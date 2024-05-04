@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# android folder
+android/
+
 # Expo
 .expo/
 dist/
