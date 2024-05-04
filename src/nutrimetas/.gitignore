@@ -6,6 +6,9 @@ node_modules/
 # android folder
 android/
 
+# firebase file
+google-services.json
+
 # Expo
 .expo/
 dist/
