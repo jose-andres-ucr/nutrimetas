@@ -1,15 +1,20 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '@/components/Themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
-
-export default function TabOneScreen() {
+export default function Expedientes() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
-    </View>
+    <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.addButton}>
+        <Text style={{
+          color: 'white',
+          textAlign: 'center',
+          fontSize: 16
+        }}>
+          Registrar paciente
+        </Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
@@ -18,14 +23,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'white'
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
+  addButton: {
+    backgroundColor: "#0386D0",
+    width: '100%',
+    height: 50,
+    position: "absolute",
+    bottom: 0,
+    justifyContent: "center"
+  }
 });
