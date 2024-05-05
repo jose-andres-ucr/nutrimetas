@@ -2,6 +2,7 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
+import Colors from '@/constants/Colors';
 
 export default function Expedientes() {
   return (
@@ -21,7 +22,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white'
   },
   addButton: {
-    backgroundColor: "#0386D0",
+    backgroundColor: Colors.lightblue,
+    fontWeight: "bold",
     width: '100%',
     height: 50,
     position: "absolute",
