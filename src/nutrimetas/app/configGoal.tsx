@@ -17,12 +17,21 @@ const goalForm = z.object({
     .string(),
   frequency: z
     .string()
-    .min(1, { message: "El número debe ser mayor 1" })
-    .max(50),
+    .refine((value) => {
+        return /^-?\d+$/.test(value);
+    }, { message: "Debe ingresar un valor numérico" })
+    .refine((value) => {
+        const numericValue = parseInt(value, 10);
+        return !isNaN(numericValue) && numericValue > 0;
+    }, { message: "Debe ingresar un valor numérico mayor a 0" })
+    .refine((value) => {
+        return parseInt(value, 10) <= 50;
+    }, { message: "El número debe ser menor o igual a 50" })
+    .transform((value) => Number(value)),
   startDate: z
-    .string(),
+    .date(),
   deadline: z      
-    .string(),
+    .date(),
 });
 
 type GoalFormType = z.infer<typeof goalForm>
@@ -36,8 +45,8 @@ export default function InfoGoals() {
     defaultValues: {
       modality: '',
       frequency: '',
-      startDate: '',
-      deadline: ''
+      startDate: new Date(),
+      deadline: new Date(),
     },
     resolver: zodResolver(goalForm),
   });
@@ -117,7 +126,7 @@ export default function InfoGoals() {
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
-            value={value}
+            value={value.toDateString()}
             error={errors.startDate?true:false}
             keyboardType="default"
             returnKeyType="next"
@@ -141,7 +150,7 @@ export default function InfoGoals() {
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
-            value={value.toString()}
+            value={value.toDateString()}
             error={errors.deadline?true:false}
             keyboardType="default"
             returnKeyType="next"
@@ -173,7 +182,7 @@ export default function InfoGoals() {
                 onSubmit({...form });
             })}
             >
-            <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Continuar</Text>
+            <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Crear</Text>
             </Button>
         </View>
 
