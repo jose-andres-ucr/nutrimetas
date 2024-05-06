@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
@@ -10,11 +10,13 @@ import { StatusBar } from 'expo-status-bar';
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
+import { Dropdown } from "react-native-element-dropdown";
 
 
 const goalForm = z.object({
   modality: z
-    .string(),
+    .string()
+    .min(1, {message: "Debe seleccionar alguna modalidad"}),
   frequency: z
     .string()
     .refine((value) => {
@@ -36,7 +38,19 @@ const goalForm = z.object({
 
 type GoalFormType = z.infer<typeof goalForm>
 
+const data = [
+    { label: 'Item 1', value: '1' },
+    { label: 'Item 2', value: '2' },
+    { label: 'Item 3', value: '3' },
+    { label: 'Item 4', value: '4' },
+    { label: 'Item 5', value: '5' },
+    { label: 'Item 6', value: '6' },
+    { label: 'Item 7', value: '7' },
+    { label: 'Item 8', value: '8' },
+  ];
+
 export default function InfoGoals() {
+    const [value, setValue] = useState<string>('');
   const {
     control,
     handleSubmit,
@@ -71,21 +85,23 @@ export default function InfoGoals() {
         <Controller
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-            mode="outlined"
-            label="Modalidad"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
+            <Dropdown
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            data={data}
+            search
+            maxHeight={300}
+            labelField="label"
+            valueField="value"
+            placeholder="Seleccione una modalidad"
+            searchPlaceholder="Buscar..."
             value={value}
-            error={errors.modality?true:false}
-            keyboardType="default"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-                refs.modalityRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-            />
+            onChange={(item) => onChange(item?.value || '')}
+            onBlur={onBlur}
+        />
         )}
         name="modality"
         />
@@ -236,5 +252,30 @@ const styles = StyleSheet.create({
   },
   error: {
     color: "red",
+  },
+  dropdown: {
+    margin: 16,
+    padding: 10,
+    marginVertical: 10,
+    width: "70%",
+    height: 50,
+    borderColor: 'gray',
+    borderRadius: 5,
+    borderWidth: 1,
+    backgroundColor: 'white'
+  },
+  placeholderStyle: {
+    fontSize: 16,
+  },
+  selectedTextStyle: {
+    fontSize: 16,
+  },
+  iconStyle: {
+    width: 20,
+    height: 20,
+  },
+  inputSearchStyle: {
+    height: 40,
+    fontSize: 16,
   },
 });
