@@ -7,6 +7,7 @@ import { Switch, Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import firestore from '@react-native-firebase/firestore';
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -55,7 +56,18 @@ export default function AddPatient() {
   } as const;
 
   const onSubmit = (data: PatientFormType) => {
-    console.log("Enviados correctamente ", data)
+    firestore()
+      .collection('Patient')
+      .add({
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        password: data.password,
+      })
+      .then(() => {
+        console.log('User added!');
+        router.navigate('/(tabs)/')
+      });
   };
 
   return (
