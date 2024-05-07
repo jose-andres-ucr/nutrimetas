@@ -1,12 +1,13 @@
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, View } from '@/components/Themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
+import PatientList from '../PatientList';
 
 export default function Expedientes() {
   return (
     <SafeAreaView style={styles.container}>
+      <PatientList/>
       <Link push href="/addPatient" style={styles.addButton}>
             Registrar paciente
       </Link>
@@ -16,10 +17,8 @@ export default function Expedientes() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white'
+    height: '100%',
+    backgroundColor: 'white',
   },
   addButton: {
     backgroundColor: Colors.lightblue,
@@ -33,5 +32,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     lineHeight: 50
-  }
+  },
 });
