@@ -19,18 +19,9 @@ const goalForm = z.object({
     .string()
     .min(1, { message: "Debe seleccionar alguna modalidad" }),
   frequency: z
-    .string()
-    .refine((value) => {
-      return /^-?\d+$/.test(value);
-    }, { message: "Debe ingresar un valor numérico" })
-    .refine((value) => {
-      const numericValue = parseInt(value, 10);
-      return !isNaN(numericValue) && numericValue > 0;
-    }, { message: "Debe ingresar un valor numérico mayor a 0" })
-    .refine((value) => {
-      return parseInt(value, 10) <= 50;
-    }, { message: "El número debe ser menor o igual a 50" })
-    .transform((value) => Number(value)),
+    .number({ message: "Debe digitar un valor numerico" })
+    .min(1, { message: "Debe digitar un valor mayor a 0" })
+    .max(100, { message: "Debe digitar un valor menor o igual a 100" }),
   startDate: z
     .date(),
   deadline: z
@@ -53,7 +44,7 @@ const data = [
 export default function InfoGoals() {
   const route = useRoute();
   const formData = route.params?.formData;
-  console.log("recivido", formData)
+  console.log("recibido", formData)
   const [value, setValue] = useState<string>('');
   const {
     control,
@@ -62,7 +53,7 @@ export default function InfoGoals() {
   } = useForm({
     defaultValues: {
       modality: '',
-      frequency: '',
+      frequency: 0,
       startDate: new Date(),
       deadline: new Date(),
     },
@@ -121,8 +112,15 @@ export default function InfoGoals() {
             label="Frecuencia"
             style={styles.inputField}
             onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
+            onChangeText={(text) => {
+              const numericValue = parseFloat(text);
+              if (!isNaN(numericValue)) {
+                onChange(numericValue);
+              } else {
+                onChange(text);
+              }
+            }}
+            value={value.toString()}
             error={errors.frequency ? true : false}
             keyboardType="numeric"
             returnKeyType="next"
