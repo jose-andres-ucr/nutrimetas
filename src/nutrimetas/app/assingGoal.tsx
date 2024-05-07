@@ -7,7 +7,8 @@ import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-
+import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
@@ -39,6 +40,7 @@ const data = [
 ];
 
 export default function AssignGoal() {
+  const navigation = useNavigation();
   const [value, setValue] = useState<string>('');
   const {
     control,
@@ -61,6 +63,7 @@ export default function AssignGoal() {
 
   const onSubmit = (data: GoalFormType) => {
     console.log("Enviados correctamente ", data)
+    navigation.navigate('configGoal', { formData: data });
   };
 
   return (
@@ -154,14 +157,15 @@ export default function AssignGoal() {
         </Link>
 
         <Button
-          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
-          mode="contained"
-          onPress={handleSubmit((form) => {
-            onSubmit({ ...form });
-          })}
-        >
-          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Continuar</Text>
-        </Button>
+            style={{...styles.button, backgroundColor: Colors.lightblue}}
+            mode="contained"
+            onPress={handleSubmit((form) => {
+                onSubmit({...form });
+            })}
+            >
+            <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Crear</Text>
+            </Button>
+
       </View>
 
       {/* Use a light status bar on iOS to account for the black space above the modal */}

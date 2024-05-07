@@ -7,50 +7,54 @@ import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-
+import { useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
-
+import { useRoute } from '@react-navigation/native';
 
 const goalForm = z.object({
   modality: z
     .string()
-    .min(1, {message: "Debe seleccionar alguna modalidad"}),
+    .min(1, { message: "Debe seleccionar alguna modalidad" }),
   frequency: z
     .string()
     .refine((value) => {
-        return /^-?\d+$/.test(value);
+      return /^-?\d+$/.test(value);
     }, { message: "Debe ingresar un valor numérico" })
     .refine((value) => {
-        const numericValue = parseInt(value, 10);
-        return !isNaN(numericValue) && numericValue > 0;
+      const numericValue = parseInt(value, 10);
+      return !isNaN(numericValue) && numericValue > 0;
     }, { message: "Debe ingresar un valor numérico mayor a 0" })
     .refine((value) => {
-        return parseInt(value, 10) <= 50;
+      return parseInt(value, 10) <= 50;
     }, { message: "El número debe ser menor o igual a 50" })
     .transform((value) => Number(value)),
   startDate: z
     .date(),
-  deadline: z      
+  deadline: z
     .date(),
 });
 
 type GoalFormType = z.infer<typeof goalForm>
 
 const data = [
-    { label: 'Item 1', value: '1' },
-    { label: 'Item 2', value: '2' },
-    { label: 'Item 3', value: '3' },
-    { label: 'Item 4', value: '4' },
-    { label: 'Item 5', value: '5' },
-    { label: 'Item 6', value: '6' },
-    { label: 'Item 7', value: '7' },
-    { label: 'Item 8', value: '8' },
-  ];
+  { label: 'Item 1', value: '1' },
+  { label: 'Item 2', value: '2' },
+  { label: 'Item 3', value: '3' },
+  { label: 'Item 4', value: '4' },
+  { label: 'Item 5', value: '5' },
+  { label: 'Item 6', value: '6' },
+  { label: 'Item 7', value: '7' },
+  { label: 'Item 8', value: '8' },
+];
 
 export default function InfoGoals() {
-    const [value, setValue] = useState<string>('');
+  const route = useRoute();
+  const formData = route.params?.formData;
+  console.log("recivido", formData)
+  const [value, setValue] = useState<string>('');
   const {
     control,
     handleSubmit,
@@ -78,14 +82,14 @@ export default function InfoGoals() {
 
   return (
     <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Asignar Meta</Text>
-        <Text style={styles.subtitle}>NUTRI<Text style={{color: Colors.lightblue}}>METAS</Text></Text>
-        <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <Text style={styles.title}>Asignar Meta</Text>
+      <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
+      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
-        <Controller
+      <Controller
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
-            <Dropdown
+          <Dropdown
             style={styles.dropdown}
             placeholderStyle={styles.placeholderStyle}
             selectedTextStyle={styles.selectedTextStyle}
@@ -101,15 +105,15 @@ export default function InfoGoals() {
             value={value}
             onChange={(item) => onChange(item?.value || '')}
             onBlur={onBlur}
-        />
+          />
         )}
         name="modality"
-        />
-        {errors.modality ? (
-            <Text style={styles.error}>{errors.modality.message}</Text>
-        ) : null}
+      />
+      {errors.modality ? (
+        <Text style={styles.error}>{errors.modality.message}</Text>
+      ) : null}
 
-        <Controller
+      <Controller
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
@@ -119,7 +123,7 @@ export default function InfoGoals() {
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
-            error={errors.frequency?true:false}
+            error={errors.frequency ? true : false}
             keyboardType="numeric"
             returnKeyType="next"
             onSubmitEditing={() => {
@@ -128,79 +132,79 @@ export default function InfoGoals() {
             blurOnSubmit={false}
           />
         )}
-        name="frequency"/>
-        {errors.frequency ? (
-          <Text style={styles.error}>{errors.frequency.message}</Text>
-        ) : null}
+        name="frequency" />
+      {errors.frequency ? (
+        <Text style={styles.error}>{errors.frequency.message}</Text>
+      ) : null}
 
-        <Controller
+      <Controller
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
+          <TextInput
             mode="outlined"
             label="Fecha de Inicio"
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value.toDateString()}
-            error={errors.startDate?true:false}
+            error={errors.startDate ? true : false}
             keyboardType="default"
             returnKeyType="next"
             onSubmitEditing={() => {
-                refs.startDateRef.current?.focus();
+              refs.startDateRef.current?.focus();
             }}
             blurOnSubmit={false}
-            />
+          />
         )}
-        name="startDate"/>
-        {errors.startDate ? (
-            <Text style={styles.error}>{errors.startDate.message}</Text>
-        ) : null}
+        name="startDate" />
+      {errors.startDate ? (
+        <Text style={styles.error}>{errors.startDate.message}</Text>
+      ) : null}
 
-        <Controller
+      <Controller
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
+          <TextInput
             mode="outlined"
             label="Fecha límite"
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value.toDateString()}
-            error={errors.deadline?true:false}
+            error={errors.deadline ? true : false}
             keyboardType="default"
             returnKeyType="next"
             onSubmitEditing={() => {
-                refs.deadlineRef.current?.focus();
+              refs.deadlineRef.current?.focus();
             }}
             blurOnSubmit={false}
-            />
+          />
         )}
-        name="deadline"/>
-        {errors.deadline ? (
-            <Text style={styles.error}>{errors.deadline.message}</Text>
-        ) : null}
-          
-        <View style={styles.buttonContainer}>
-            <Link href='/(tabs)/' style={{
-            ...styles.button, 
-            borderWidth: 1,
-            borderColor: "black",
-            lineHeight: 35
-            }}>
-                Cancelar
-            </Link>
+        name="deadline" />
+      {errors.deadline ? (
+        <Text style={styles.error}>{errors.deadline.message}</Text>
+      ) : null}
 
-            <Button
-            style={{...styles.button, backgroundColor: Colors.lightblue}}
-            mode="contained"
-            onPress={handleSubmit((form) => {
-                onSubmit({...form });
-            })}
-            >
-            <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Crear</Text>
-            </Button>
-        </View>
+      <View style={styles.buttonContainer}>
+        <Link href='/(tabs)/' style={{
+          ...styles.button,
+          borderWidth: 1,
+          borderColor: "black",
+          lineHeight: 35
+        }}>
+          Cancelar
+        </Link>
+
+        <Button
+          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
+          mode="contained"
+          onPress={handleSubmit((form) => {
+            onSubmit({ ...form });
+          })}
+        >
+          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
+        </Button>
+      </View>
 
       {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
@@ -235,7 +239,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 40,
-    borderRadius:5,
+    borderRadius: 5,
     width: 165,
     marginTop: 24,
     textAlign: "center",
@@ -246,7 +250,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 40,
     backgroundColor: "transparent",
-    flexDirection:"row", 
+    flexDirection: "row",
     justifyContent: "space-evenly",
     width: "100%"
   },
