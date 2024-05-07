@@ -47,10 +47,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         margin: '2%',
+        borderBottomWidth: 1
     },
     itemImage: {
-       width: 50,
-       height: 50 
+       width: 60,
+       height: 60 
     },
     itemName: {
         fontWeight: 'bold',
