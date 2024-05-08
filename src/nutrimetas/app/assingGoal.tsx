@@ -1,13 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -63,6 +63,19 @@ export default function AssignGoal() {
   const onSubmit = (data: GoalFormType) => {
     navigation.navigate('configGoal', { formData: data });
   };
+
+  const [categoryData, setCategoryData] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = firestore().collection('Category').onSnapshot(querySnapshot => {
+      const categoryData = querySnapshot.docs.map(doc => {
+        return { label: doc.data().Type, value: doc.data().Type };
+      });
+      setCategoryData(categoryData);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -126,7 +139,7 @@ export default function AssignGoal() {
             selectedTextStyle={styles.selectedTextStyle}
             inputSearchStyle={styles.inputSearchStyle}
             iconStyle={styles.iconStyle}
-            data={data}
+            data={categoryData}
             search
             maxHeight={300}
             labelField="label"
