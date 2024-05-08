@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
@@ -14,6 +14,7 @@ import { useRoute } from '@react-navigation/native';
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import firestore from '@react-native-firebase/firestore';
+
 
 const goalForm = z.object({
   modality: z
@@ -30,17 +31,6 @@ const goalForm = z.object({
 });
 
 type GoalFormType = z.infer<typeof goalForm>
-
-const data = [
-  { label: 'Item 1', value: '1' },
-  { label: 'Item 2', value: '2' },
-  { label: 'Item 3', value: '3' },
-  { label: 'Item 4', value: '4' },
-  { label: 'Item 5', value: '5' },
-  { label: 'Item 6', value: '6' },
-  { label: 'Item 7', value: '7' },
-  { label: 'Item 8', value: '8' },
-];
 
 export default function InfoGoals() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -91,6 +81,19 @@ export default function InfoGoals() {
       });
   };
 
+  const [modalityData, setModalityData] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = firestore().collection('Modality').onSnapshot(querySnapshot => {
+      const modalityData = querySnapshot.docs.map(doc => {
+        return { label: doc.data().Type, value: doc.data().Type };
+      });
+      setModalityData(modalityData);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Asignar Meta</Text>
@@ -106,7 +109,7 @@ export default function InfoGoals() {
             selectedTextStyle={styles.selectedTextStyle}
             inputSearchStyle={styles.inputSearchStyle}
             iconStyle={styles.iconStyle}
-            data={data}
+            data={modalityData}
             search
             maxHeight={300}
             labelField="label"

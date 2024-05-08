@@ -28,17 +28,6 @@ const goalForm = z.object({
 
 type GoalFormType = z.infer<typeof goalForm>
 
-const data = [
-  { label: 'Item 1', value: '1' },
-  { label: 'Item 2', value: '2' },
-  { label: 'Item 3', value: '3' },
-  { label: 'Item 4', value: '4' },
-  { label: 'Item 5', value: '5' },
-  { label: 'Item 6', value: '6' },
-  { label: 'Item 7', value: '7' },
-  { label: 'Item 8', value: '8' },
-];
-
 export default function AssignGoal() {
   const navigation = useNavigation();
   const {
@@ -168,14 +157,14 @@ export default function AssignGoal() {
         </Link>
 
         <Button
-            style={{...styles.button, backgroundColor: Colors.lightblue}}
-            mode="contained"
-            onPress={handleSubmit((form) => {
-                onSubmit({...form });
-            })}
-            >
-            <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Crear</Text>
-            </Button>
+          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
+          mode="contained"
+          onPress={handleSubmit((form) => {
+            onSubmit({ ...form });
+          })}
+        >
+          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
+        </Button>
 
       </View>
 
