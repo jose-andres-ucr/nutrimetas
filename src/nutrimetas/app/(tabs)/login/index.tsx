@@ -62,6 +62,7 @@ const LoginStyles = StyleSheet.create({
     },
     Title: {
         fontWeight: "bold",
+        // TODO: Load font (expo-fonts) or replace it with a system font
         fontFamily: "inter",
         fontStyle: "normal",
         textAlign: "center",
@@ -92,8 +93,8 @@ const LoginStyles = StyleSheet.create({
     FormView: {
         flex: 1,
         padding: 5,
-        maxHeight: 200,
-        minHeight: 200,
+        maxHeight: 225,
+        minHeight: 225,
         width:"100%",
 
         alignSelf: "center",

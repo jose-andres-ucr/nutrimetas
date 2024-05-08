@@ -77,87 +77,98 @@ export default function LoginForm(
         <View style={FormStyles.FormView}>
 
             {/* Email field */}
-            <View style={FormStyles.TextFieldView}>
-                <Image 
-                    source={icon? icon[0] as ImageSourcePropType : undefined}
-                    onError={() => {console.error("Error loading image:", error);}}
+            <View style={FormStyles.FieldView}>
+                {/* Input */}
+                <View style={FormStyles.FieldInputView}>
+                    <Image 
+                        source={icon? icon[0] as ImageSourcePropType : undefined}
+                        onError={() => {console.error("Error loading image:", error);}}
 
-                    style={FormStyles.TextFieldIcon}
-                    contentFit="contain"
-                />
-                <Controller
-                    control = { control }
-                    rules = { {required: true,} }
-                    render = { 
-                        ({ field: { onChange, onBlur, value } }) => (
-                        <TextInput
-                            ref={emailRef}
-                            onBlur={onBlur}
-                            onChangeText={onChange}
-                            value={value}
+                        style={FormStyles.InputTextIcon}
+                        contentFit="contain"
+                    />
+                    <Controller
+                        control = { control }
+                        rules = { {required: true,} }
+                        render = { 
+                            ({ field: { onChange, onBlur, value } }) => (
+                            <TextInput
+                                ref={emailRef}
+                                onBlur={onBlur}
+                                onChangeText={onChange}
+                                value={value}
 
-                            placeholder="Correo de usuario"
-                            keyboardType="email-address"
-                            autoComplete="email"
-                            autoCapitalize="none"
-                            returnKeyType="next"
-                            style={FormStyles.TextFieldInput}
-                            
-                            autoFocus={true}
-                            blurOnSubmit={false}
-                            onSubmitEditing={() => {
-                                emailRef.current?.focus();
-                            }}        
-                        />
-                    )}
-                    name = "email"
-                />
+                                placeholder="Correo de usuario"
+                                keyboardType="email-address"
+                                autoComplete="email"
+                                autoCapitalize="none"
+                                returnKeyType="next"
+                                style={FormStyles.FieldInputText}
+                                
+                                autoFocus={true}
+                                blurOnSubmit={false}
+                                onSubmitEditing={() => {
+                                    emailRef.current?.focus();
+                                }}        
+                            />
+                        )}
+                        name = "email"
+                    />
+                </View>
+
+                {/* Errors */}
                 {errors.email && 
-                    <Text style={FormStyles.ErrorText}> 
-                        {errors.email.message} 
-                    </Text>
-                }
+                        <Text style={FormStyles.ErrorText}> 
+                            {errors.email.message} 
+                        </Text>
+                    }
             </View>
 
             {/* Password field */}
-            <View style={FormStyles.TextFieldView}>
-                <Image 
-                    source={icon? icon[1] as ImageSourcePropType : undefined}
-                    onError={() => {console.error("Error loading image:", error);}}
+            <View style={FormStyles.FieldView}>
+                {/* Input */}
+                <View style={FormStyles.FieldInputView}>
+                    <Image 
+                        source={icon? icon[1] as ImageSourcePropType : undefined}
+                        onError={() => {
+                            console.error("Error loading image:", error);}}
 
-                    style={FormStyles.TextFieldIcon}
-                    contentFit="contain"
-                />
-                <Controller
-                    control = { control }
-                    rules = { {required: true,} }
-                    render = { 
-                        ({ field: { onChange, onBlur, value } }) => (
-                        <TextInput
-                            ref={passwordRef}
-                            onBlur={onBlur}
-                            onChangeText={onChange}
-                            value={value}
+                        style={FormStyles.InputTextIcon}
+                        contentFit="contain"
+                    />
+                    <Controller
+                        control = { control }
+                        rules = { {required: true,} }
+                        render = { 
+                            ({ field: { onChange, onBlur, value } }) => (
+                            <TextInput
+                                ref={passwordRef}
+                                onBlur={onBlur}
+                                onChangeText={onChange}
+                                value={value}
 
-                            placeholder="Contraseña"
-                            autoComplete="current-password"
-                            autoCapitalize="none"
-                            returnKeyType="next"
-                            style={FormStyles.TextFieldInput}
+                                placeholder="Contraseña"
+                                autoComplete="current-password"
+                                autoCapitalize="none"
+                                returnKeyType="next"
+                                style={FormStyles.FieldInputText}
 
-                            secureTextEntry={true}
-                            blurOnSubmit={false}
-                            onSubmitEditing={() => {
-                                passwordRef.current?.focus();
-                            }}  
-                        />
-                    )}
-                    name = "password"
-                />
+                                secureTextEntry={true}
+                                blurOnSubmit={false}
+                                onSubmitEditing={() => {
+                                    passwordRef.current?.focus();
+                                }}  
+                            />
+                        )}
+                        name = "password"
+                    />
+                </View>
+
+                {/* Errors */}
                 {errors.password && 
-                    <Text style={FormStyles.ErrorText}> 
-                        {errors.password.message} 
-                    </Text>}
+                        <Text style={FormStyles.ErrorText}> 
+                            {errors.password.message} 
+                        </Text>}
             </View>
 
             {/* Login button */}
@@ -177,8 +188,8 @@ const FormStyles = StyleSheet.create({
     FormView: {
         flex: 1,
         padding: 5,
-        gap: 35,
-        maxHeight: 250,
+        gap: 10,
+        maxHeight: 300,
         width: "100%",
 
         flexDirection: "column",
@@ -186,7 +197,17 @@ const FormStyles = StyleSheet.create({
         justifyContent: "center",
         // backgroundColor: "green"
     },
-    TextFieldView: {
+    FieldView: {
+        flex: 1,
+        width: "100%",
+
+        flexDirection: "column",
+        alignItems: "stretch",
+        justifyContent: "center",
+
+        /// backgroundColor: "green"
+    },
+    FieldInputView: {
         flex: 1,
         padding: 5,
         gap: 10,
@@ -200,12 +221,12 @@ const FormStyles = StyleSheet.create({
         borderBottomColor: '#A6A6A6',
         // backgroundColor: "green"
     },
-    TextFieldIcon: {
+    InputTextIcon: {
         width: 25,
         height: 25,
         color: '#A6A6A6',
     },
-    TextFieldInput: {
+    FieldInputText: {
         fontWeight: "normal",
         fontFamily: "sans-serif-light",
         fontStyle: "normal",
