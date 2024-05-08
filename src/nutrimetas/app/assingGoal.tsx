@@ -23,7 +23,7 @@ const goalForm = z.object({
     .min(1, { message: "Debes digitar una descripción" }),
   category: z
     .string()
-    .min(1, { message: "Debe seleccionar alguna modalidad" }),
+    .min(1, { message: "Debe seleccionar alguna categoría" }),
 });
 
 type GoalFormType = z.infer<typeof goalForm>
@@ -41,7 +41,6 @@ const data = [
 
 export default function AssignGoal() {
   const navigation = useNavigation();
-  const [value, setValue] = useState<string>('');
   const {
     control,
     handleSubmit,

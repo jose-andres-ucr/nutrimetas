@@ -1,18 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
+import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { Stack } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { useRoute } from '@react-navigation/native';
+import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const goalForm = z.object({
   modality: z
@@ -42,10 +42,12 @@ const data = [
 ];
 
 export default function InfoGoals() {
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const route = useRoute();
-  const formData = route.params?.formData;
-  console.log("recibido", formData)
-  const [value, setValue] = useState<string>('');
+  const firstGoalData = route.params?.formData;
+  console.log("recibido", firstGoalData)
+
   const {
     control,
     handleSubmit,
@@ -63,8 +65,8 @@ export default function InfoGoals() {
   const refs = {
     modalityRef: React.useRef<TextInputRn>(null),
     frequencyRef: React.useRef<TextInputRn>(null),
-    startDateRef: React.useRef<TextInputRn>(null),
-    deadlineRef: React.useRef<TextInputRn>(null),
+    startDateRef: React.useRef<DatePickerOptions>(null),
+    deadlineRef: React.useRef<DatePickerOptions>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
@@ -135,48 +137,66 @@ export default function InfoGoals() {
         <Text style={styles.error}>{errors.frequency.message}</Text>
       ) : null}
 
+      <View style={[styles.textDate, {paddingTop: 5}]}>
+        <Text>Fecha de Inicio</Text>
+      </View>
       <Controller
         control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            mode="outlined"
-            label="Fecha de Inicio"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value.toDateString()}
-            error={errors.startDate ? true : false}
-            keyboardType="default"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.startDateRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
+        render={({ field: { onChange, value } }) => (
+          <View>
+            <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
+                <Text>{value.toDateString()}</Text>
+                <FontAwesome name="calendar" size={24} color="gray" />
+            </TouchableOpacity>
+            {showStartDatePicker && (
+              <DateTimePicker
+                value={value}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowStartDatePicker(false);
+                  onChange(selectedDate);
+                }}
+                minimumDate={new Date()}
+                negativeButton={{label: 'Cancelar'}}
+                positiveButton={{label: 'Aceptar'}}
+              />
+            )}
+          </View>
         )}
-        name="startDate" />
+        name="startDate"
+        defaultValue={new Date()}
+      />
       {errors.startDate ? (
         <Text style={styles.error}>{errors.startDate.message}</Text>
       ) : null}
 
+      <View style={[styles.textDate, {paddingTop: 15}]}>
+        <Text>Fecha Límite</Text>
+      </View>
       <Controller
         control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            mode="outlined"
-            label="Fecha límite"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value.toDateString()}
-            error={errors.deadline ? true : false}
-            keyboardType="default"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.deadlineRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
+        render={({ field: { onChange, value } }) => (
+          <View>
+            <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowDeadlineDatePicker(true)}>
+                <Text>{value.toDateString()}</Text>
+                <FontAwesome name="calendar" size={24} color="gray" />
+            </TouchableOpacity>
+            {showDeadlineDatePicker && (
+              <DateTimePicker
+                value={value}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDeadlineDatePicker(false);
+                  onChange(selectedDate);
+                }}
+                minimumDate={new Date()}
+                negativeButton={{label: 'Cancelar'}}
+                positiveButton={{label: 'Aceptar'}}
+              />
+            )}
+          </View>
         )}
         name="deadline" />
       {errors.deadline ? (
@@ -184,7 +204,7 @@ export default function InfoGoals() {
       ) : null}
 
       <View style={styles.buttonContainer}>
-        <Link href='/(tabs)/' style={{
+        <Link href='/assingGoal' style={{
           ...styles.button,
           borderWidth: 1,
           borderColor: "black",
@@ -196,8 +216,8 @@ export default function InfoGoals() {
         <Button
           style={{ ...styles.button, backgroundColor: Colors.lightblue }}
           mode="contained"
-          onPress={handleSubmit((form) => {
-            onSubmit({ ...form });
+          onPress={handleSubmit((secondGoalData) => {
+            onSubmit({...firstGoalData, ...secondGoalData });
           })}
         >
           <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
@@ -264,7 +284,7 @@ const styles = StyleSheet.create({
     borderColor: 'gray',
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: 'white'
+    backgroundColor: 'white',    
   },
   placeholderStyle: {
     fontSize: 16,
@@ -280,4 +300,19 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
+  datePickerStyle: {
+    width: '70%',
+    padding: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'gray',
+    justifyContent: 'space-between', 
+    alignItems: 'center',      
+    flexDirection: 'row',
+  },
+  textDate: {
+    justifyContent: 'flex-start',
+    width: '70%',
+    backgroundColor: 'transparent',
+  }
 });
