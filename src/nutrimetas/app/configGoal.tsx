@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from 'expo-router';
+import { router, Link } from 'expo-router';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity } from 'react-native';
@@ -13,6 +13,7 @@ import { Dropdown } from "react-native-element-dropdown";
 import { useRoute } from '@react-navigation/native';
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import firestore from '@react-native-firebase/firestore';
 
 const goalForm = z.object({
   modality: z
@@ -46,7 +47,7 @@ export default function InfoGoals() {
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const route = useRoute();
   const firstGoalData = route.params?.formData;
-  console.log("recibido", firstGoalData)
+
 
   const {
     control,
@@ -71,6 +72,23 @@ export default function InfoGoals() {
 
   const onSubmit = (data: GoalFormType) => {
     console.log("Enviados correctamente ", data)
+    firestore()
+      .collection('Goal')
+      .add({
+        Deadline: data.deadline,
+        Description: data.description,
+        Frequency: data.frequency,
+        Modality: data.modality,
+        StartDate: data.startDate,
+        Title: data.title,
+      })
+      .then(() => {
+        console.log('Goal added!');
+        router.navigate('/(tabs)/');
+      })
+      .catch((error) => {
+        console.error('Error adding goal: ', error);
+      });
   };
 
   return (
@@ -137,7 +155,7 @@ export default function InfoGoals() {
         <Text style={styles.error}>{errors.frequency.message}</Text>
       ) : null}
 
-      <View style={[styles.textDate, {paddingTop: 5}]}>
+      <View style={[styles.textDate, { paddingTop: 5 }]}>
         <Text>Fecha de Inicio</Text>
       </View>
       <Controller
@@ -145,8 +163,8 @@ export default function InfoGoals() {
         render={({ field: { onChange, value } }) => (
           <View>
             <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
-                <Text>{value.toDateString()}</Text>
-                <FontAwesome name="calendar" size={24} color="gray" />
+              <Text>{value.toDateString()}</Text>
+              <FontAwesome name="calendar" size={24} color="gray" />
             </TouchableOpacity>
             {showStartDatePicker && (
               <DateTimePicker
@@ -158,8 +176,8 @@ export default function InfoGoals() {
                   onChange(selectedDate);
                 }}
                 minimumDate={new Date()}
-                negativeButton={{label: 'Cancelar'}}
-                positiveButton={{label: 'Aceptar'}}
+                negativeButton={{ label: 'Cancelar' }}
+                positiveButton={{ label: 'Aceptar' }}
               />
             )}
           </View>
@@ -171,7 +189,7 @@ export default function InfoGoals() {
         <Text style={styles.error}>{errors.startDate.message}</Text>
       ) : null}
 
-      <View style={[styles.textDate, {paddingTop: 15}]}>
+      <View style={[styles.textDate, { paddingTop: 15 }]}>
         <Text>Fecha Límite</Text>
       </View>
       <Controller
@@ -179,8 +197,8 @@ export default function InfoGoals() {
         render={({ field: { onChange, value } }) => (
           <View>
             <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowDeadlineDatePicker(true)}>
-                <Text>{value.toDateString()}</Text>
-                <FontAwesome name="calendar" size={24} color="gray" />
+              <Text>{value.toDateString()}</Text>
+              <FontAwesome name="calendar" size={24} color="gray" />
             </TouchableOpacity>
             {showDeadlineDatePicker && (
               <DateTimePicker
@@ -192,8 +210,8 @@ export default function InfoGoals() {
                   onChange(selectedDate);
                 }}
                 minimumDate={new Date()}
-                negativeButton={{label: 'Cancelar'}}
-                positiveButton={{label: 'Aceptar'}}
+                negativeButton={{ label: 'Cancelar' }}
+                positiveButton={{ label: 'Aceptar' }}
               />
             )}
           </View>
@@ -217,7 +235,7 @@ export default function InfoGoals() {
           style={{ ...styles.button, backgroundColor: Colors.lightblue }}
           mode="contained"
           onPress={handleSubmit((secondGoalData) => {
-            onSubmit({...firstGoalData, ...secondGoalData });
+            onSubmit({ ...firstGoalData, ...secondGoalData });
           })}
         >
           <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
@@ -284,7 +302,7 @@ const styles = StyleSheet.create({
     borderColor: 'gray',
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: 'white',    
+    backgroundColor: 'white',
   },
   placeholderStyle: {
     fontSize: 16,
@@ -306,8 +324,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderWidth: 1,
     borderColor: 'gray',
-    justifyContent: 'space-between', 
-    alignItems: 'center',      
+    justifyContent: 'space-between',
+    alignItems: 'center',
     flexDirection: 'row',
   },
   textDate: {

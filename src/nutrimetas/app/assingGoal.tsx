@@ -61,7 +61,6 @@ export default function AssignGoal() {
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
-    console.log("Enviados correctamente ", data)
     navigation.navigate('configGoal', { formData: data });
   };
 
