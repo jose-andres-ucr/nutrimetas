@@ -1,6 +1,9 @@
 "use strict"
 
 // Dependencies
+// React Hooks & References
+import { useRef } from "react";
+
 // Core React Native UI
 import { View, Text, TextInput, Button } from "react-native";
 
@@ -51,6 +54,12 @@ export default function LoginForm(
         resolver: zodResolver(formSchema),
     });
 
+    // Register the login form's field refs
+    const {emailRef, passwordRef} = {
+        emailRef: useRef<TextInput>(null),
+        passwordRef: useRef<TextInput>(null),
+    } as const;
+
     // Render login form
     return (
         // Overall form frame
@@ -65,10 +74,23 @@ export default function LoginForm(
                     render = { 
                         ({ field: { onChange, onBlur, value } }) => (
                         <TextInput
-                            placeholder="(Ingrese su correo aquí)"
+                            ref={emailRef}
                             onBlur={onBlur}
                             onChangeText={onChange}
                             value={value}
+
+                            /* style={styles.inputField} */
+                            placeholder="(Ingrese su correo de aquí)"
+                            keyboardType="email-address"
+                            autoComplete="email"
+                            autoCapitalize="none"
+                            returnKeyType="next"
+                            
+                            autoFocus={true}
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => {
+                                emailRef.current?.focus();
+                            }}        
                         />
                     )}
                     name = "email"
@@ -86,11 +108,22 @@ export default function LoginForm(
                     render = { 
                         ({ field: { onChange, onBlur, value } }) => (
                         <TextInput
-                            placeholder="(Ingrese su contraseña aquí)"
+                            ref={passwordRef}
                             onBlur={onBlur}
                             onChangeText={onChange}
                             value={value}
+                            
+                            /* style={styles.inputField} */
+                            placeholder="(Ingrese su contraseña aquí)"
+                            autoComplete="current-password"
+                            autoCapitalize="none"
+                            returnKeyType="next"
+
                             secureTextEntry={true}
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => {
+                                passwordRef.current?.focus();
+                            }}  
                         />
                     )}
                     name = "password"
