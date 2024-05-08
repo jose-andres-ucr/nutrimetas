@@ -5,10 +5,15 @@
 import { useRef } from "react";
 
 // Core React Native UI
-import { View, Text, TextInput, Button } from "react-native";
+import { View, Text, TextInput, StyleSheet, Pressable, 
+    ImageSourcePropType } from "react-native";
+
+// Expo UI
+import { useAssets } from 'expo-asset'; 
+import { Image } from "expo-image";
 
 // Form structure and hooks
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { useForm, SubmitHandler, Controller, Form } from "react-hook-form";
 
 // Data validation and sanitization
 import { z } from "zod";
@@ -60,14 +65,26 @@ export default function LoginForm(
         passwordRef: useRef<TextInput>(null),
     } as const;
 
+    // Register the icon loading hook
+    const [icon, error] = useAssets([
+        require('../assets/images/mail.svg'), 
+        require('../assets/images/lock.svg')
+    ]);
+
     // Render login form
     return (
         // Overall form frame
-        <View /* style={CommonStyles.columnView} */>
+        <View style={FormStyles.FormView}>
 
             {/* Email field */}
-            <View /* style={CommonStyles.rowView} */>
-                <Text> Correo de usuario: </Text>
+            <View style={FormStyles.TextFieldView}>
+                <Image 
+                    source={icon? icon[0] as ImageSourcePropType : undefined}
+                    onError={() => {console.error("Error loading image:", error);}}
+
+                    style={FormStyles.TextFieldIcon}
+                    contentFit="contain"
+                />
                 <Controller
                     control = { control }
                     rules = { {required: true,} }
@@ -79,12 +96,12 @@ export default function LoginForm(
                             onChangeText={onChange}
                             value={value}
 
-                            /* style={styles.inputField} */
-                            placeholder="(Ingrese su correo de aquí)"
+                            placeholder="Correo de usuario"
                             keyboardType="email-address"
                             autoComplete="email"
                             autoCapitalize="none"
                             returnKeyType="next"
+                            style={FormStyles.TextFieldInput}
                             
                             autoFocus={true}
                             blurOnSubmit={false}
@@ -96,12 +113,21 @@ export default function LoginForm(
                     name = "email"
                 />
                 {errors.email && 
-                    <Text> {errors.email.message} </Text>}
+                    <Text style={FormStyles.ErrorText}> 
+                        {errors.email.message} 
+                    </Text>
+                }
             </View>
 
             {/* Password field */}
-            <View /* style={CommonStyles.rowView} */>
-                <Text> Contraseña: </Text>
+            <View style={FormStyles.TextFieldView}>
+                <Image 
+                    source={icon? icon[1] as ImageSourcePropType : undefined}
+                    onError={() => {console.error("Error loading image:", error);}}
+
+                    style={FormStyles.TextFieldIcon}
+                    contentFit="contain"
+                />
                 <Controller
                     control = { control }
                     rules = { {required: true,} }
@@ -112,12 +138,12 @@ export default function LoginForm(
                             onBlur={onBlur}
                             onChangeText={onChange}
                             value={value}
-                            
-                            /* style={styles.inputField} */
-                            placeholder="(Ingrese su contraseña aquí)"
+
+                            placeholder="Contraseña"
                             autoComplete="current-password"
                             autoCapitalize="none"
                             returnKeyType="next"
+                            style={FormStyles.TextFieldInput}
 
                             secureTextEntry={true}
                             blurOnSubmit={false}
@@ -129,15 +155,89 @@ export default function LoginForm(
                     name = "password"
                 />
                 {errors.password && 
-                    <Text> {errors.password.message} </Text>}
+                    <Text style={FormStyles.ErrorText}> 
+                        {errors.password.message} 
+                    </Text>}
             </View>
 
             {/* Login button */}
-            <Button 
-                title = "Iniciar sesión" 
-                onPress = {handleSubmit(props.onSubmit)} 
-            />
+            <Pressable 
+                style = {FormStyles.LoginButton}
+                onPress = {handleSubmit(props.onSubmit)}  
+            >
+                <Text style={FormStyles.LoginButtonText}> Ingresar </Text>
+            </Pressable>
 
         </View>
     )
 }
+
+// Login form styles
+const FormStyles = StyleSheet.create({
+    FormView: {
+        flex: 1,
+        padding: 5,
+        gap: 35,
+        maxHeight: 250,
+        width: "100%",
+
+        flexDirection: "column",
+        alignItems: "stretch",
+        justifyContent: "center",
+        // backgroundColor: "green"
+    },
+    TextFieldView: {
+        flex: 1,
+        padding: 5,
+        gap: 10,
+        maxHeight: 30,
+
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-start",
+
+        borderBottomWidth: 1,
+        borderBottomColor: '#A6A6A6',
+        // backgroundColor: "green"
+    },
+    TextFieldIcon: {
+        width: 25,
+        height: 25,
+        color: '#A6A6A6',
+    },
+    TextFieldInput: {
+        fontWeight: "normal",
+        fontFamily: "sans-serif-light",
+        fontStyle: "normal",
+
+        textAlign: "justify",        
+    },
+    ErrorText: {
+        fontWeight: "bold",
+        fontFamily: "sans-serif-light",
+        fontStyle: "italic",
+        color: "red",
+
+        textAlign: "left",
+    },
+    LoginButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 4,
+        elevation: 3,
+
+        alignItems: 'center',
+        justifyContent: 'center',
+        
+        backgroundColor: '#00C0F3',
+    },
+    LoginButtonText: {
+        fontWeight: "bold",
+        fontFamily: "sans-serif-light",
+        fontStyle: "normal",
+        color: "white",
+
+        textAlign: "justify",
+        borderBottomColor: '#A6A6A6',
+    },
+});
