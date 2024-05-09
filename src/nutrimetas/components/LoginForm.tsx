@@ -67,8 +67,8 @@ export default function LoginForm(
 
     // Register the icon loading hook
     const [icon, error] = useAssets([
-        require('../assets/images/mail.svg'), 
-        require('../assets/images/lock.svg')
+        require('@/assets/images/mail.svg'), 
+        require('@/assets/images/lock.svg')
     ]);
 
     // Render login form

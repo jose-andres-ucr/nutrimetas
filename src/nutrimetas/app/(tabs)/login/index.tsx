@@ -16,7 +16,7 @@ export default function LoginPage(
 ) {
     // Register the icon loading hook
     const [icon, error] = useAssets([
-        require('../../../assets/images/logo.png')
+        require('@/assets/images/logo.png')
     ]);
 
     // Render login form
