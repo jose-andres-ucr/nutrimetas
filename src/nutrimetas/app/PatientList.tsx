@@ -1,9 +1,9 @@
-import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image, ToastAndroid  } from 'react-native';
+import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image  } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { router } from "expo-router";
 import FlashMessage, { showMessage } from "react-native-flash-message";
-
+import { successfulSelection } from './Notifications';
 
 
 const PatientList = () => {
@@ -21,25 +21,11 @@ const PatientList = () => {
     return () => unsubscribe();
   }, []);
 
-const onPressHandle = () => {
-    showMessage({
-      type: "success",
-      message: "Success",
-      description: "You successfully selected a patient",
-      backgroundColor: "#00c0f3", 
-      color: "#FFFFFF", 
-      icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/free-icons-6/free-blue-information-button-icon-18667.png'}} {...props} />,
-      style: {
-        borderRadius: 10, 
-      },
-    })
-}
-
 return (
     <FlatList
         data={patients}
         renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => onPressHandle()}>
+            <TouchableOpacity onPress={() => successfulSelection()}>
                 <View style={styles.item}>
                     <Image
                         style={styles.itemImage}

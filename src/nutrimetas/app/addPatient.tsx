@@ -2,12 +2,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
+import { Platform, StyleSheet, Image, TextInput as TextInputRn } from 'react-native';
 import { Switch, Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
+import { successfulAddition } from './Notifications';
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -187,9 +188,10 @@ export default function AddPatient() {
           style={{...styles.button, backgroundColor: Colors.lightblue}}
           icon="content-save"
           mode="contained"
-          onPress={handleSubmit((form) => {
+          onPress={() => {handleSubmit((form) => {
             onSubmit({...form });
-          })}
+          })(); successfulAddition()
+          }}
         >
           <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Registrar</Text>
         </Button>
