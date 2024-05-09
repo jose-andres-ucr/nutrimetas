@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity } from 'react-native';
+import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity, Image } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { useRoute } from '@react-navigation/native';
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import firestore from '@react-native-firebase/firestore';
-
+import FlashMessage, { showMessage } from "react-native-flash-message";
 
 const goalForm = z.object({
   modality: z
@@ -28,17 +28,23 @@ const goalForm = z.object({
     .date(),
   deadline: z
     .date(),
-});
+}).refine(schema => {
+  const startDate = schema.startDate.getDate();
+  const deadline = schema.deadline.getDate();  
+  return deadline > startDate;
+}, {message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"]},);
 
 type GoalFormType = z.infer<typeof goalForm>
+type CallbackFunction = () => void;
 
 export default function InfoGoals() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
+  const [modalityData, setModalityData] = useState([]);
   const route = useRoute();
   const firstGoalData = route.params?.formData;
-
-
+  const today = new Date();
+  
   const {
     control,
     handleSubmit,
@@ -47,8 +53,8 @@ export default function InfoGoals() {
     defaultValues: {
       modality: '',
       frequency: 0,
-      startDate: new Date(),
-      deadline: new Date(),
+      startDate: today,
+      deadline: today,
     },
     resolver: zodResolver(goalForm),
   });
@@ -60,8 +66,24 @@ export default function InfoGoals() {
     deadlineRef: React.useRef<DatePickerOptions>(null),
   } as const;
 
+  
+  const showSuccessMessage =  (callback: CallbackFunction) => {
+    showMessage({
+      type: "success",
+      message: "Success",
+      description: "La meta fue agregada exitosamente",
+      backgroundColor: "#00c0f3", 
+      color: "#FFFFFF", 
+      icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/free-icons-6/free-blue-information-button-icon-18667.png'}} {...props} />,
+      style: {
+        borderRadius: 10, 
+      },
+    })
+    setTimeout(callback, 2000);
+}
+
   const onSubmit = (data: GoalFormType) => {
-    console.log("Enviados correctamente ", data)
+    console.log("Enviados correctamente ", data)    
     firestore()
       .collection('Goal')
       .add({
@@ -74,14 +96,16 @@ export default function InfoGoals() {
       })
       .then(() => {
         console.log('Goal added!');
-        router.navigate('/(tabs)/');
+        showSuccessMessage(() => {
+          router.navigate('/(tabs)/');
+        });
       })
       .catch((error) => {
         console.error('Error adding goal: ', error);
       });
+      
   };
 
-  const [modalityData, setModalityData] = useState([]);
 
   useEffect(() => {
     const unsubscribe = firestore().collection('Modality').onSnapshot(querySnapshot => {
@@ -178,7 +202,7 @@ export default function InfoGoals() {
                   setShowStartDatePicker(false);
                   onChange(selectedDate);
                 }}
-                minimumDate={new Date()}
+                minimumDate={today}
                 negativeButton={{ label: 'Cancelar' }}
                 positiveButton={{ label: 'Aceptar' }}
               />
@@ -186,7 +210,7 @@ export default function InfoGoals() {
           </View>
         )}
         name="startDate"
-        defaultValue={new Date()}
+        defaultValue={today}
       />
       {errors.startDate ? (
         <Text style={styles.error}>{errors.startDate.message}</Text>
@@ -212,7 +236,7 @@ export default function InfoGoals() {
                   setShowDeadlineDatePicker(false);
                   onChange(selectedDate);
                 }}
-                minimumDate={new Date()}
+                minimumDate={today}
                 negativeButton={{ label: 'Cancelar' }}
                 positiveButton={{ label: 'Aceptar' }}
               />
@@ -244,6 +268,7 @@ export default function InfoGoals() {
           <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
         </Button>
       </View>
+      <FlashMessage position="top" />
 
       {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
