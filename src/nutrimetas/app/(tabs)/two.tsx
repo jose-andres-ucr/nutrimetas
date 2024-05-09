@@ -1,31 +1,41 @@
-import { StyleSheet } from 'react-native';
+import Colors from '@/constants/Colors';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import PatientList from '../PatientsList';
+import GoalList from '../goalList';
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
-
-export default function TabTwoScreen() {
+export default function LoginProfessional() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab Two</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/two.tsx" />
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.listContainer}>
+        <PatientList />
+        <GoalList />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: '100%',
+    backgroundColor: "white"
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  listContainer: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    top: -50
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
+  addButton: {
+    backgroundColor: Colors.lightblue,
+    fontWeight: "bold",
+    width: '100%',
+    height: 50,
+    position: "absolute",
+    bottom: 0,
+    justifyContent: "center",
+    textAlign: 'center',
+    color: 'white',
+    fontSize: 16,
+    lineHeight: 50
   },
 });
