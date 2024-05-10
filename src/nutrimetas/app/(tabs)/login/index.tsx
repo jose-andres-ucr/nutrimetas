@@ -2,7 +2,7 @@
 
 // Dependencies
 // Core React hooks & misc. stuff
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 
 // Core React Native UI
 import { View, Text, StyleSheet, ImageSourcePropType } 
@@ -21,10 +21,17 @@ import IconPopup from "@/components/IconPopup";
 // Firestore DB
 import firestore from '@react-native-firebase/firestore';
 
+// Session Context
+import { SessionContext } from "@/app/_layout";
+
 /// Credential verification
 const checkAuth = function(email: string, password: string, 
     credentials : any)
 {
+    console.log("Checking credentials")
+    console.log("Pulled", credentials)
+    console.log("Passed", email, password)
+
     if (credentials.email == email &&
         credentials.password == password)
     {console.log("Credential valid");}
@@ -46,14 +53,23 @@ type LoginStatus = {
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
-    // Keep track of current login state
-    const [loginState, setLoginState] = useState({value: "pending"} as LoginStatus);
+    // Keep track of current login state...
+    const [loginState, setLoginState] = 
+        useState({value: "pending"} as LoginStatus);
+
+    // and the data of whoever is logged on, if at all
+    let authData = useRef({});
+
+    // Access the shared context of said data
+    const session = useContext(SessionContext);
 
     // Assume initial login state is to be signed out
     useEffect(() => {setLoginState({value: "signed-out"});}, []);
 
-    // Login handling
-    const handleLogin = async function(
+    // Login handling for...
+
+    // Attempts
+    const handleLoginAttempt = async function(
         data : {email: string, password: string}
     )
     {
@@ -66,7 +82,7 @@ export default function LoginPage(
         let unexpectedError = null;
 
         // Find the proper person associated with said credentials
-        let person = null;
+        authData.current = {};
 
         // Be it a patient...
         await firestore()
@@ -77,7 +93,7 @@ export default function LoginPage(
             .then(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0)
-                    { person = QuerySnapshot.docs[0].data(); }
+                    { authData.current = QuerySnapshot.docs[0].data(); }
                 },
                 (Error) => {
                     unexpectedError = Error;
@@ -90,7 +106,7 @@ export default function LoginPage(
             );
 
         // Or a professional
-        person ?? await firestore()
+        authData.current ?? await firestore()
             .collection("Professionals")
             .where("email", "==", data.email)
             .limit(1)
@@ -98,7 +114,7 @@ export default function LoginPage(
             .then(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0)
-                    { person = QuerySnapshot.docs[0].data(); }
+                    { authData.current = QuerySnapshot.docs[0].data(); }
                 },
                 (Error) => {
                     unexpectedError = Error;
@@ -115,8 +131,8 @@ export default function LoginPage(
         // along with the user control to the next screens
         if (
             unexpectedError == null && 
-            person != null && 
-            checkAuth(data.email, data.password, person)
+            authData.current != null && 
+            checkAuth(data.email, data.password, authData.current)
         )
         {
             console.log("Succesful login!");
@@ -134,6 +150,12 @@ export default function LoginPage(
             setLoginState({value: "invalid", message: reason});
         }
     }
+
+    /// Succesful attempts
+    useEffect(() => {
+        if (loginState.value == "signed-in")
+        { console.log("Attempting to log in..."); }
+    }, [loginState]);
 
     // Register the icon loading hook
     const [icon, error] = useAssets([
@@ -161,7 +183,7 @@ export default function LoginPage(
             { /* Login form */ }
             <View style={LoginStyles.FormView}>
                 <LoginForm 
-                    onSubmit={handleLogin}
+                    onSubmit={handleLoginAttempt}
                 />
             </View>
 
