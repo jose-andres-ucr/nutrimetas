@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
 
 const PatientList = () => {
-    //const navigation = useNavigation();
+    const navigation = useNavigation();
     const [patients, setPatients] = useState<any[]>([]);
     const [goals, setGoals] = useState<any[]>([]);
 
@@ -21,6 +21,7 @@ const PatientList = () => {
 
     const onPressHandle = async (selectedPatient: any) => {
         const goalsData = [];
+
         if (selectedPatient.Goals && selectedPatient.Goals.length > 0) {
             for (const goalRef of selectedPatient.Goals) {
                 try {
@@ -34,9 +35,11 @@ const PatientList = () => {
                 }
             }
         }
+       
         setGoals(goalsData);
-        console.log(goalsData);
-        //navigation.navigate('GoalList', { goalsData });
+        console.log('Selected Patient:',selectedPatient.name)
+        console.log('Profesional ID:', selectedPatient.assignedProfessionalId); 
+        navigation.navigate('PatientGoals', { name: selectedPatient.name });
     };
 
     return (
