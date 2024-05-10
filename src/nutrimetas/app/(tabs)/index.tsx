@@ -3,7 +3,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
 import PatientList from '../PatientList';
-import PatientsList from '../PatientsList';
 
 export default function Expedientes() {
   return (
