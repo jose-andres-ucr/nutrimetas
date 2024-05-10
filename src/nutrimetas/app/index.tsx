@@ -50,6 +50,9 @@ type LoginStatus = {
     message?: string,
 };
 
+// Possible user states 
+type UserRole = "professional" | "patient";
+
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
@@ -58,7 +61,7 @@ export default function LoginPage(
         useState({value: "pending"} as LoginStatus);
 
     // and the data of whoever is logged on, if at all
-    let authData = useRef({});
+    let authData = useRef({} as {[key: string]: any, role? : UserRole});
 
     // Access the shared context of said data
     const session = useContext(SessionContext);
@@ -93,7 +96,10 @@ export default function LoginPage(
             .then(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0)
-                    { authData.current = QuerySnapshot.docs[0].data(); }
+                    { 
+                        authData.current = QuerySnapshot.docs[0].data(); 
+                        authData.current.role = "patient";
+                    }
                 },
                 (Error) => {
                     unexpectedError = Error;
@@ -114,7 +120,10 @@ export default function LoginPage(
             .then(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0)
-                    { authData.current = QuerySnapshot.docs[0].data(); }
+                    { 
+                        authData.current = QuerySnapshot.docs[0].data(); 
+                        authData.current.role = "professional";
+                    }
                 },
                 (Error) => {
                     unexpectedError = Error;
@@ -153,8 +162,33 @@ export default function LoginPage(
 
     /// Succesful attempts
     useEffect(() => {
+        // If user is logged in, redirect it to the proper screen of interest
         if (loginState.value == "signed-in")
-        { console.log("Attempting to log in..."); }
+        { 
+            console.log("Attempting to log in..."); 
+
+            switch (authData.current.role)
+            {
+                case "patient": {
+                    console.log("Logging in as patient");
+                    break;
+                }
+
+                case "professional": {
+                    console.log("Logging in as professional");
+                    break;
+                }
+
+                // If role is unknown, report an error
+                default: {
+                    setLoginState({
+                        value: "invalid", 
+                        message: "Error inesperado: Rol desconocido. Inténtelo más tarde."});
+                    break;
+                }
+
+            }
+        }
     }, [loginState]);
 
     // Register the icon loading hook
