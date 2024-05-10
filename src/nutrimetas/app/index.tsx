@@ -2,7 +2,7 @@
 
 // Dependencies
 // Core React hooks & misc. stuff
-import { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 
 // Core React Native UI
 import { View, Text, StyleSheet, ImageSourcePropType } 
@@ -13,7 +13,7 @@ import { useAssets } from 'expo-asset';
 import { Image } from "expo-image";
 
 // Expo navigation
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 
 // Login form 
 import LoginForm from "@/components/LoginForm";
@@ -25,7 +25,8 @@ import IconPopup from "@/components/IconPopup";
 import firestore from '@react-native-firebase/firestore';
 
 // Session Context
-import { SessionContext } from "@/app/_layout";
+import { SessionContext, SessionDispatchContext, 
+    LoginSession } from "@/shared/LoginSession";
 
 /// Credential verification
 const checkAuth = function(email: string, password: string, 
@@ -47,9 +48,6 @@ type LoginStatus = {
     message?: string,
 };
 
-// Possible user states 
-type UserRole = "professional" | "patient";
-
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
@@ -58,13 +56,29 @@ export default function LoginPage(
         useState({value: "pending"} as LoginStatus);
 
     // and the data of whoever is logged on, if at all
-    let authData = useRef({} as {[key: string]: any, role? : UserRole});
+    let potentialSession = useRef({} as LoginSession);
 
     // Access the shared context of said data
     const session = useContext(SessionContext);
+    const sessionDispatch = useContext(SessionDispatchContext);
 
-    // Assume initial login state is to be signed out
-    useEffect(() => {setLoginState({value: "signed-out"});}, []);
+    // Assume initial login state is to be signed out whenever the login
+    // screen is opened
+    useFocusEffect(
+        React.useCallback(
+        () => {
+            console.log("Signing out on login page landing")
+
+            // Clear up any session had in memory...
+            sessionDispatch({
+                type : "reset",
+                newSession : undefined,
+            });
+
+            // And in this screen
+            setLoginState({value: "signed-out"});
+        }, [])
+    )
 
     // Login handling for...
 
@@ -83,7 +97,7 @@ export default function LoginPage(
         let unexpectedError = null;
 
         // Find the proper person associated with said credentials
-        authData.current = {};
+        potentialSession.current = {};
 
         // Be it a patient...
         await firestore()
@@ -95,8 +109,8 @@ export default function LoginPage(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0)
                     { 
-                        authData.current = QuerySnapshot.docs[0].data(); 
-                        authData.current.role = "patient";
+                        potentialSession.current = QuerySnapshot.docs[0].data(); 
+                        potentialSession.current.role = "patient";
                     }
                 },
                 (Error) => {
@@ -119,8 +133,8 @@ export default function LoginPage(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0)
                     { 
-                        authData.current = QuerySnapshot.docs[0].data(); 
-                        authData.current.role = "professional";
+                        potentialSession.current = QuerySnapshot.docs[0].data(); 
+                        potentialSession.current.role = "professional";
                     }
                 },
                 (Error) => {
@@ -138,8 +152,8 @@ export default function LoginPage(
         // along with the user control to the next screens
         if (
             unexpectedError == null && 
-            authData.current != null && 
-            checkAuth(data.email, data.password, authData.current)
+            potentialSession.current != null && 
+            checkAuth(data.email, data.password, potentialSession.current)
         )
         {
             console.log("Login SUCCESFUL");
@@ -160,12 +174,19 @@ export default function LoginPage(
 
     /// Succesful attempts
     useEffect(() => {
-        // If user is logged in, redirect it to the proper screen of interest
+        // If user is logged in then...
         if (loginState.value == "signed-in")
         { 
-            console.log(`Handling succesful login as ${authData.current.role ?? "UNKNOWN ROLE"}...`);
+            console.log(`Handling succesful login as ${potentialSession.current?.role?? "UNKNOWN ROLE"}...`);
+            
+            // ... update the login session in memory
+            sessionDispatch({
+                type : "set",
+                newSession : potentialSession.current,
+            });
 
-            switch (authData.current.role)
+            // ... and redirect it to the proper screen of interest
+            switch (potentialSession.current?.role)
             {
                 case "patient": {
                     // TODO: Changed to proper patient route
