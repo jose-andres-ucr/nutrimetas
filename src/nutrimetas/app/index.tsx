@@ -12,6 +12,9 @@ from "react-native";
 import { useAssets } from 'expo-asset'; 
 import { Image } from "expo-image";
 
+// Expo navigation
+import { router } from "expo-router";
+
 // Login form 
 import LoginForm from "@/components/LoginForm";
 
@@ -28,15 +31,9 @@ import { SessionContext } from "@/app/_layout";
 const checkAuth = function(email: string, password: string, 
     credentials : any)
 {
-    console.log("Checking credentials")
-    console.log("Pulled", credentials)
-    console.log("Passed", email, password)
-
-    if (credentials.email == email &&
-        credentials.password == password)
-    {console.log("Credential valid");}
-    else
-    {console.log("Credential invalid");}
+    console.log("Checking credentials...");
+    console.log("Pulled", credentials);
+    console.log("Passed", email, password);
 
     return (
         credentials.email === email &&
@@ -76,6 +73,7 @@ export default function LoginPage(
         data : {email: string, password: string}
     )
     {
+        console.log("Attempting to log in..."); 
         // Keep track of... 
 
         // ... the current state of login
@@ -144,13 +142,13 @@ export default function LoginPage(
             checkAuth(data.email, data.password, authData.current)
         )
         {
-            console.log("Succesful login!");
+            console.log("Login SUCCESFUL");
             setLoginState({value: "signed-in"});
         }
     
         // Otherwise, reject the login
         else {
-            console.log("Failed login :(");
+            console.log("Login FAILED");
 
             let reason = (unexpectedError == null) ? 
                 "Credenciales incorrectas" : 
@@ -165,7 +163,7 @@ export default function LoginPage(
         // If user is logged in, redirect it to the proper screen of interest
         if (loginState.value == "signed-in")
         { 
-            console.log("Attempting to log in..."); 
+            console.log(`Handling succesful login as ${authData.current.role ?? "UNKNOWN ROLE"}...`);
 
             switch (authData.current.role)
             {
