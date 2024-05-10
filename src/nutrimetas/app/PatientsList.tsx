@@ -3,51 +3,34 @@ import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
 
-const PatientList = () => {
+const PatientsList = () => {
     const navigation = useNavigation();
     const [patients, setPatients] = useState<any[]>([]);
-    const [goals, setGoals] = useState<any[]>([]);
 
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Patient')
             .onSnapshot((snapshot) => {
-                const data = snapshot.docs.map((doc) => doc.data());
+                const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
                 setPatients(data);
             });
 
         return () => unsubscribe();
     }, []);
 
-    const onPressHandle = async (selectedPatient: any) => {
-        const goalsData = [];
 
-        if (selectedPatient.Goals && selectedPatient.Goals.length > 0) {
-            for (const goalRef of selectedPatient.Goals) {
-                try {
-                    const GoalDoc = await goalRef.get();
-                    const goalData = GoalDoc.data();
-                    if (goalData) {
-                        goalsData.push(goalData);
-                    }
-                } catch (error) {
-                    console.error('Error fetching goal:', error);
-                }
-            }
-        }
-       
-        setGoals(goalsData);
-        console.log('Selected Patient:',selectedPatient.name)
-        console.log('Profesional ID:', selectedPatient.assignedProfessionalId); 
-        navigation.navigate('PatientGoals', { name: selectedPatient.name });
+    const onPressHandle = (selectedPatientId: string) => {
+        //console.log(selectedPatientId);
+        navigation.navigate('GoalList', { selectedPatientId });
     };
+
 
     return (
         <View>
             <FlatList
                 data={patients}
                 renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => onPressHandle(item)}>
+                    <TouchableOpacity onPress={() => onPressHandle((item.id))}>
                         <View style={styles.item}>
                             <Image
                                 style={styles.itemImage}
@@ -64,7 +47,7 @@ const PatientList = () => {
     );
 }
 
-export default PatientList;
+export default PatientsList;
 
 const styles = StyleSheet.create({
     item: {
