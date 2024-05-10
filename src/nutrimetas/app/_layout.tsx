@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from '@/components/useColorScheme';
 
 // Login session and its dispatching context 
-import { LoginSessionProvider} from '@/shared/LoginSession';
+import { LoginSessionProvider } from '@/shared/LoginSession';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -47,9 +47,9 @@ export default function RootLayout() {
 
   // Inject login session state and handling 
   return (
-  <LoginSessionProvider>
+    <LoginSessionProvider>
       <RootLayoutNav />
-  </LoginSessionProvider>
+    </LoginSessionProvider>
   );
 }
 
@@ -61,12 +61,11 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="addPatient" options={{ headerShown: false }}/>
-        <Stack.Screen name="assingGoal" options={{ headerShown: false }}/>
-        <Stack.Screen name="configGoal" options={{ headerShown: false }}/>
-        <Stack.Screen name="PatientsList" options={{ headerShown: false }} />
+        <Stack.Screen name="addPatient" options={{ headerShown: false }} />
+        <Stack.Screen name="assingGoal" options={{ headerShown: false }} />
+        <Stack.Screen name="configGoal" options={{ headerShown: false }} />
+        <Stack.Screen name="PatientList" options={{ headerShown: false }} />
         <Stack.Screen name="GoalList" options={{ headerShown: false }} />
-        <Stack.Screen name="PatientGoals" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );
