@@ -5,7 +5,8 @@
 import { useState, useEffect } from "react";
 
 // Core React Native UI
-import { View, Text, StyleSheet, ImageSourcePropType } from "react-native";
+import { View, Text, StyleSheet, ImageSourcePropType } 
+from "react-native";
 
 // Expo UI
 import { useAssets } from 'expo-asset'; 
@@ -13,6 +14,9 @@ import { Image } from "expo-image";
 
 // Login form 
 import LoginForm from "@/components/LoginForm";
+
+// Icon pop-up
+import IconPopup from "@/components/IconPopup";
 
 // Firestore DB
 import firestore from '@react-native-firebase/firestore';
@@ -34,16 +38,19 @@ const checkAuth = function(email: string, password: string,
 }
 
 // Possible login states 
-type LoginStatus = "pending" | "invalid" | "signed-in" | "signed-out";
+type LoginStatus = {
+    value : "pending" | "invalid" | "signed-in" | "signed-out",
+    message?: string,
+};
 
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
     // Keep track of current login state
-    const [loginState, setLoginState] = useState("pending" as LoginStatus);
+    const [loginState, setLoginState] = useState({value: "pending"} as LoginStatus);
 
     // Assume initial login state is to be signed out
-    useEffect(() => {setLoginState("signed-out");}, []);
+    useEffect(() => {setLoginState({value: "signed-out"});}, []);
 
     // Login handling
     const handleLogin = async function(
@@ -53,7 +60,7 @@ export default function LoginPage(
         // Keep track of... 
 
         // ... the current state of login
-        setLoginState("pending");
+        setLoginState({value: "pending"});
         
         // ...and unexpected DB errors
         let unexpectedError = null;
@@ -113,13 +120,18 @@ export default function LoginPage(
         )
         {
             console.log("Succesful login!");
-            setLoginState("signed-in");
+            setLoginState({value: "signed-in"});
         }
     
         // Otherwise, reject the login
         else {
             console.log("Failed login :(");
-            setLoginState("invalid");
+
+            let reason = (unexpectedError == null) ? 
+                "Credenciales incorrectas" : 
+                `Error inesperado: ${error?.name}. Inténtelo más tarde.`;
+
+            setLoginState({value: "invalid", message: reason});
         }
     }
 
@@ -152,6 +164,34 @@ export default function LoginPage(
                     onSubmit={handleLogin}
                 />
             </View>
+
+            { /* Icon Popup */ }
+            <IconPopup
+                isActive={["invalid", "pending"].includes(loginState.value)}
+                isPressable={loginState.value != "pending"}
+                onCloseRequest={
+                    () => {setLoginState({value:"signed-out"})}
+                }
+                onActionRequest={
+                    () => {setLoginState({value:"signed-out"})}
+                }
+
+                icon={icon != undefined ? icon[0] as ImageSourcePropType : undefined}
+                description={
+                    {
+                        content: (loginState.value == "pending") ? 
+                            "Cargando..." : 
+                            `No se logró iniciar sesión: ${loginState.message}`,
+                        style : (loginState.value == "pending") ? 
+                            LoginStyles.PopupLoadingText : 
+                            LoginStyles.PopupErrorText,
+                    }
+                }
+                actionText={
+                    loginState.value == "pending" ? 
+                    "Cargando..." : "Aceptar"
+                }
+            />
         </View>
     )
 }
@@ -209,5 +249,20 @@ const LoginStyles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         /// backgroundColor: "yellow",
+    },
+    PopupLoadingText: {
+        fontWeight: "normal",
+        fontFamily: "sans-serif-light",
+        fontStyle: "normal",
+
+        textAlign: "justify",
+    },
+    PopupErrorText: {
+        fontWeight: "bold",
+        fontFamily: "sans-serif-light",
+        fontStyle: "italic",
+        color: "red",
+
+        textAlign: "left",
     },
 });
