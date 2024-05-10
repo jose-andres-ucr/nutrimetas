@@ -42,7 +42,7 @@ const PatientList = () => {
                     <FlashMessage position="top" />
                 </TouchableOpacity>
             )}
-            keyExtractor={(item) => item.phone}
+            keyExtractor={(item) => item.email}
         />
     );
 }
