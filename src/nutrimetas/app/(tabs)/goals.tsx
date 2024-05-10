@@ -1,17 +1,15 @@
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, View } from '@/components/Themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
-import PatientList from '../PatientList';
+import InfoGoals from '../assingGoal';
 
-export default function Expedientes() {
+export default function Goals() {
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.listContainer}>
-        <PatientList/>
-      </View>
-      <Link push href="/addPatient" style={styles.addButton}>
-            Registrar paciente
+      <Link push href="/assingGoal" style={styles.button}>
+            Crear Meta
       </Link>
     </SafeAreaView>
   );
@@ -19,15 +17,11 @@ export default function Expedientes() {
 
 const styles = StyleSheet.create({
   container: {
-    height: '100%',
-    backgroundColor: "white"
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  listContainer: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    top: -50
-  },
-  addButton: {
+  button: {
     backgroundColor: Colors.lightblue,
     fontWeight: "bold",
     width: '100%',
@@ -39,5 +33,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     lineHeight: 50
-  },
+  }
 });
