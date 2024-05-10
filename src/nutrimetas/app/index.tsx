@@ -110,7 +110,7 @@ export default function LoginPage(
             );
 
         // Or a professional
-        authData.current ?? await firestore()
+        unexpectedError ?? await firestore()
             .collection("Professionals")
             .where("email", "==", data.email)
             .limit(1)
