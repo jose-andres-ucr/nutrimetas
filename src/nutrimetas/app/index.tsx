@@ -168,12 +168,14 @@ export default function LoginPage(
             switch (authData.current.role)
             {
                 case "patient": {
-                    console.log("Logging in as patient");
+                    // TODO: Changed to proper patient route
+                    router.push("/(tabs)/")
                     break;
                 }
 
                 case "professional": {
-                    console.log("Logging in as professional");
+                    // TODO: Changed to proper professional route
+                    router.push("/(tabs)/")
                     break;
                 }
 
