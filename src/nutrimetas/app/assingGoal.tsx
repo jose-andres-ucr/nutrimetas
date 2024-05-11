@@ -147,7 +147,7 @@ export default function AssignGoal() {
       ) : null}
 
       <View style={styles.buttonContainer}>
-        <Link href='/(tabs)/' style={{
+        <Link href='/(tabs)/goals' style={{
           ...styles.button,
           borderWidth: 1,
           borderColor: "black",

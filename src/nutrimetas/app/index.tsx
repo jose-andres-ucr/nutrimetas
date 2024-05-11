@@ -8,6 +8,9 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import { View, Text, StyleSheet, ImageSourcePropType } 
 from "react-native";
 
+// React Navigation
+import { useNavigation } from '@react-navigation/native';
+
 // Expo UI
 import { useAssets } from 'expo-asset'; 
 import { Image } from "expo-image";
@@ -48,9 +51,15 @@ type LoginStatus = {
     message?: string,
 };
 
+// TODO: Get rid of antipattern of patient-specific doc ID
+// Patient doc id
+let patientDocId : string | undefined = undefined;
+
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
+    const navigation = useNavigation();
+
     // Keep track of current login state...
     const [loginState, setLoginState] = 
         useState({value: "pending"} as LoginStatus);
@@ -111,6 +120,7 @@ export default function LoginPage(
                     { 
                         potentialSession.current = QuerySnapshot.docs[0].data(); 
                         potentialSession.current.role = "patient";
+                        patientDocId = QuerySnapshot.docs[0].id; 
                     }
                 },
                 (Error) => {
@@ -135,6 +145,7 @@ export default function LoginPage(
                     { 
                         potentialSession.current = QuerySnapshot.docs[0].data(); 
                         potentialSession.current.role = "professional";
+                        patientDocId = QuerySnapshot.docs[0].id; 
                     }
                 },
                 (Error) => {
@@ -190,13 +201,13 @@ export default function LoginPage(
             {
                 case "patient": {
                     // TODO: Changed to proper patient route
-                    router.push("/(tabs)/")
+                    navigation.navigate('GoalList', { sessionDocId: patientDocId });
                     break;
                 }
 
                 case "professional": {
                     // TODO: Changed to proper professional route
-                    router.push("/(tabs)/")
+                    router.push("/(tabs)/expedientes")
                     break;
                 }
 

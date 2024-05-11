@@ -1,9 +1,7 @@
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
-import { router } from "expo-router";
-import FlashMessage, { showMessage } from "react-native-flash-message";
-import { successfulSelection } from './Notifications';
+import FlashMessage from "react-native-flash-message";
 import { useNavigation } from '@react-navigation/native';
 
 const PatientList = () => {
@@ -21,9 +19,9 @@ const PatientList = () => {
         return () => unsubscribe();
     }, []);
 
-    const onPressHandle = async (selectedPatientId: string) => {
-        //console.log(selectedPatientId);
-        navigation.navigate('GoalList', { selectedPatientId });
+    const onPressHandle = async (patientDocId: string) => {
+        //console.log(sessionDocId);
+        navigation.navigate('GoalList', { sessionDocId: patientDocId });
     };
 
     return (

@@ -6,7 +6,7 @@ import { useRoute } from '@react-navigation/native';
 
 const GoalList = () => {
     const route = useRoute();
-    const patientId = route.params?.selectedPatientId;
+    const patientId = route.params?.sessionDocId;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -82,7 +82,7 @@ const GoalList = () => {
                             </View>
                         </TouchableOpacity>
                     )}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item, index) => index.toString()} // TODO: Utilizar llave primaria de BD
                 />
             )}
         </View>

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
 import InfoGoals from '../assingGoal';
+import FlashMessage from "react-native-flash-message";
 
 export default function Goals() {
   return (
@@ -11,6 +12,7 @@ export default function Goals() {
       <Link push href="/assingGoal" style={styles.button}>
             Crear Meta
       </Link>
+      <FlashMessage position="top" />
     </SafeAreaView>
   );
 }

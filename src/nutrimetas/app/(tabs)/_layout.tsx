@@ -27,7 +27,7 @@ export default function TabLayout() {
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen
-        name="index"
+        name="expedientes"
         options={{
           title: 'Expedientes',
           tabBarIcon: ({ color }) => <TabBarIcon name="address-book" color={color} />,

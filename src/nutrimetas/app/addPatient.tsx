@@ -8,7 +8,7 @@ import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
-import { successfulAddition } from './Notifications';
+import { showMessage } from "react-native-flash-message";
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -67,9 +67,23 @@ export default function AddPatient() {
       })
       .then(() => {
         console.log('User added!');
-        router.navigate('/(tabs)/')
+        router.navigate('/(tabs)/expedientes')
       });
   };
+
+  const successfulAddition = () => {
+    showMessage({
+        type: "success",
+        message: "Success",
+        description: "Patient succesfully added",
+        backgroundColor: "#6dc067", 
+        color: "#FFFFFF", 
+        icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png'}} {...props} />,
+        style: {
+        borderRadius: 10, 
+        },
+    })
+    }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -175,7 +189,7 @@ export default function AddPatient() {
       {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
           
       <View style={styles.buttonContainer}>
-        <Link href='/(tabs)/' style={{
+        <Link href='/(tabs)/expedientes' style={{
           ...styles.button, 
           borderWidth: 1,
           borderColor: "black",

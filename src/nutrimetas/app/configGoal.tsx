@@ -31,7 +31,7 @@ const goalForm = z.object({
 }).refine(schema => {
   const startDate = schema.startDate.getDate();
   const deadline = schema.deadline.getDate();  
-  return deadline > startDate;
+  return deadline >= startDate;
 }, {message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"]},);
 
 type GoalFormType = z.infer<typeof goalForm>
@@ -72,14 +72,14 @@ export default function InfoGoals() {
       type: "success",
       message: "Success",
       description: "La meta fue agregada exitosamente",
-      backgroundColor: "#00c0f3", 
+      backgroundColor: "#6dc067", 
       color: "#FFFFFF", 
-      icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/free-icons-6/free-blue-information-button-icon-18667.png'}} {...props} />,
+      icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png'}} {...props} />,
       style: {
-        borderRadius: 10, 
+      borderRadius: 10, 
       },
-    })
-    setTimeout(callback, 2000);
+  })
+  setTimeout(callback, 2000);
 }
 
   const onSubmit = (data: GoalFormType) => {
@@ -97,7 +97,7 @@ export default function InfoGoals() {
       .then(() => {
         console.log('Goal added!');
         showSuccessMessage(() => {
-          router.navigate('/(tabs)/');
+          router.navigate('/(tabs)/goals');
         });
       })
       .catch((error) => {
