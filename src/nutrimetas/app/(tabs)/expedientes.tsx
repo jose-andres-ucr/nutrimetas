@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
@@ -8,6 +8,7 @@ export default function Expedientes() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.listContainer}>
+        <Text style={styles.title}>Expedientes</Text>
         <PatientList />
       </View>
       <Link push href="/addPatient" style={styles.addButton}>
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
   listContainer: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
-    top: -50
+    top: -73
   },
   addButton: {
     backgroundColor: Colors.lightblue,
@@ -39,5 +40,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     lineHeight: 50
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: 'bold',
   },
 });

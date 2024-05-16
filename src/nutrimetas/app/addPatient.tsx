@@ -17,8 +17,12 @@ import { View } from "@/components/Themed";
 const patientForm = z.object({
   name: z
     .string()
-    .min(5, { message: "El nombre debe tener al menos 5 caracteres" })
+    .min(4, { message: "El nombre debe tener al menos 4 caracteres" })
     .max(32, { message: "El nombre debe tener máximo 32 caracteres" }),
+  lastName: z
+    .string()
+    .min(4, { message: "El apellido debe tener al menos 4 caracteres" })
+    .max(32, { message: "El apellido debe tener máximo 32 caracteres" }),
   phone: z
     .string()
     .min(8, { message: "El número no es válido." })
@@ -42,6 +46,7 @@ export default function AddPatient() {
   } = useForm({
     defaultValues: {
       name: '',
+      lastName: '',
       phone: '',
       email: '',
       password: ''
@@ -51,6 +56,7 @@ export default function AddPatient() {
 
   const refs = {
     nameRef: React.useRef<TextInputRn>(null),
+    lastNameRef: React.useRef<TextInputRn>(null),
     phoneRef: React.useRef<TextInputRn>(null),
     emailRef: React.useRef<TextInputRn>(null),
     passwordRef: React.useRef<TextInputRn>(null),
@@ -61,6 +67,7 @@ export default function AddPatient() {
       .collection('Patient')
       .add({
         name: data.name,
+        lastName: data.lastName,
         phone: data.phone,
         email: data.email,
         password: data.password,
@@ -96,7 +103,7 @@ export default function AddPatient() {
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
             mode="outlined"
-            label="Nombre completo"
+            label="Nombre"
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
@@ -114,6 +121,31 @@ export default function AddPatient() {
       />
       {errors.name ? (
         <Text style={styles.error}>{errors.name.message}</Text>
+      ) : null}
+
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            mode="outlined"
+            label="Apellido completo"
+            style={styles.inputField}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.lastName?true:false}
+            keyboardType="default"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              refs.nameRef.current?.focus();
+            }}
+            blurOnSubmit={false}
+          />
+        )}
+        name="lastName"
+      />
+      {errors.lastName ? (
+        <Text style={styles.error}>{errors.lastName.message}</Text>
       ) : null}
 
       <Controller
