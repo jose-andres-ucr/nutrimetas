@@ -2,10 +2,12 @@
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const GoalList = () => {
     const route = useRoute();
+    const navigation = useNavigation();
     const patientId = route.params?.sessionDocId;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -58,7 +60,12 @@ const GoalList = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Metas</Text>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Icon name="arrow-back" size={24} color="black" />
+                </TouchableOpacity>
+                <Text style={styles.title}>Metas</Text>
+            </View>
             {loading ? (
                 <Text>Cargando...</Text>
             ) : goals.length === 0 ? (
@@ -96,12 +103,18 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingTop: 50,
         paddingLeft: 20,
+        paddingRight: 20, // Added paddingRight for space for the tittle
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        marginBottom: 10,
+        marginLeft: 10, // Margin on the left to separate the button from the title
     },
     item: {
         flexDirection: 'row',
@@ -134,7 +147,6 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     }
 });
-
 
 
 /*
