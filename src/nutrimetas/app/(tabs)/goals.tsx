@@ -1,9 +1,7 @@
-import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
-import InfoGoals from '../assingGoal';
 import FlashMessage from "react-native-flash-message";
 
 export default function Goals() {

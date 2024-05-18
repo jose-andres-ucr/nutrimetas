@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
@@ -12,7 +12,9 @@ import { useNavigation } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
+import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 
+const MAX_LINES = 6;
 
 const goalForm = z.object({
   title: z
@@ -46,7 +48,7 @@ export default function AssignGoal() {
   const refs = {
     titleRef: React.useRef<TextInputRn>(null),
     descriptionRef: React.useRef<TextInputRn>(null),
-    categoryRef: React.useRef<TextInputRn>(null),
+    categoryRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
@@ -84,8 +86,9 @@ export default function AssignGoal() {
             value={value}
             error={errors.title ? true : false}
             returnKeyType="next"
+            autoFocus
             onSubmitEditing={() => {
-              refs.titleRef.current?.focus();
+              refs.descriptionRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -99,17 +102,19 @@ export default function AssignGoal() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
+            ref={refs.descriptionRef}
             mode="outlined"
             label="Descripción"
             style={[styles.inputField, { minHeight: 110 }]}
-            multiline
+            multiline        
+            numberOfLines={MAX_LINES}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
             error={errors.description ? true : false}
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.descriptionRef.current?.focus();
+              refs.categoryRef.current?.open();
             }}
             blurOnSubmit={false}
           />
@@ -123,6 +128,7 @@ export default function AssignGoal() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <Dropdown
+            ref={refs.categoryRef}
             style={styles.dropdown}
             placeholderStyle={styles.placeholderStyle}
             selectedTextStyle={styles.selectedTextStyle}

@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
+import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 import { useRoute } from '@react-navigation/native';
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -60,7 +61,7 @@ export default function InfoGoals() {
   });
 
   const refs = {
-    modalityRef: React.useRef<TextInputRn>(null),
+    modalityRef: React.useRef<IDropdownRef>(null),
     frequencyRef: React.useRef<TextInputRn>(null),
     startDateRef: React.useRef<DatePickerOptions>(null),
     deadlineRef: React.useRef<DatePickerOptions>(null),
@@ -128,6 +129,7 @@ export default function InfoGoals() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <Dropdown
+            ref={refs.modalityRef}
             style={styles.dropdown}
             placeholderStyle={styles.placeholderStyle}
             selectedTextStyle={styles.selectedTextStyle}
@@ -155,6 +157,7 @@ export default function InfoGoals() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
+            ref={refs.frequencyRef}
             mode="outlined"
             label="Frecuencia"
             style={styles.inputField}
@@ -172,7 +175,7 @@ export default function InfoGoals() {
             keyboardType="numeric"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.frequencyRef.current?.focus();
+              refs.startDateRef.current?.display;
             }}
             blurOnSubmit={false}
           />
