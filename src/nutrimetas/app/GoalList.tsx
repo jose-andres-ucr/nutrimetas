@@ -1,13 +1,15 @@
 
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
 
 const GoalList = () => {
     const route = useRoute();
     const navigation = useNavigation();
+    const { role } = useContext(SessionContext);  // Obtén el rol del contexto de la sesión
     const patientId = route.params?.sessionDocId;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -58,6 +60,11 @@ const GoalList = () => {
         console.log(selectedGoal);
     };
 
+    const handleAddGoal = () => {
+        console.log(patientId);
+        navigation.navigate('assingGoal', { patientId });
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -91,6 +98,11 @@ const GoalList = () => {
                     )}
                     keyExtractor={(item, index) => index.toString()} // TODO: Utilizar llave primaria de BD
                 />
+            )}
+            {role === 'professional' && (
+                <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
+                    <Icon name="add" size={24} color="white" />
+                </TouchableOpacity>
             )}
         </View>
     );
@@ -145,7 +157,19 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         textAlign: 'center'
-    }
+    },
+    floatingButton: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: 'green',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+    },
 });
 
 
