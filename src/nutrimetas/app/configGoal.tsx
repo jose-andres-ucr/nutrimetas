@@ -16,8 +16,9 @@ import DateTimePicker, { DatePickerOptions } from '@react-native-community/datet
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import firestore from '@react-native-firebase/firestore';
 import FlashMessage, { showMessage } from "react-native-flash-message";
+import { partialGoalForm } from "./assingGoal";
 
-const goalForm = z.object({
+const goalSecondaryForm = z.object({
   modality: z
     .string()
     .min(1, { message: "Debe seleccionar alguna modalidad" }),
@@ -34,6 +35,8 @@ const goalForm = z.object({
   const deadline = schema.deadline.getDate();  
   return deadline >= startDate;
 }, {message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"]},);
+
+const goalForm = goalSecondaryForm.and(partialGoalForm)
 
 type GoalFormType = z.infer<typeof goalForm>
 type CallbackFunction = () => void;
@@ -57,7 +60,7 @@ export default function InfoGoals() {
       startDate: today,
       deadline: today,
     },
-    resolver: zodResolver(goalForm),
+    resolver: zodResolver(goalSecondaryForm),
   });
 
   const refs = {
@@ -84,6 +87,12 @@ export default function InfoGoals() {
 }
 
   const onSubmit = (data: GoalFormType) => {
+    goalForm.parse(data);
+    // If validation passes, then check the refinement
+    const { startDate, deadline } = data;
+    if (deadline <= startDate) {
+        throw new Error("La fecha límite debe ser mayor a la fecha de inicio");
+    }
     console.log("Enviados correctamente ", data)    
     firestore()
       .collection('Goal')
@@ -235,7 +244,7 @@ export default function InfoGoals() {
                 value={value}
                 mode="date"
                 display="default"
-                onChange={(event, selectedDate) => {
+                onChange={(_, selectedDate) => {
                   setShowDeadlineDatePicker(false);
                   onChange(selectedDate);
                 }}

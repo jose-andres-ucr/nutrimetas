@@ -16,7 +16,7 @@ import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/compo
 
 const MAX_LINES = 6;
 
-const goalForm = z.object({
+export const partialGoalForm = z.object({
   title: z
     .string()
     .min(1, { message: "Debe digitar un título" }),
@@ -28,7 +28,7 @@ const goalForm = z.object({
     .min(1, { message: "Debe seleccionar alguna categoría" }),
 });
 
-type GoalFormType = z.infer<typeof goalForm>
+type GoalFormType = z.infer<typeof partialGoalForm>
 
 export default function AssignGoal() {
   const navigation = useNavigation();
@@ -42,7 +42,7 @@ export default function AssignGoal() {
       description: '',
       category: '',
     },
-    resolver: zodResolver(goalForm),
+    resolver: zodResolver(partialGoalForm),
   });
 
   const refs = {
