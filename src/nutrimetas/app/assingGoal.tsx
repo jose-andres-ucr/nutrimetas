@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
+import { Platform, StyleSheet, TextInput as TextInputRn ,  ScrollView} from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,6 +30,11 @@ export const partialGoalForm = z.object({
 
 type GoalFormType = z.infer<typeof partialGoalForm>
 
+type Category = {
+  label: string;
+  value: string;
+};
+
 export default function AssignGoal() {
   const navigation = useNavigation();
   const {
@@ -55,16 +60,29 @@ export default function AssignGoal() {
     navigation.navigate('configGoal', { formData: data });
   };
 
-  const [categoryData, setCategoryData] = useState([]);
+  
+
+  const [categoryData, setCategoryData] = useState<Category[]>([]);
+
 
   useEffect(() => {
-    const unsubscribe = firestore().collection('Category').onSnapshot(querySnapshot => {
-      const categoryData = querySnapshot.docs.map(doc => {
-        return { label: doc.data().Type, value: doc.data().Type };
-      });
-      setCategoryData(categoryData);
-    });
-
+    const unsubscribe = firestore().collection('Category').onSnapshot(
+      (querySnapshot) => {
+        try {
+          const categoryData = querySnapshot.docs.map(doc => ({
+            label: doc.data().Type,
+            value: doc.data().Type
+          }));
+          setCategoryData(categoryData);
+        } catch (error) {
+          console.error("Error fetching categories:", error);
+        }
+      },
+      (error) => {
+        console.error("Error listening to categories collection:", error);
+      }
+    );
+  
     return () => unsubscribe();
   }, []);
 
@@ -105,7 +123,7 @@ export default function AssignGoal() {
             ref={refs.descriptionRef}
             mode="outlined"
             label="Descripción"
-            style={[styles.inputField, { minHeight: 110 }]}
+            style={[styles.inputField, { minHeight: 140, maxHeight: 140 }]}
             multiline        
             numberOfLines={MAX_LINES}
             onBlur={onBlur}
@@ -185,7 +203,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    color: "#FFFFFF"
   },
   title: {
     fontSize: 36,

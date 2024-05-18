@@ -20,6 +20,7 @@
     "@react-native-firebase/app": "^19.2.2",
     "@react-native-firebase/firestore": "^19.2.2",
     "@react-navigation/native": "^6.1.17",
+    "@react-navigation/stack": "^6.3.29",
     "expo": "~50.0.17",
     "expo-asset": "~9.0.2",
     "expo-font": "~11.10.3",

@@ -11,12 +11,12 @@ import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
-import { useRoute } from '@react-navigation/native';
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import firestore from '@react-native-firebase/firestore';
 import FlashMessage, { showMessage } from "react-native-flash-message";
 import { partialGoalForm } from "./assingGoal";
+import { useRoute } from '@react-navigation/native';
 
 const goalSecondaryForm = z.object({
   modality: z
@@ -41,14 +41,19 @@ const goalForm = goalSecondaryForm.and(partialGoalForm)
 type GoalFormType = z.infer<typeof goalForm>
 type CallbackFunction = () => void;
 
+type Modality = {
+  label: string;
+  value: string;
+};
+
 export default function InfoGoals() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
-  const [modalityData, setModalityData] = useState([]);
+  const [modalityData, setModalityData] = useState<Modality[]>([]);
   const route = useRoute();
   const firstGoalData = route.params?.formData;
   const today = new Date();
-  
+
   const {
     control,
     handleSubmit,
@@ -87,12 +92,6 @@ export default function InfoGoals() {
 }
 
   const onSubmit = (data: GoalFormType) => {
-    goalForm.parse(data);
-    // If validation passes, then check the refinement
-    const { startDate, deadline } = data;
-    if (deadline <= startDate) {
-        throw new Error("La fecha límite debe ser mayor a la fecha de inicio");
-    }
     console.log("Enviados correctamente ", data)    
     firestore()
       .collection('Goal')
@@ -116,15 +115,24 @@ export default function InfoGoals() {
       
   };
 
-
   useEffect(() => {
-    const unsubscribe = firestore().collection('Modality').onSnapshot(querySnapshot => {
-      const modalityData = querySnapshot.docs.map(doc => {
-        return { label: doc.data().Type, value: doc.data().Type };
-      });
-      setModalityData(modalityData);
-    });
-
+    const unsubscribe = firestore().collection('Modality').onSnapshot(
+      (querySnapshot) => {
+        try {
+          const modalityData = querySnapshot.docs.map(doc => ({
+            label: doc.data().Type,
+            value: doc.data().Type
+          }));
+          setModalityData(modalityData);
+        } catch (error) {
+          console.error("Error fetching categories:", error);
+        }
+      },
+      (error) => {
+        console.error("Error listening to categories collection:", error);
+      }
+    );
+  
     return () => unsubscribe();
   }, []);
 
@@ -293,7 +301,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    color: "#FFFFFF"
   },
   title: {
     fontSize: 36,
