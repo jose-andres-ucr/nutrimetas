@@ -10,7 +10,6 @@ export default function Goals() {
       <Link push href="/assingGoal" style={styles.button}>
             Crear Meta
       </Link>
-      <FlashMessage position="top" />
     </SafeAreaView>
   );
 }

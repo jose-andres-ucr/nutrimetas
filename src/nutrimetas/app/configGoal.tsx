@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity, Image } from 'react-native';
+import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,6 +53,7 @@ export default function InfoGoals() {
   const route = useRoute();
   const firstGoalData = route.params?.formData;
   const today = new Date();
+  const [loading, setLoading] = useState<boolean>(false);
 
   const {
     control,
@@ -76,23 +77,24 @@ export default function InfoGoals() {
   } as const;
 
   
-  const showSuccessMessage =  (callback: CallbackFunction) => {
+  const showSuccessMessage = (callback: CallbackFunction) => {
     showMessage({
       type: "success",
       message: "Success",
       description: "La meta fue agregada exitosamente",
-      backgroundColor: "#6dc067", 
-      color: "#FFFFFF", 
+      backgroundColor: Colors.green, 
+      color: Colors.white, 
       icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png'}} {...props} />,
       style: {
-      borderRadius: 10, 
+        borderRadius: 10, 
       },
-  })
-  setTimeout(callback, 2000);
-}
+    });
+    setTimeout(callback, 2000);
+  }
 
   const onSubmit = (data: GoalFormType) => {
-    console.log("Enviados correctamente ", data)    
+    setLoading(true);
+    console.log("Enviados correctamente ", data)   
     firestore()
       .collection('Goal')
       .add({
@@ -105,6 +107,7 @@ export default function InfoGoals() {
       })
       .then(() => {
         console.log('Goal added!');
+        setLoading(false);
         showSuccessMessage(() => {
           router.navigate('/(tabs)/goals');
         });
@@ -281,15 +284,19 @@ export default function InfoGoals() {
         <Button
           style={{ ...styles.button, backgroundColor: Colors.lightblue }}
           mode="contained"
+          disabled={loading}
           onPress={handleSubmit((secondGoalData) => {
             onSubmit({ ...firstGoalData, ...secondGoalData });
           })}
         >
-          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
-        </Button>
+          {loading && <ActivityIndicator
+            animating={loading}
+            hidesWhenStopped={true}
+            />}
+          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>{loading ? "Cargando" : "Crear"}</Text>
+        </Button>        
       </View>
       <FlashMessage position="top" />
-
       {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </SafeAreaView>
