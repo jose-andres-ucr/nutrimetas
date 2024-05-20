@@ -9,7 +9,7 @@ import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto 
 const GoalList = () => {
     const route = useRoute();
     const navigation = useNavigation();
-    const { role } = useContext(SessionContext);  // Obtén el rol del contexto de la sesión
+    const { role } = useContext(SessionContext);  
     const patientId = route.params?.sessionDocId;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -61,8 +61,7 @@ const GoalList = () => {
     };
 
     const handleAddGoal = () => {
-        console.log(patientId);
-        navigation.navigate('assingGoal', { patientId });
+        navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
 
     return (

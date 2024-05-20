@@ -8,7 +8,7 @@ import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
@@ -37,6 +37,8 @@ type Category = {
 
 export default function AssignGoal() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const patientId = route.params?.sessionDocId;
   const {
     control,
     handleSubmit,
@@ -57,13 +59,11 @@ export default function AssignGoal() {
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
-    navigation.navigate('configGoal', { formData: data });
-  };
-
-  
+    console.log("Patient sent: ", patientId);
+    navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
+  };  
 
   const [categoryData, setCategoryData] = useState<Category[]>([]);
-
 
   useEffect(() => {
     const unsubscribe = firestore().collection('Category').onSnapshot(

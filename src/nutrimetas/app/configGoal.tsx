@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, Link } from 'expo-router';
+import { router, Link, useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
@@ -50,8 +50,10 @@ export default function InfoGoals() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const [modalityData, setModalityData] = useState<Modality[]>([]);
+  const navigation = useNavigation();
   const route = useRoute();
   const firstGoalData = route.params?.formData;
+  const patientId = route.params?.sessionDocId;
   const today = new Date();
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -95,26 +97,49 @@ export default function InfoGoals() {
   const onSubmit = (data: GoalFormType) => {
     setLoading(true);
     console.log("Enviados correctamente ", data)   
-    firestore()
-      .collection('Goal')
-      .add({
-        Deadline: data.deadline,
-        Description: data.description,
-        Frequency: data.frequency,
-        Modality: data.modality,
-        StartDate: data.startDate,
-        Title: data.title,
-      })
-      .then(() => {
-        console.log('Goal added!');
+    const newGoalId = firestore().collection('Goal').doc().id
+    const newGoalData = {
+      Deadline: data.deadline,
+      Description: data.description,
+      Frequency: data.frequency,
+      Modality: data.modality,
+      StartDate: data.startDate,
+      Title: data.title,
+    }
+    const goalDocRef = firestore().collection('Goal').doc(newGoalId);
+    goalDocRef.set(newGoalData)
+    .then(() => {
+      console.log('Goal added!');
+      if (patientId !== undefined) {
+        firestore()
+        .collection('Patient')
+        .doc(patientId)
+        .update({
+          Goals: firestore.FieldValue.arrayUnion(goalDocRef)
+        })
+        .then(() => {
+          console.log("Patient sent: ", patientId);
+          setLoading(false);
+          navigation.navigate('GoalList', { sessionDocId: patientId });
+          showSuccessMessage(() => {
+          });
+          console.log('Patient Goal added!');
+        })
+        .catch((error) => {
+          setLoading(false);
+          console.error('Error adding goal to patient: ', error);
+        });
+      } else {
         setLoading(false);
         showSuccessMessage(() => {
           router.navigate('/(tabs)/goals');
         });
-      })
-      .catch((error) => {
-        console.error('Error adding goal: ', error);
-      });
+      }
+    })
+    .catch((error) => {
+      setLoading(false);
+      console.error('Error adding goal: ', error);
+    });
       
   };
 
