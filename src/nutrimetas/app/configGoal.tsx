@@ -31,9 +31,19 @@ const goalSecondaryForm = z.object({
   deadline: z
     .date(),
 }).refine(schema => {
-  const startDate = schema.startDate.getDate();
-  const deadline = schema.deadline.getDate();  
-  return deadline >= startDate;
+  const startDate = schema.startDate;
+  const deadline = schema.deadline;
+  const startYear = startDate.getFullYear();
+  const startMonth = startDate.getMonth();
+  const startDay = startDate.getDate();
+
+  const deadlineYear = deadline.getFullYear();
+  const deadlineMonth = deadline.getMonth();
+  const deadlineDay = deadline.getDate();
+
+  return startYear < deadlineYear || 
+    (startYear === deadlineYear && startMonth < deadlineMonth) || 
+    (startYear === deadlineYear && startMonth === deadlineMonth && startDay <= deadlineDay);
 }, {message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"]},);
 
 const goalForm = goalSecondaryForm.and(partialGoalForm)
