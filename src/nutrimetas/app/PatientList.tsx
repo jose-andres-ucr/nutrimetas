@@ -13,7 +13,7 @@ const PatientList = () => {
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Patient')
-            .orderBy('firstName') 
+            .orderBy('lastName') 
             .onSnapshot((snapshot) => {
                 const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
                 setPatients(data);
@@ -27,14 +27,6 @@ const PatientList = () => {
     };
 
     const filteredPatients = patients.filter(patient => {
-        /*const searchTermLower = searchTerm.toLowerCase();
-        const firstNameMatch = patient.firstName.toLowerCase().startsWith(searchTermLower);
-        const lastNameMatch = patient.lastName.toLowerCase().startsWith(searchTermLower);
-        const idMatch = patient.id.toLowerCase().startsWith(searchTermLower);
-        const combinedNameMatch = (firstNameMatch && lastNameMatch) || (lastNameMatch && lastNameMatch);
-    
-        // Devuelve true si alguna de las condiciones se cumple
-        return firstNameMatch || lastNameMatch || combinedNameMatch || idMatch;*/
 
         const searchTermLower = searchTerm.toLowerCase();
         const firstNameWords = patient.firstName.toLowerCase().split(" ");
@@ -65,6 +57,10 @@ const PatientList = () => {
         return  firstNameMatch || lastNameMatch || idMatch;
     });
 
+    function formatId(id: string) {
+        return id.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
+    }
+
     return (
         <View>
             <View style={styles.searchContainer}>
@@ -92,10 +88,9 @@ const PatientList = () => {
                             />
                             <View style={styles.nameAndIdContainer}>
                                 <Text style={styles.itemName}> {item.lastName.trim()} {item.firstName.trim()} </Text>
-                                <Text style={styles.itemId}>{item.id}</Text>
+                                <Text style={styles.itemId}>{formatId(item.id)}</Text>
                             </View>
                         </View>
-                        <FlashMessage position="top" />
                     </TouchableOpacity>
                 )}
                 keyExtractor={(item) => item.email}

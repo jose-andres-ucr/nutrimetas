@@ -17,11 +17,11 @@ import { View } from "@/components/Themed";
 const patientForm = z.object({
   firstName: z
     .string()
-    .min(4, { message: "El nombre debe tener al menos 4 caracteres" })
+    .min(3, { message: "El nombre debe tener al menos 3 caracteres" })
     .max(32, { message: "El nombre debe tener máximo 32 caracteres" }),
   lastName: z
     .string()
-    .min(4, { message: "El apellido debe tener al menos 4 caracteres" })
+    .min(2, { message: "El apellido debe tener al menos 2 caracteres" })
     .max(32, { message: "El apellido debe tener máximo 32 caracteres" }),
   id: z
     .string()
