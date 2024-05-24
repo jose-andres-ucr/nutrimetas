@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import FlashMessage from "react-native-flash-message";
 import { useNavigation } from '@react-navigation/native';
+import Colors from '@/constants/Colors';
 
 const PatientList = () => {
     const navigation = useNavigation();
@@ -12,7 +13,7 @@ const PatientList = () => {
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Patient')
-            .orderBy('name') 
+            .orderBy('firstName') 
             .onSnapshot((snapshot) => {
                 const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
                 setPatients(data);
@@ -25,9 +26,44 @@ const PatientList = () => {
         navigation.navigate('GoalList', { sessionDocId: patientDocId });
     };
 
-    const filteredPatients = patients.filter(patient =>
-        patient.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredPatients = patients.filter(patient => {
+        /*const searchTermLower = searchTerm.toLowerCase();
+        const firstNameMatch = patient.firstName.toLowerCase().startsWith(searchTermLower);
+        const lastNameMatch = patient.lastName.toLowerCase().startsWith(searchTermLower);
+        const idMatch = patient.id.toLowerCase().startsWith(searchTermLower);
+        const combinedNameMatch = (firstNameMatch && lastNameMatch) || (lastNameMatch && lastNameMatch);
+    
+        // Devuelve true si alguna de las condiciones se cumple
+        return firstNameMatch || lastNameMatch || combinedNameMatch || idMatch;*/
+
+        const searchTermLower = searchTerm.toLowerCase();
+        const firstNameWords = patient.firstName.toLowerCase().split(" ");
+        const lastNameWords = patient.lastName.toLowerCase().split(" ");
+
+        // Verifica si alguna palabra del firstName o lastName comienza con la búsqueda
+        const firstNameSplitMatches = firstNameWords.some((word: string) => word.startsWith(searchTermLower));
+        const lastNameSplitMatches = lastNameWords.some((word: string) => word.startsWith(searchTermLower));
+
+        const firstNameMatch = patient.firstName.toLowerCase().startsWith(searchTermLower);
+        const lastNameMatch = patient.lastName.toLowerCase().startsWith(searchTermLower);
+        const idMatch = patient.id.toLowerCase().startsWith(searchTermLower);
+        
+        const fullNameWithLastName = patient.lastName.toLowerCase().trim() + " " + patient.firstName.toLowerCase().trim();
+        const fullNameWithFirstName = patient.firstName.toLowerCase().trim() + " " + patient.lastName.toLowerCase().trim();
+        const fullNameMatch = fullNameWithLastName.startsWith(searchTermLower) || fullNameWithFirstName.startsWith(searchTermLower);
+
+        if (firstNameSplitMatches){
+            return firstNameSplitMatches;
+        }
+        if(lastNameSplitMatches){
+            return lastNameSplitMatches;
+        }
+        if(fullNameMatch){
+            return fullNameMatch;
+        }
+
+        return  firstNameMatch || lastNameMatch || idMatch;
+    });
 
     return (
         <View>
@@ -54,7 +90,10 @@ const PatientList = () => {
                                 style={styles.itemImage}
                                 source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
                             />
-                            <Text style={styles.itemName}> {item.name} </Text>
+                            <View style={styles.nameAndIdContainer}>
+                                <Text style={styles.itemName}> {item.lastName.trim()} {item.firstName.trim()} </Text>
+                                <Text style={styles.itemId}>{item.id}</Text>
+                            </View>
                         </View>
                         <FlashMessage position="top" />
                     </TouchableOpacity>
@@ -70,7 +109,7 @@ export default PatientList
 const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
-        borderColor: '#ccc',
+        borderColor: Colors.lightGray,
         borderWidth: 1,
         borderRadius: 10, 
     },
@@ -100,6 +139,14 @@ const styles = StyleSheet.create({
     },
     itemName: {
         fontWeight: 'bold',
-        fontSize: 16
+        fontSize: 16,
+    },
+    itemId: {
+        color: Colors.gray,
+        fontStyle: 'italic', 
+        marginLeft: '2%',
+    },
+    nameAndIdContainer: {
+        flexDirection: 'column',
     }
 });

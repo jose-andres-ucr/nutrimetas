@@ -21,10 +21,10 @@ export default function Expedientes() {
 const styles = StyleSheet.create({
   container: {
     height: '100%',
-    backgroundColor: "white"
+    backgroundColor: Colors.white
   },
   listContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.white,
     paddingHorizontal: 20,
     top: -73
   },
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     textAlign: 'center',
-    color: 'white',
+    color: Colors.white,
     fontSize: 16,
     lineHeight: 50
   },

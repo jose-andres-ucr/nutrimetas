@@ -3,7 +3,7 @@ import { router, Link } from 'expo-router';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, Image, TextInput as TextInputRn } from 'react-native';
-import { Switch, Text, TextInput, Button } from "react-native-paper";
+import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,7 +15,7 @@ import { View } from "@/components/Themed";
 
 
 const patientForm = z.object({
-  name: z
+  firstName: z
     .string()
     .min(4, { message: "El nombre debe tener al menos 4 caracteres" })
     .max(32, { message: "El nombre debe tener máximo 32 caracteres" }),
@@ -23,6 +23,10 @@ const patientForm = z.object({
     .string()
     .min(4, { message: "El apellido debe tener al menos 4 caracteres" })
     .max(32, { message: "El apellido debe tener máximo 32 caracteres" }),
+  id: z
+    .string()
+    .min(9, { message: "El número de cédula no es válido." })
+    .max(9, { message: "El número de cédula no es válido." }),
   phone: z
     .string()
     .min(8, { message: "El número no es válido." })
@@ -45,8 +49,9 @@ export default function AddPatient() {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      name: '',
+      firstName: '',
       lastName: '',
+      id: '',
       phone: '',
       email: '',
       password: ''
@@ -55,9 +60,10 @@ export default function AddPatient() {
   });
 
   const refs = {
-    nameRef: React.useRef<TextInputRn>(null),
+    firstNameRef: React.useRef<TextInputRn>(null),
     lastNameRef: React.useRef<TextInputRn>(null),
     phoneRef: React.useRef<TextInputRn>(null),
+    idRef: React.useRef<TextInputRn>(null),
     emailRef: React.useRef<TextInputRn>(null),
     passwordRef: React.useRef<TextInputRn>(null),
   } as const;
@@ -66,8 +72,9 @@ export default function AddPatient() {
     firestore()
       .collection('Patient')
       .add({
-        name: data.name,
+        firstName: data.firstName,
         lastName: data.lastName,
+        id: data.id,
         phone: data.phone,
         email: data.email,
         password: data.password,
@@ -103,24 +110,24 @@ export default function AddPatient() {
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
             mode="outlined"
-            label="Nombre"
+            label="Primer Nombre"
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
-            error={errors.name?true:false}
+            error={errors.firstName?true:false}
             keyboardType="default"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.nameRef.current?.focus();
+              refs.firstNameRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
         )}
-        name="name"
+        name="firstName"
       />
-      {errors.name ? (
-        <Text style={styles.error}>{errors.name.message}</Text>
+      {errors.firstName ? (
+        <Text style={styles.error}>{errors.firstName.message}</Text>
       ) : null}
 
       <Controller
@@ -137,7 +144,7 @@ export default function AddPatient() {
             keyboardType="default"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.nameRef.current?.focus();
+              refs.lastNameRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -146,6 +153,30 @@ export default function AddPatient() {
       />
       {errors.lastName ? (
         <Text style={styles.error}>{errors.lastName.message}</Text>
+      ) : null}
+
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur } }) => (
+          <TextInput
+            mode="outlined"
+            label="Cédula"
+            style={styles.inputField}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            error={errors.id?true:false}
+            keyboardType="numeric"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              refs.idRef.current?.focus();
+            }}
+            blurOnSubmit={false}
+          />
+        )}
+        name="id"
+      />
+      {errors.id ? (
+        <Text style={styles.error}>{errors.id.message}</Text>
       ) : null}
 
       <Controller
@@ -254,7 +285,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    color: "#FFFFFF"
+    color: Colors.white,
   },
   title: {
     fontSize: 36,
@@ -286,12 +317,12 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 40,
-    backgroundColor: "transparent",
+    backgroundColor: Colors.transparent,
     flexDirection:"row", 
     justifyContent: "space-evenly",
     width: "100%"
   },
   error: {
-    color: "red",
+    color: Colors.red,
   },
 });
