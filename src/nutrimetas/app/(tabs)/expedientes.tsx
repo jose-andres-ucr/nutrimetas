@@ -8,7 +8,7 @@ export default function Expedientes() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.listContainer}>
-        <Text style={styles.title}>Expedientes</Text>
+      <Text style={styles.title}>Expedientes</Text>
         <PatientList />
       </View>
       <Link push href="/addPatient" style={styles.addButton}>
@@ -21,18 +21,19 @@ export default function Expedientes() {
 const styles = StyleSheet.create({
   container: {
     height: '100%',
-    backgroundColor: Colors.white
+    backgroundColor: Colors.lightblue
   },
   listContainer: {
     backgroundColor: Colors.white,
     paddingHorizontal: 20,
-    top: -73
+    top: -73,
+    height: '103%',
   },
   addButton: {
     backgroundColor: Colors.lightblue,
     fontWeight: "bold",
     width: '100%',
-    height: 50,
+    height: 55,
     position: "absolute",
     bottom: 0,
     justifyContent: "center",
@@ -44,5 +45,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: 'bold',
+    backgroundColor: Colors.white,
   },
 });

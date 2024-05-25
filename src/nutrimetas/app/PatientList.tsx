@@ -1,7 +1,6 @@
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, TextInput, Image } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
-import FlashMessage from "react-native-flash-message";
 import { useNavigation } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 
@@ -29,73 +28,68 @@ const PatientList = () => {
     const filteredPatients = patients.filter(patient => {
 
         const searchTermLower = searchTerm.toLowerCase();
-        const firstNameWords = patient.firstName.toLowerCase().split(" ");
-        const lastNameWords = patient.lastName.toLowerCase().split(" ");
 
-        // Verifica si alguna palabra del firstName o lastName comienza con la búsqueda
-        const firstNameSplitMatches = firstNameWords.some((word: string) => word.startsWith(searchTermLower));
-        const lastNameSplitMatches = lastNameWords.some((word: string) => word.startsWith(searchTermLower));
-
-        const firstNameMatch = patient.firstName.toLowerCase().startsWith(searchTermLower);
-        const lastNameMatch = patient.lastName.toLowerCase().startsWith(searchTermLower);
-        const idMatch = patient.id.toLowerCase().startsWith(searchTermLower);
+        const firstNameMatch = patient.firstName.toLowerCase().includes(searchTermLower);
+        const lastNameMatch = patient.lastName.toLowerCase().includes(searchTermLower);
+        const idMatch = patient.idNumber.toLowerCase().startsWith(searchTermLower.replace(/-/g, ''));
         
         const fullNameWithLastName = patient.lastName.toLowerCase().trim() + " " + patient.firstName.toLowerCase().trim();
         const fullNameWithFirstName = patient.firstName.toLowerCase().trim() + " " + patient.lastName.toLowerCase().trim();
-        const fullNameMatch = fullNameWithLastName.startsWith(searchTermLower) || fullNameWithFirstName.startsWith(searchTermLower);
+        const fullNameMatch = fullNameWithLastName.includes(searchTermLower) || fullNameWithFirstName.includes(searchTermLower);
 
-        if (firstNameSplitMatches){
-            return firstNameSplitMatches;
+        if(firstNameMatch){
+            return firstNameMatch;
         }
-        if(lastNameSplitMatches){
-            return lastNameSplitMatches;
+        if(lastNameMatch){
+            return lastNameMatch;
         }
         if(fullNameMatch){
             return fullNameMatch;
         }
-
-        return  firstNameMatch || lastNameMatch || idMatch;
+        if(idMatch){
+            return idMatch;
+        }
     });
 
-    function formatId(id: string) {
-        return id.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
+    function formatId(idNumber: string) {
+        return idNumber.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
     }
 
     return (
-        <View>
-            <View style={styles.searchContainer}>
-                <View style={styles.inputContainer}>  
-                    <Image
-                        style={styles.searchIcon}
-                        source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
-                    />
-                    <TextInput
-                        style={styles.searchBar}
-                        placeholder="Paciente"
-                        onChangeText={setSearchTerm}
-                        value={searchTerm}
-                    />
-                </View>
-            </View>
-            <FlatList
-                data={filteredPatients}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => onPressHandle(item.id)}>
-                        <View style={styles.item}>
-                            <Image
-                                style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                            />
-                            <View style={styles.nameAndIdContainer}>
-                                <Text style={styles.itemName}> {item.lastName.trim()} {item.firstName.trim()} </Text>
-                                <Text style={styles.itemId}>{formatId(item.id)}</Text>
-                            </View>
+        <FlatList
+            data={filteredPatients}
+            renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => onPressHandle(item.id)}>
+                    <View style={styles.item}>
+                        <Image
+                            style={styles.itemImage}
+                            source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                        />
+                        <View style={styles.nameAndIdContainer}>
+                            <Text style={styles.itemName}> {item.lastName.trim()} {item.firstName.trim()} </Text>
+                            <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
                         </View>
-                    </TouchableOpacity>
-                )}
-                keyExtractor={(item) => item.email}
-            />
-        </View>
+                    </View>
+                </TouchableOpacity>
+            )}
+            keyExtractor={(item) => item.email}
+            ListHeaderComponent={
+                <View style={styles.searchContainer}>
+                    <View style={styles.inputContainer}>  
+                        <Image
+                            style={styles.searchIcon}
+                            source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
+                        />
+                        <TextInput
+                            style={styles.searchBar}
+                            placeholder="Paciente"
+                            onChangeText={setSearchTerm}
+                            value={searchTerm}
+                        />
+                    </View>
+                </View>
+            }
+        />
     );
 }
 
@@ -125,7 +119,8 @@ const styles = StyleSheet.create({
     item: {
         flexDirection: 'row',
         alignItems: 'center',
-        margin: '2%',
+        margin: '1%',
+        marginTop: '3%',
         borderBottomWidth: 1
     },
     itemImage: {

@@ -23,7 +23,7 @@ const patientForm = z.object({
     .string()
     .min(2, { message: "El apellido debe tener al menos 2 caracteres" })
     .max(32, { message: "El apellido debe tener máximo 32 caracteres" }),
-  id: z
+  idNumber: z
     .string()
     .min(9, { message: "El número de cédula no es válido." })
     .max(9, { message: "El número de cédula no es válido." }),
@@ -51,7 +51,7 @@ export default function AddPatient() {
     defaultValues: {
       firstName: '',
       lastName: '',
-      id: '',
+      idNumber: '',
       phone: '',
       email: '',
       password: ''
@@ -63,7 +63,7 @@ export default function AddPatient() {
     firstNameRef: React.useRef<TextInputRn>(null),
     lastNameRef: React.useRef<TextInputRn>(null),
     phoneRef: React.useRef<TextInputRn>(null),
-    idRef: React.useRef<TextInputRn>(null),
+    idNumberRef: React.useRef<TextInputRn>(null),
     emailRef: React.useRef<TextInputRn>(null),
     passwordRef: React.useRef<TextInputRn>(null),
   } as const;
@@ -74,7 +74,7 @@ export default function AddPatient() {
       .add({
         firstName: data.firstName,
         lastName: data.lastName,
-        id: data.id,
+        idNumber: data.idNumber,
         phone: data.phone,
         email: data.email,
         password: data.password,
@@ -82,6 +82,7 @@ export default function AddPatient() {
       .then(() => {
         console.log('User added!');
         router.navigate('/(tabs)/expedientes')
+        successfulAddition();
       });
   };
 
@@ -164,19 +165,19 @@ export default function AddPatient() {
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
-            error={errors.id?true:false}
+            error={errors.idNumber?true:false}
             keyboardType="numeric"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.idRef.current?.focus();
+              refs.idNumberRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
         )}
-        name="id"
+        name="idNumber"
       />
-      {errors.id ? (
-        <Text style={styles.error}>{errors.id.message}</Text>
+      {errors.idNumber ? (
+        <Text style={styles.error}>{errors.idNumber.message}</Text>
       ) : null}
 
       <Controller
@@ -267,7 +268,7 @@ export default function AddPatient() {
           mode="contained"
           onPress={() => {handleSubmit((form) => {
             onSubmit({...form });
-          })(); successfulAddition()
+          })(); 
           }}
         >
           <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Registrar</Text>

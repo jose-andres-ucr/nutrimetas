@@ -19,6 +19,7 @@
     "@react-native-community/datetimepicker": "^8.0.0",
     "@react-native-firebase/app": "^19.2.2",
     "@react-native-firebase/firestore": "^19.2.2",
+    "@react-native-vector-icons/ionicons": "^7.3.1-alpha.9",
     "@react-navigation/native": "^6.1.17",
     "expo": "~50.0.17",
     "expo-asset": "~9.0.2",
@@ -41,6 +42,7 @@
     "react-native-screens": "~3.29.0",
     "react-native-simple-toast": "^3.3.1",
     "react-native-toast-message": "^2.2.0",
+    "react-native-vector-icons": "^10.1.0",
     "react-native-web": "~0.19.6",
     "zod": "^3.23.6"
   },
