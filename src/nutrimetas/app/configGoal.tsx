@@ -313,7 +313,7 @@ export default function InfoGoals() {
           borderColor: "black",
           lineHeight: 35
         }}>
-          Cancelar
+          Retroceder
         </Link>
 
         <Button

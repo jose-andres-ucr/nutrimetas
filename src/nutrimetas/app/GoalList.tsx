@@ -26,7 +26,7 @@ const GoalList = () => {
                     fetchGoalsFromFirebase(patientGoals);
                 } else {
                     setLoading(false); // No hay metas, actualiza el estado de carga
-                    console.log('El paciente no tiene objetivos.');
+                    console.log('El paciente no tiene metas.');
                 }
             });
 
@@ -76,7 +76,7 @@ const GoalList = () => {
                 <Text>Cargando...</Text>
             ) : goals.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No tiene objetivos pendientes.</Text>
+                    <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
                 </View>
             ) : (
                 <FlatList
