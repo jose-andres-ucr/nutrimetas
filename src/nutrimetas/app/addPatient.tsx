@@ -3,7 +3,7 @@ import { router, Link } from 'expo-router';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, Image, TextInput as TextInputRn } from 'react-native';
-import { Switch, Text, TextInput, Button } from "react-native-paper";
+import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,10 +15,18 @@ import { View } from "@/components/Themed";
 
 
 const patientForm = z.object({
-  name: z
+  firstName: z
     .string()
-    .min(5, { message: "El nombre debe tener al menos 5 caracteres" })
+    .min(3, { message: "El nombre debe tener al menos 3 caracteres" })
     .max(32, { message: "El nombre debe tener máximo 32 caracteres" }),
+  lastName: z
+    .string()
+    .min(2, { message: "El apellido debe tener al menos 2 caracteres" })
+    .max(32, { message: "El apellido debe tener máximo 32 caracteres" }),
+  idNumber: z
+    .string()
+    .min(9, { message: "El número de cédula no es válido." })
+    .max(9, { message: "El número de cédula no es válido." }),
   phone: z
     .string()
     .min(8, { message: "El número no es válido." })
@@ -41,7 +49,9 @@ export default function AddPatient() {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      name: '',
+      firstName: '',
+      lastName: '',
+      idNumber: '',
       phone: '',
       email: '',
       password: ''
@@ -50,8 +60,10 @@ export default function AddPatient() {
   });
 
   const refs = {
-    nameRef: React.useRef<TextInputRn>(null),
+    firstNameRef: React.useRef<TextInputRn>(null),
+    lastNameRef: React.useRef<TextInputRn>(null),
     phoneRef: React.useRef<TextInputRn>(null),
+    idNumberRef: React.useRef<TextInputRn>(null),
     emailRef: React.useRef<TextInputRn>(null),
     passwordRef: React.useRef<TextInputRn>(null),
   } as const;
@@ -60,7 +72,9 @@ export default function AddPatient() {
     firestore()
       .collection('Patient')
       .add({
-        name: data.name,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        idNumber: data.idNumber,
         phone: data.phone,
         email: data.email,
         password: data.password,
@@ -68,6 +82,7 @@ export default function AddPatient() {
       .then(() => {
         console.log('User added!');
         router.navigate('/(tabs)/expedientes')
+        successfulAddition();
       });
   };
 
@@ -96,30 +111,83 @@ export default function AddPatient() {
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
             mode="outlined"
-            label="Nombre completo"
+            label="Primer Nombre"
             style={styles.inputField}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
-            error={errors.name?true:false}
+            error={errors.firstName?true:false}
             keyboardType="default"
             returnKeyType="next"
+            autoFocus
             onSubmitEditing={() => {
-              refs.nameRef.current?.focus();
+              refs.lastNameRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
         )}
-        name="name"
+        name="firstName"
       />
-      {errors.name ? (
-        <Text style={styles.error}>{errors.name.message}</Text>
+      {errors.firstName ? (
+        <Text style={styles.error}>{errors.firstName.message}</Text>
+      ) : null}
+
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            ref={refs.lastNameRef}
+            mode="outlined"
+            label="Apellido completo"
+            style={styles.inputField}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.lastName?true:false}
+            keyboardType="default"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              refs.idNumberRef.current?.focus();
+            }}
+            blurOnSubmit={false}
+          />
+        )}
+        name="lastName"
+      />
+      {errors.lastName ? (
+        <Text style={styles.error}>{errors.lastName.message}</Text>
       ) : null}
 
       <Controller
         control={control}
         render={({ field: { onChange, onBlur } }) => (
           <TextInput
+            ref={refs.idNumberRef}
+            mode="outlined"
+            label="Cédula"
+            style={styles.inputField}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            error={errors.idNumber?true:false}
+            keyboardType="numeric"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              refs.phoneRef.current?.focus();
+            }}
+            blurOnSubmit={false}
+          />
+        )}
+        name="idNumber"
+      />
+      {errors.idNumber ? (
+        <Text style={styles.error}>{errors.idNumber.message}</Text>
+      ) : null}
+
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur } }) => (
+          <TextInput
+            ref={refs.phoneRef}
             mode="outlined"
             label="Teléfono"
             style={styles.inputField}
@@ -129,7 +197,7 @@ export default function AddPatient() {
             keyboardType="numeric"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.phoneRef.current?.focus();
+              refs.emailRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -144,6 +212,7 @@ export default function AddPatient() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
+            ref={refs.emailRef}
             mode="outlined"
             label="Correo electrónico"
             style={styles.inputField}
@@ -156,7 +225,7 @@ export default function AddPatient() {
             autoComplete="email"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.emailRef.current?.focus();
+              refs.passwordRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -204,7 +273,7 @@ export default function AddPatient() {
           mode="contained"
           onPress={() => {handleSubmit((form) => {
             onSubmit({...form });
-          })(); successfulAddition()
+          })(); 
           }}
         >
           <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Registrar</Text>
@@ -222,7 +291,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    color: "#FFFFFF"
+    color: Colors.white,
   },
   title: {
     fontSize: 36,
@@ -254,12 +323,12 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 40,
-    backgroundColor: "transparent",
+    backgroundColor: Colors.transparent,
     flexDirection:"row", 
     justifyContent: "space-evenly",
     width: "100%"
   },
   error: {
-    color: "red",
+    color: Colors.red,
   },
 });
