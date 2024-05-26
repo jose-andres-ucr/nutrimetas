@@ -119,8 +119,9 @@ export default function AddPatient() {
             error={errors.firstName?true:false}
             keyboardType="default"
             returnKeyType="next"
+            autoFocus
             onSubmitEditing={() => {
-              refs.firstNameRef.current?.focus();
+              refs.lastNameRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -135,6 +136,7 @@ export default function AddPatient() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
+            ref={refs.lastNameRef}
             mode="outlined"
             label="Apellido completo"
             style={styles.inputField}
@@ -145,7 +147,7 @@ export default function AddPatient() {
             keyboardType="default"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.lastNameRef.current?.focus();
+              refs.idNumberRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -160,6 +162,7 @@ export default function AddPatient() {
         control={control}
         render={({ field: { onChange, onBlur } }) => (
           <TextInput
+            ref={refs.idNumberRef}
             mode="outlined"
             label="Cédula"
             style={styles.inputField}
@@ -169,7 +172,7 @@ export default function AddPatient() {
             keyboardType="numeric"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.idNumberRef.current?.focus();
+              refs.phoneRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -184,6 +187,7 @@ export default function AddPatient() {
         control={control}
         render={({ field: { onChange, onBlur } }) => (
           <TextInput
+            ref={refs.phoneRef}
             mode="outlined"
             label="Teléfono"
             style={styles.inputField}
@@ -193,7 +197,7 @@ export default function AddPatient() {
             keyboardType="numeric"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.phoneRef.current?.focus();
+              refs.emailRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -208,6 +212,7 @@ export default function AddPatient() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
+            ref={refs.emailRef}
             mode="outlined"
             label="Correo electrónico"
             style={styles.inputField}
@@ -220,7 +225,7 @@ export default function AddPatient() {
             autoComplete="email"
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.emailRef.current?.focus();
+              refs.passwordRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
