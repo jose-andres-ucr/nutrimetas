@@ -20,10 +20,9 @@ export default {
   lightblue: "#00c0f3",
   blue: "#005da4",
   green: "#6dc067",
-  white: "#FFFFFF",,
+  white: "#FFFFFF",
   gray: "#808080",
   lightGray: '#ccc',
-  white: '#FFFFFF',
   transparent: '#ffffff00',
   red: '#FF0000',
 };

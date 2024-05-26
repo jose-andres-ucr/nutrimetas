@@ -104,7 +104,7 @@ export default function AddPatient() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Registro de pacientes</Text>
       <Text style={styles.subtitle}>NUTRI<Text style={{color: Colors.lightblue}}>METAS</Text></Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
       <Controller
         control={control}

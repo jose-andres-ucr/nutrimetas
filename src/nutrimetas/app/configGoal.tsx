@@ -178,7 +178,7 @@ export default function InfoGoals() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Asignar Meta</Text>
       <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
       <Controller
         control={control}
@@ -328,7 +328,7 @@ export default function InfoGoals() {
             animating={loading}
             hidesWhenStopped={true}
             />}
-          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>{loading ? "Cargando" : "Crear"}</Text>
+          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>{loading ? "Cargando" : "Crear"}</Text>
         </Button>        
       </View>
       <FlashMessage position="top" />
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   error: {
-    color: "red",
+    color: Colors.red,
   },
   dropdown: {
     margin: 16,
@@ -388,10 +388,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "70%",
     height: 50,
-    borderColor: 'gray',
+    borderColor: Colors.gray,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: 'white',
+    backgroundColor: Colors.white,
   },
   placeholderStyle: {
     fontSize: 16,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: 'gray',
+    borderColor: Colors.gray,
     justifyContent: 'space-between',
     alignItems: 'center',
     flexDirection: 'row',

@@ -90,7 +90,7 @@ export default function AssignGoal() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Asignar Meta</Text>
       <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
       <Controller
         control={control}
@@ -187,7 +187,7 @@ export default function AssignGoal() {
             onSubmit({ ...form });
           })}
         >
-          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
+          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Crear</Text>
         </Button>
 
       </View>
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   error: {
-    color: "red",
+    color: Colors.red,
   },
   dropdown: {
     margin: 16,
@@ -248,10 +248,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "70%",
     height: 50,
-    borderColor: 'gray',
+    borderColor: Colors.gray,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: 'white'
+    backgroundColor: Colors.white
   },
   placeholderStyle: {
     fontSize: 16,
