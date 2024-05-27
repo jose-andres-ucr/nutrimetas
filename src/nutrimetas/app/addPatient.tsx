@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, Image, TextInput as TextInputRn } from 'react-native';
+import { Platform, StyleSheet, Image, TextInput as TextInputRn, ScrollView } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -152,189 +152,191 @@ export default function AddPatient() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Registro de pacientes</Text>
-      <Text style={styles.subtitle}>NUTRI<Text style={{color: Colors.lightblue}}>METAS</Text></Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+    <ScrollView>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Registro de pacientes</Text>
+        <Text style={styles.subtitle}>NUTRI<Text style={{color: Colors.lightblue}}>METAS</Text></Text>
+        <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
 
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            mode="outlined"
-            label="Primer Nombre"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.firstName?true:false}
-            keyboardType="default"
-            returnKeyType="next"
-            autoFocus
-            onSubmitEditing={() => {
-              refs.lastNameRef.current?.focus();
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              mode="outlined"
+              label="Nombre"
+              style={styles.inputField}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={errors.firstName?true:false}
+              keyboardType="default"
+              returnKeyType="next"
+              autoFocus
+              onSubmitEditing={() => {
+                refs.lastNameRef.current?.focus();
+              }}
+              blurOnSubmit={false}
+            />
+          )}
+          name="firstName"
+        />
+        {errors.firstName ? (
+          <Text style={styles.error}>{errors.firstName.message}</Text>
+        ) : null}
+
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              ref={refs.lastNameRef}
+              mode="outlined"
+              label="Apellidos"
+              style={styles.inputField}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={errors.lastName?true:false}
+              keyboardType="default"
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                refs.idNumberRef.current?.focus();
+              }}
+              blurOnSubmit={false}
+            />
+          )}
+          name="lastName"
+        />
+        {errors.lastName ? (
+          <Text style={styles.error}>{errors.lastName.message}</Text>
+        ) : null}
+
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur } }) => (
+            <TextInput
+              ref={refs.idNumberRef}
+              mode="outlined"
+              label="Cédula"
+              style={styles.inputField}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              error={errors.idNumber?true:false}
+              keyboardType="numeric"
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                refs.phoneRef.current?.focus();
+              }}
+              blurOnSubmit={false}
+            />
+          )}
+          name="idNumber"
+        />
+        {errors.idNumber ? (
+          <Text style={styles.error}>{errors.idNumber.message}</Text>
+        ) : null}
+
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur } }) => (
+            <TextInput
+              ref={refs.phoneRef}
+              mode="outlined"
+              label="Teléfono"
+              style={styles.inputField}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              error={errors.phone?true:false}
+              keyboardType="numeric"
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                refs.emailRef.current?.focus();
+              }}
+              blurOnSubmit={false}
+            />
+          )}
+          name="phone"
+        />
+        {errors.phone ? (
+          <Text style={styles.error}>{errors.phone.message}</Text>
+        ) : null}
+      
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              ref={refs.emailRef}
+              mode="outlined"
+              label="Correo electrónico"
+              style={styles.inputField}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={errors.email?true:false}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                refs.passwordRef.current?.focus();
+              }}
+              blurOnSubmit={false}
+            />
+          )}
+          name="email"
+        />
+        {errors.email ? (
+          <Text style={styles.error}>{errors.email.message}</Text>
+        ) : null}
+
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              ref={refs.passwordRef}
+              mode="outlined"
+              label="Password"
+              secureTextEntry
+              style={styles.inputField}
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={errors.password?true:false}
+              autoCapitalize="none"
+              autoComplete="password"
+            />
+          )}
+          name="password"
+        />
+        {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
+            
+        <View style={styles.buttonContainer}>
+          <Link href='/(tabs)/expedientes' style={{
+            ...styles.button, 
+            borderWidth: 1,
+            borderColor: "black",
+            lineHeight: 35
+            }}>
+              Cancelar
+          </Link>
+
+          <Button
+            style={{...styles.button, backgroundColor: Colors.lightblue}}
+            icon="content-save"
+            mode="contained"
+            onPress={() => {
+              handleSubmit((form) => {
+                onSubmit({...form });
+              })();
             }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="firstName"
-      />
-      {errors.firstName ? (
-        <Text style={styles.error}>{errors.firstName.message}</Text>
-      ) : null}
+          >
+            <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Registrar</Text>
+          </Button>
+        </View>
 
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            ref={refs.lastNameRef}
-            mode="outlined"
-            label="Apellido completo"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.lastName?true:false}
-            keyboardType="default"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.idNumberRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="lastName"
-      />
-      {errors.lastName ? (
-        <Text style={styles.error}>{errors.lastName.message}</Text>
-      ) : null}
-
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur } }) => (
-          <TextInput
-            ref={refs.idNumberRef}
-            mode="outlined"
-            label="Cédula"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            error={errors.idNumber?true:false}
-            keyboardType="numeric"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.phoneRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="idNumber"
-      />
-      {errors.idNumber ? (
-        <Text style={styles.error}>{errors.idNumber.message}</Text>
-      ) : null}
-
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur } }) => (
-          <TextInput
-            ref={refs.phoneRef}
-            mode="outlined"
-            label="Teléfono"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            error={errors.phone?true:false}
-            keyboardType="numeric"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.emailRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="phone"
-      />
-      {errors.phone ? (
-        <Text style={styles.error}>{errors.phone.message}</Text>
-      ) : null}
-    
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            ref={refs.emailRef}
-            mode="outlined"
-            label="Correo electrónico"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.email?true:false}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.passwordRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="email"
-      />
-      {errors.email ? (
-        <Text style={styles.error}>{errors.email.message}</Text>
-      ) : null}
-
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            ref={refs.passwordRef}
-            mode="outlined"
-            label="Password"
-            secureTextEntry
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.password?true:false}
-            autoCapitalize="none"
-            autoComplete="password"
-          />
-        )}
-        name="password"
-      />
-      {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
-          
-      <View style={styles.buttonContainer}>
-        <Link href='/(tabs)/expedientes' style={{
-          ...styles.button, 
-          borderWidth: 1,
-          borderColor: "black",
-          lineHeight: 35
-          }}>
-            Cancelar
-        </Link>
-
-        <Button
-          style={{...styles.button, backgroundColor: Colors.lightblue}}
-          icon="content-save"
-          mode="contained"
-          onPress={() => {
-            handleSubmit((form) => {
-              onSubmit({...form });
-            })();
-          }}
-        >
-          <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Registrar</Text>
-        </Button>
-      </View>
-
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </SafeAreaView>
+        {/* Use a light status bar on iOS to account for the black space above the modal */}
+        <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
