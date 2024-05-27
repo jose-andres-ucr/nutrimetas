@@ -68,37 +68,88 @@ export default function AddPatient() {
     passwordRef: React.useRef<TextInputRn>(null),
   } as const;
 
-  const onSubmit = (data: PatientFormType) => {
-    firestore()
-      .collection('Patient')
-      .add({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        idNumber: data.idNumber,
-        phone: data.phone,
-        email: data.email,
-        password: data.password,
-      })
-      .then(() => {
-        console.log('User added!');
-        router.navigate('/(tabs)/expedientes')
-        successfulAddition();
-      });
+  const idExists = async (idNumber: string) => {
+    try {
+      const user = await firestore().collection('Patient').where('idNumber', '==', idNumber).get();
+      return user.empty? false: true;
+    } catch (error) {
+      console.error("Error al comprobar si el usuario ya existe: ", error);
+      throw new Error("Error al comprobar si el usuario ya existe.");
+    }
+  }
+
+  const onSubmit = async (data: PatientFormType) => {
+    const userExists = await idExists(data.idNumber)
+    if (!userExists) {
+      firestore()
+        .collection('Patient')
+        .add({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          idNumber: data.idNumber,
+          phone: data.phone,
+          email: data.email,
+          password: data.password,
+        })
+        .then(() => {
+          console.log('Usuario agregado!')
+          router.replace('/(tabs)/expedientes')
+          successfulAddition()
+        })
+        .catch((error: Error) => {
+          console.log("Error tratando de agregar paciente: ", error)
+          somethingWentWrong();
+        });
+    } else {
+      console.log("El usuario ya existe")
+      alreadyExistAlert()
+    }
   };
 
   const successfulAddition = () => {
     showMessage({
+        position: "bottom",
         type: "success",
-        message: "Success",
-        description: "Patient succesfully added",
-        backgroundColor: "#6dc067", 
-        color: "#FFFFFF", 
+        message: "Exito!",
+        description: "Paciente añadido exitosamente.",
+        backgroundColor: Colors.green, 
+        color: Colors.white, 
         icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png'}} {...props} />,
         style: {
         borderRadius: 10, 
         },
     })
-    }
+  }
+  
+  const alreadyExistAlert = () => {
+    showMessage({
+        position: "bottom",
+        type: "warning",
+        message: "Atención",
+        description: "El paciente ya existe.",
+        backgroundColor: Colors.gray, 
+        color: Colors.white, 
+        icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/3/free-icon-warning-sign-9773.png'}} {...props} />,
+        style: {
+        borderRadius: 10, 
+        },
+    })
+  }
+
+  const somethingWentWrong = () => {
+    showMessage({
+        position: "bottom",
+        type: "danger",
+        message: "Error",
+        description: "Algo salió mal.",
+        backgroundColor: Colors.gray, 
+        color: Colors.white, 
+        icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/3/free-icon-warning-sign-9743.png'}} {...props} />,
+        style: {
+        borderRadius: 10, 
+        },
+    })
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -271,9 +322,10 @@ export default function AddPatient() {
           style={{...styles.button, backgroundColor: Colors.lightblue}}
           icon="content-save"
           mode="contained"
-          onPress={() => {handleSubmit((form) => {
-            onSubmit({...form });
-          })(); 
+          onPress={() => {
+            handleSubmit((form) => {
+              onSubmit({...form });
+            })();
           }}
         >
           <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Registrar</Text>

@@ -66,13 +66,13 @@ const PatientList = () => {
                             source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
                         />
                         <View style={styles.nameAndIdContainer}>
-                            <Text style={styles.itemName}> {item.lastName.trim()} {item.firstName.trim()} </Text>
+                            <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
                             <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
                         </View>
                     </View>
                 </TouchableOpacity>
             )}
-            keyExtractor={(item) => item.email}
+            keyExtractor={(item) => item.idNumber}
             ListHeaderComponent={
                 <View style={styles.searchContainer}>
                     <View style={styles.inputContainer}>  
