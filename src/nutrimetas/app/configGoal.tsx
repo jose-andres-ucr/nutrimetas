@@ -66,7 +66,7 @@ export default function InfoGoals() {
   const patientId = route.params?.sessionDocId;
   const today = new Date();
   const [loading, setLoading] = useState<boolean>(false);
-
+  console.log("Goo", firstGoalData)
   const {
     control,
     handleSubmit,
@@ -115,6 +115,7 @@ export default function InfoGoals() {
       Modality: data.modality,
       StartDate: data.startDate,
       Title: data.title,
+      Type: data.type,
     }
     const goalDocRef = firestore().collection('Goal').doc(newGoalId);
     goalDocRef.set(newGoalData)

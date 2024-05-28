@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn ,  ScrollView} from 'react-native';
+import { Platform, StyleSheet, TextInput as TextInputRn, ScrollView } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,37 +17,38 @@ import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/compo
 const MAX_LINES = 6;
 
 export const partialGoalForm = z.object({
+  type: z
+    .string()
+    .min(1, { message: "Debe seleccionar un tipo" }),
   title: z
     .string()
     .min(1, { message: "Debe digitar un título" }),
   description: z
     .string()
     .min(1, { message: "Debes digitar una descripción" }),
-  category: z
-    .string()
-    .min(1, { message: "Debe seleccionar alguna categoría" }),
 });
 
 type GoalFormType = z.infer<typeof partialGoalForm>
 
-type Category = {
-  label: string;
-  value: string;
+type Type = {
+  id: string;
+  name: string;
 };
 
 export default function AssignGoal() {
   const navigation = useNavigation();
   const route = useRoute();
   const patientId = route.params?.sessionDocId;
+  const [typeData, setTypeData] = useState<Type[]>([]);
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm({
     defaultValues: {
+      type: '',
       title: '',
       description: '',
-      category: '',
     },
     resolver: zodResolver(partialGoalForm),
   });
@@ -55,34 +56,32 @@ export default function AssignGoal() {
   const refs = {
     titleRef: React.useRef<TextInputRn>(null),
     descriptionRef: React.useRef<TextInputRn>(null),
-    categoryRef: React.useRef<IDropdownRef>(null),
+    typeRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
     console.log("Patient sent: ", patientId);
     navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
-  };  
-
-  const [categoryData, setCategoryData] = useState<Category[]>([]);
+  };
 
   useEffect(() => {
-    const unsubscribe = firestore().collection('Category').onSnapshot(
+    const unsubscribe = firestore().collection('Type').onSnapshot(
       (querySnapshot) => {
         try {
-          const categoryData = querySnapshot.docs.map(doc => ({
-            label: doc.data().Type,
-            value: doc.data().Type
+          const typeData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().Name
           }));
-          setCategoryData(categoryData);
+          setTypeData(typeData);
         } catch (error) {
-          console.error("Error fetching categories:", error);
+          console.error("Error fetching types:", error);
         }
       },
       (error) => {
-        console.error("Error listening to categories collection:", error);
+        console.error("Error listening to types collection:", error);
       }
     );
-  
+
     return () => unsubscribe();
   }, []);
 
@@ -91,6 +90,60 @@ export default function AssignGoal() {
       <Text style={styles.title}>Asignar Meta</Text>
       <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
       <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
+
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, name } }) => (
+          <Dropdown
+            ref={refs.typeRef}
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            data={typeData}
+            search
+            maxHeight={300}
+            labelField="name"
+            valueField="id"
+            placeholder="Seleccione un tipo"
+            searchPlaceholder="Buscar..."
+            value={name}
+            onChange={(item) => onChange(item?.id || '')}
+            onBlur={onBlur}
+          />
+        )}
+        name="type"
+      />
+      {errors.type ? (
+        <Text style={styles.error}>{errors.type.message}</Text>
+      ) : null}
+
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            ref={refs.descriptionRef}
+            mode="outlined"
+            label="Descripción"
+            style={[styles.inputField, { minHeight: 140, maxHeight: 140 }]}
+            multiline
+            numberOfLines={MAX_LINES}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.description ? true : false}
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              refs.typeRef.current?.open();
+            }}
+            blurOnSubmit={false}
+          />
+        )}
+        name="description" />
+      {errors.description ? (
+        <Text style={styles.error}>{errors.description.message}</Text>
+      ) : null}
 
       <Controller
         control={control}
@@ -114,60 +167,6 @@ export default function AssignGoal() {
         name="title" />
       {errors.title ? (
         <Text style={styles.error}>{errors.title.message}</Text>
-      ) : null}
-
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            ref={refs.descriptionRef}
-            mode="outlined"
-            label="Descripción"
-            style={[styles.inputField, { minHeight: 140, maxHeight: 140 }]}
-            multiline        
-            numberOfLines={MAX_LINES}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.description ? true : false}
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.categoryRef.current?.open();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="description" />
-      {errors.description ? (
-        <Text style={styles.error}>{errors.description.message}</Text>
-      ) : null}
-
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <Dropdown
-            ref={refs.categoryRef}
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={categoryData}
-            search
-            maxHeight={300}
-            labelField="label"
-            valueField="value"
-            placeholder="Seleccione una categoría"
-            searchPlaceholder="Buscar..."
-            value={value}
-            onChange={(item) => onChange(item?.value || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="category"
-      />
-      {errors.category ? (
-        <Text style={styles.error}>{errors.category.message}</Text>
       ) : null}
 
       <View style={styles.buttonContainer}>
