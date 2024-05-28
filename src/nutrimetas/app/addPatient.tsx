@@ -12,6 +12,7 @@ import { showMessage } from "react-native-flash-message";
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
+import MaskInput from "react-native-mask-input";
 
 
 const patientForm = z.object({
@@ -25,12 +26,12 @@ const patientForm = z.object({
     .max(32, { message: "El apellido debe tener máximo 32 caracteres" }),
   idNumber: z
     .string()
-    .min(9, { message: "El número de cédula no es válido." })
-    .max(9, { message: "El número de cédula no es válido." }),
+    .min(11, { message: "El número de cédula no es válido." })
+    .max(11, { message: "El número de cédula no es válido." }),
   phone: z
     .string()
-    .min(8, { message: "El número no es válido." })
-    .max(8, { message: "El número no es válido." }),
+    .min(9, { message: "El número no es válido." })
+    .max(9, { message: "El número no es válido." }),
   email: z
     .string()
     .email({message: "El correo es inválido."}),
@@ -212,21 +213,21 @@ export default function AddPatient() {
 
         <Controller
           control={control}
-          render={({ field: { onChange, onBlur } }) => (
-            <TextInput
+          render={({ field: { onChange, onBlur, value } }) => (
+            <MaskInput
               ref={refs.idNumberRef}
-              mode="outlined"
-              label="Cédula"
-              style={styles.inputField}
+              style={styles.specialInputs}
               onBlur={onBlur}
               onChangeText={onChange}
-              error={errors.idNumber?true:false}
+              value={value}
+              mask={[/\d/, '-', /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/]}
               keyboardType="numeric"
               returnKeyType="next"
               onSubmitEditing={() => {
                 refs.phoneRef.current?.focus();
               }}
               blurOnSubmit={false}
+              placeholder="Cédula"
             />
           )}
           name="idNumber"
@@ -237,21 +238,21 @@ export default function AddPatient() {
 
         <Controller
           control={control}
-          render={({ field: { onChange, onBlur } }) => (
-            <TextInput
+          render={({ field: { onChange, onBlur, value } }) => (
+            <MaskInput
               ref={refs.phoneRef}
-              mode="outlined"
-              label="Teléfono"
-              style={styles.inputField}
+              style={styles.specialInputs}
               onBlur={onBlur}
               onChangeText={onChange}
-              error={errors.phone?true:false}
+              value={value}
+              mask={[/\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/, /\d/]}
               keyboardType="numeric"
               returnKeyType="next"
               onSubmitEditing={() => {
                 refs.emailRef.current?.focus();
               }}
               blurOnSubmit={false}
+              placeholder="Teléfono"
             />
           )}
           name="phone"
@@ -362,8 +363,19 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   inputField: {
+    backgroundColor: Colors.white,
     marginVertical: 10,
-    width: "70%"
+    width: "70%",
+  },
+  specialInputs: {
+    marginVertical: 10,
+    height: 55,
+    width: "70%",
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.gray,
+    borderRadius: 5,
+    padding: 15
   },
   button: {
     height: 40,
