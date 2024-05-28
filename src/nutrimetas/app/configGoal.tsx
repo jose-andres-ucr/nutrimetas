@@ -110,12 +110,11 @@ export default function InfoGoals() {
     const newGoalId = firestore().collection('Goal').doc().id
     const newGoalData = {
       Deadline: data.deadline,
-      Description: data.description,
       Frequency: data.frequency,
       Modality: data.modality,
       StartDate: data.startDate,
-      Title: data.title,
       Type: data.type,
+      Action: data.action,
     }
     const goalDocRef = firestore().collection('Goal').doc(newGoalId);
     goalDocRef.set(newGoalData)

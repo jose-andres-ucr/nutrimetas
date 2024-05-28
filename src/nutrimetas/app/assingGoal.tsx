@@ -14,18 +14,14 @@ import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 
-const MAX_LINES = 6;
 
 export const partialGoalForm = z.object({
   type: z
     .string()
     .min(1, { message: "Debe seleccionar un tipo" }),
-  title: z
+  action: z
     .string()
-    .min(1, { message: "Debe digitar un título" }),
-  description: z
-    .string()
-    .min(1, { message: "Debes digitar una descripción" }),
+    .min(1, { message: "Debe seleccionar una acción" }),
 });
 
 type GoalFormType = z.infer<typeof partialGoalForm>
@@ -35,10 +31,40 @@ type Type = {
   name: string;
 };
 
+type Action = {
+  id: string;
+  name: string;
+};
+
+const fetchCollectionData = (
+  collectionName: string,
+  setData: React.Dispatch<React.SetStateAction<Type[] | Action[]>>,
+  errorMessage: string
+) => {
+  return firestore().collection(collectionName).onSnapshot(
+    (snapshot) => {
+      try {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().Name
+        }));
+        setData(data);
+      } catch (error) {
+        console.error(errorMessage, error);
+      }
+    },
+    (error) => {
+      console.error(`Error listening to ${collectionName} collection:`, error);
+    }
+  );
+};
+
+
 export default function AssignGoal() {
   const navigation = useNavigation();
   const route = useRoute();
   const patientId = route.params?.sessionDocId;
+  const [actionData, setActionData] = useState<Action[]>([]);
   const [typeData, setTypeData] = useState<Type[]>([]);
   const {
     control,
@@ -47,16 +73,14 @@ export default function AssignGoal() {
   } = useForm({
     defaultValues: {
       type: '',
-      title: '',
-      description: '',
+      action: '',
     },
     resolver: zodResolver(partialGoalForm),
   });
 
   const refs = {
-    titleRef: React.useRef<TextInputRn>(null),
-    descriptionRef: React.useRef<TextInputRn>(null),
     typeRef: React.useRef<IDropdownRef>(null),
+    actionRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
@@ -65,24 +89,22 @@ export default function AssignGoal() {
   };
 
   useEffect(() => {
-    const unsubscribe = firestore().collection('Type').onSnapshot(
-      (querySnapshot) => {
-        try {
-          const typeData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            name: doc.data().Name
-          }));
-          setTypeData(typeData);
-        } catch (error) {
-          console.error("Error fetching types:", error);
-        }
-      },
-      (error) => {
-        console.error("Error listening to types collection:", error);
-      }
+    const unsubscribeType = fetchCollectionData(
+      'Type',
+      setTypeData,
+      "Error fetching types:"
     );
 
-    return () => unsubscribe();
+    const unsubscribeAction = fetchCollectionData(
+      'Action',
+      setActionData,
+      "Error fetching actions:"
+    );
+
+    return () => {
+      unsubscribeType();
+      unsubscribeAction();
+    };
   }, []);
 
   return (
@@ -121,52 +143,30 @@ export default function AssignGoal() {
 
       <Controller
         control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            ref={refs.descriptionRef}
-            mode="outlined"
-            label="Descripción"
-            style={[styles.inputField, { minHeight: 140, maxHeight: 140 }]}
-            multiline
-            numberOfLines={MAX_LINES}
+        render={({ field: { onChange, onBlur, name } }) => (
+          <Dropdown
+            ref={refs.actionRef}
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            data={actionData}
+            search
+            maxHeight={300}
+            labelField="name"
+            valueField="id"
+            placeholder="Seleccione una acción"
+            searchPlaceholder="Buscar..."
+            value={name}
+            onChange={(item) => onChange(item?.id || '')}
             onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.description ? true : false}
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.typeRef.current?.open();
-            }}
-            blurOnSubmit={false}
           />
         )}
-        name="description" />
-      {errors.description ? (
-        <Text style={styles.error}>{errors.description.message}</Text>
-      ) : null}
-
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            mode="outlined"
-            label="Título"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.title ? true : false}
-            returnKeyType="next"
-            autoFocus
-            onSubmitEditing={() => {
-              refs.descriptionRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="title" />
-      {errors.title ? (
-        <Text style={styles.error}>{errors.title.message}</Text>
+        name="action"
+      />
+      {errors.action ? (
+        <Text style={styles.error}>{errors.action.message}</Text>
       ) : null}
 
       <View style={styles.buttonContainer}>
@@ -186,7 +186,7 @@ export default function AssignGoal() {
             onSubmit({ ...form });
           })}
         >
-          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Crear</Text>
+          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
         </Button>
 
       </View>
