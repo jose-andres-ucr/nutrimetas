@@ -22,23 +22,28 @@ export const partialGoalForm = z.object({
   action: z
     .string()
     .min(1, { message: "Debe seleccionar una acción" }),
+  rubric: z
+    .string()
+    .min(1, { message: "Debe seleccionar un rubro" }),
+  amount: z
+    .string()
+    .min(1, { message: "Debe seleccionar una cantidad" }),
+  portion: z
+    .string()
+    .min(1, { message: "Debe seleccionar una porción" }),
 });
 
 type GoalFormType = z.infer<typeof partialGoalForm>
 
-type Type = {
+type CommonType = {
   id: string;
   name: string;
 };
 
-type Action = {
-  id: string;
-  name: string;
-};
 
 const fetchCollectionData = (
   collectionName: string,
-  setData: React.Dispatch<React.SetStateAction<Type[] | Action[]>>,
+  setData: React.Dispatch<React.SetStateAction< CommonType[] >>,
   errorMessage: string
 ) => {
   return firestore().collection(collectionName).onSnapshot(
@@ -64,8 +69,11 @@ export default function AssignGoal() {
   const navigation = useNavigation();
   const route = useRoute();
   const patientId = route.params?.sessionDocId;
-  const [actionData, setActionData] = useState<Action[]>([]);
-  const [typeData, setTypeData] = useState<Type[]>([]);
+  const [actionData, setActionData] = useState<CommonType[]>([]);
+  const [typeData, setTypeData] = useState<CommonType[]>([]);
+  const [rubricData, setRubricData] = useState<CommonType[]>([]);
+  const [amountData, setAmountData] = useState<CommonType[]>([]);
+  const [portionData, setPortionData] = useState<CommonType[]>([]);
   const {
     control,
     handleSubmit,
@@ -74,6 +82,9 @@ export default function AssignGoal() {
     defaultValues: {
       type: '',
       action: '',
+      rubric: '',
+      amount: '',
+      portion: '',
     },
     resolver: zodResolver(partialGoalForm),
   });
@@ -81,6 +92,9 @@ export default function AssignGoal() {
   const refs = {
     typeRef: React.useRef<IDropdownRef>(null),
     actionRef: React.useRef<IDropdownRef>(null),
+    rubricRef: React.useRef<IDropdownRef>(null),
+    amountRef: React.useRef<IDropdownRef>(null),
+    portionRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
@@ -101,9 +115,30 @@ export default function AssignGoal() {
       "Error fetching actions:"
     );
 
+    const unsubscribeRubric = fetchCollectionData(
+      'Rubric',
+      setRubricData,
+      "Error fetching rubrics:"
+    );
+
+    const unsubscribeAmount = fetchCollectionData(
+      'Amount',
+      setAmountData,
+      "Error fetching amounts:"
+    );
+
+    const unsubscribePortion = fetchCollectionData(
+      'Portion',
+      setPortionData,
+      "Error fetching portions:"
+    );
+
     return () => {
       unsubscribeType();
       unsubscribeAction();
+      unsubscribeRubric();
+      unsubscribeAmount();
+      unsubscribePortion();
     };
   }, []);
 
@@ -113,6 +148,9 @@ export default function AssignGoal() {
       <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
       <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
+      <View style={[styles.textInfo, { paddingTop: 0 }]}>
+        <Text>Tipo</Text>
+      </View>
       <Controller
         control={control}
         render={({ field: { onChange, onBlur, name } }) => (
@@ -125,7 +163,7 @@ export default function AssignGoal() {
             iconStyle={styles.iconStyle}
             data={typeData}
             search
-            maxHeight={300}
+            maxHeight={220}
             labelField="name"
             valueField="id"
             placeholder="Seleccione un tipo"
@@ -141,6 +179,9 @@ export default function AssignGoal() {
         <Text style={styles.error}>{errors.type.message}</Text>
       ) : null}
 
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Acción</Text>
+      </View>
       <Controller
         control={control}
         render={({ field: { onChange, onBlur, name } }) => (
@@ -153,7 +194,7 @@ export default function AssignGoal() {
             iconStyle={styles.iconStyle}
             data={actionData}
             search
-            maxHeight={300}
+            maxHeight={220}
             labelField="name"
             valueField="id"
             placeholder="Seleccione una acción"
@@ -167,6 +208,99 @@ export default function AssignGoal() {
       />
       {errors.action ? (
         <Text style={styles.error}>{errors.action.message}</Text>
+      ) : null}
+
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Rubro</Text>
+      </View>
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, name } }) => (
+          <Dropdown
+            ref={refs.rubricRef}
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            data={rubricData}
+            search
+            maxHeight={220}
+            labelField="name"
+            valueField="id"
+            placeholder="Seleccione un rubro"
+            searchPlaceholder="Buscar..."
+            value={name}
+            onChange={(item) => onChange(item?.id || '')}
+            onBlur={onBlur}
+          />
+        )}
+        name="rubric"
+      />
+      {errors.rubric ? (
+        <Text style={styles.error}>{errors.rubric.message}</Text>
+      ) : null}
+
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Cantidad</Text>
+      </View>
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, name } }) => (
+          <Dropdown
+            ref={refs.amountRef}
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            data={amountData}
+            search
+            maxHeight={220}
+            labelField="name"
+            valueField="id"
+            placeholder="Seleccione una cantidad"
+            searchPlaceholder="Buscar..."
+            value={name}
+            onChange={(item) => onChange(item?.id || '')}
+            onBlur={onBlur}
+          />
+        )}
+        name="amount"
+      />
+      {errors.amount ? (
+        <Text style={styles.error}>{errors.amount.message}</Text>
+      ) : null}
+
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Porción</Text>
+      </View>
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, name } }) => (
+          <Dropdown
+            ref={refs.portionRef}
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            inputSearchStyle={styles.inputSearchStyle}
+            iconStyle={styles.iconStyle}
+            data={portionData}
+            search
+            maxHeight={220}
+            labelField="name"
+            valueField="id"
+            placeholder="Seleccione una porción"
+            searchPlaceholder="Buscar..."
+            value={name}
+            onChange={(item) => onChange(item?.id || '')}
+            onBlur={onBlur}
+          />
+        )}
+        name="portion"
+      />
+      {errors.portion ? (
+        <Text style={styles.error}>{errors.portion.message}</Text>
       ) : null}
 
       <View style={styles.buttonContainer}>
@@ -201,7 +335,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    marginTop: '15%',
   },
   title: {
     fontSize: 36,
@@ -242,8 +377,8 @@ const styles = StyleSheet.create({
     color: Colors.red,
   },
   dropdown: {
-    margin: 16,
-    padding: 10,
+    margin: 13,
+    padding: 7,
     marginVertical: 10,
     width: "70%",
     height: 50,
@@ -266,4 +401,9 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
+  textInfo: {
+    justifyContent: 'flex-start',
+    width: '70%',
+    backgroundColor: 'transparent',
+  }
 });
