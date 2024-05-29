@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn, ScrollView } from 'react-native';
-import { Text, TextInput, Button } from "react-native-paper";
+import { Control, Controller, useForm } from 'react-hook-form';
+import { Platform, StyleSheet, ScrollView } from 'react-native';
+import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +13,6 @@ import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
-
 
 export const partialGoalForm = z.object({
   type: z
@@ -35,15 +34,14 @@ export const partialGoalForm = z.object({
 
 type GoalFormType = z.infer<typeof partialGoalForm>
 
-export type CommonType = {
+type CommonType = {
   id: string;
   name: string;
 };
 
-
-export const fetchCollectionData = (
+const fetchCollectionData = (
   collectionName: string,
-  setData: React.Dispatch<React.SetStateAction< CommonType[] >>,
+  setData: React.Dispatch<React.SetStateAction<CommonType[]>>,
   errorMessage: string
 ) => {
   return firestore().collection(collectionName).onSnapshot(
@@ -64,6 +62,38 @@ export const fetchCollectionData = (
   );
 };
 
+export const renderDropdown = (
+  name: keyof GoalFormType,
+  data: CommonType[],
+  control: Control<GoalFormType>,
+  refs: { [key: string]: React.MutableRefObject<IDropdownRef | null> },
+  placeholder: string
+) => (
+  <Controller
+    control={control}
+    render={({ field: { onChange, onBlur, value } }) => (
+      <Dropdown
+        ref={refs[`${name}Ref`]}
+        style={styles.dropdown}
+        placeholderStyle={styles.placeholderStyle}
+        selectedTextStyle={styles.selectedTextStyle}
+        inputSearchStyle={styles.inputSearchStyle}
+        iconStyle={styles.iconStyle}
+        data={data}
+        search
+        maxHeight={220}
+        labelField="name"
+        valueField="id"
+        placeholder={placeholder}
+        searchPlaceholder="Buscar..."
+        value={value}
+        onChange={(item) => onChange(item?.id || '')}
+        onBlur={onBlur}
+      />
+    )}
+    name={name}
+  />
+);
 
 export default function AssignGoal() {
   const navigation = useNavigation();
@@ -143,193 +173,75 @@ export default function AssignGoal() {
   }, []);
 
   return (
-    <ScrollView>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Asignar Meta</Text>
-        <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-        <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Asignar Meta</Text>
+      <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
+      <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
-        <View style={[styles.textInfo, { paddingTop: 0 }]}>
-          <Text>Tipo</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, onBlur, name } }) => (
-            <Dropdown
-              ref={refs.typeRef}
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={typeData}
-              search
-              maxHeight={220}
-              labelField="name"
-              valueField="id"
-              placeholder="Seleccione un tipo"
-              searchPlaceholder="Buscar..."
-              value={name}
-              onChange={(item) => onChange(item?.id || '')}
-              onBlur={onBlur}
-            />
-          )}
-          name="type"
-        />
-        {errors.type ? (
-          <Text style={styles.error}>{errors.type.message}</Text>
-        ) : null}
+      <View style={[styles.textInfo, { paddingTop: 0 }]}>
+        <Text>Tipo</Text>
+      </View>
+      {renderDropdown('type', typeData, control, refs, "Seleccione un tipo")}
+      {errors.type ? (
+        <Text style={styles.error}>{errors.type.message}</Text>
+      ) : null}
 
-        <View style={[styles.textInfo, { paddingTop: 5 }]}>
-          <Text>Acción</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, onBlur, name } }) => (
-            <Dropdown
-              ref={refs.actionRef}
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={actionData}
-              search
-              maxHeight={220}
-              labelField="name"
-              valueField="id"
-              placeholder="Seleccione una acción"
-              searchPlaceholder="Buscar..."
-              value={name}
-              onChange={(item) => onChange(item?.id || '')}
-              onBlur={onBlur}
-            />
-          )}
-          name="action"
-        />
-        {errors.action ? (
-          <Text style={styles.error}>{errors.action.message}</Text>
-        ) : null}
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Acción</Text>
+      </View>
+      {renderDropdown('action', actionData, control, refs, "Seleccione una acción")}
+      {errors.action ? (
+        <Text style={styles.error}>{errors.action.message}</Text>
+      ) : null}
 
-        <View style={[styles.textInfo, { paddingTop: 5 }]}>
-          <Text>Rubro</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, onBlur, name } }) => (
-            <Dropdown
-              ref={refs.rubricRef}
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={rubricData}
-              search
-              maxHeight={220}
-              labelField="name"
-              valueField="id"
-              placeholder="Seleccione un rubro"
-              searchPlaceholder="Buscar..."
-              value={name}
-              onChange={(item) => onChange(item?.id || '')}
-              onBlur={onBlur}
-            />
-          )}
-          name="rubric"
-        />
-        {errors.rubric ? (
-          <Text style={styles.error}>{errors.rubric.message}</Text>
-        ) : null}
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Rubro</Text>
+      </View>
+      {renderDropdown('rubric', rubricData, control, refs, "Seleccione un rubro")}
+      {errors.rubric ? (
+        <Text style={styles.error}>{errors.rubric.message}</Text>
+      ) : null}
 
-        <View style={[styles.textInfo, { paddingTop: 5 }]}>
-          <Text>Cantidad</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, onBlur, name } }) => (
-            <Dropdown
-              ref={refs.amountRef}
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={amountData}
-              search
-              maxHeight={220}
-              labelField="name"
-              valueField="id"
-              placeholder="Seleccione una cantidad"
-              searchPlaceholder="Buscar..."
-              value={name}
-              onChange={(item) => onChange(item?.id || '')}
-              onBlur={onBlur}
-            />
-          )}
-          name="amount"
-        />
-        {errors.amount ? (
-          <Text style={styles.error}>{errors.amount.message}</Text>
-        ) : null}
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Cantidad</Text>
+      </View>
+      {renderDropdown('amount', amountData, control, refs, "Seleccione una cantidad")}
+      {errors.amount ? (
+        <Text style={styles.error}>{errors.amount.message}</Text>
+      ) : null}
 
-        <View style={[styles.textInfo, { paddingTop: 5 }]}>
-          <Text>Porción</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, onBlur, name } }) => (
-            <Dropdown
-              ref={refs.portionRef}
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={portionData}
-              search
-              maxHeight={220}
-              labelField="name"
-              valueField="id"
-              placeholder="Seleccione una porción"
-              searchPlaceholder="Buscar..."
-              value={name}
-              onChange={(item) => onChange(item?.id || '')}
-              onBlur={onBlur}
-            />
-          )}
-          name="portion"
-        />
-        {errors.portion ? (
-          <Text style={styles.error}>{errors.portion.message}</Text>
-        ) : null}
+      <View style={[styles.textInfo, { paddingTop: 5 }]}>
+        <Text>Porción</Text>
+      </View>
+      {renderDropdown('portion', portionData, control, refs, "Seleccione una porción")}
+      {errors.portion ? (
+        <Text style={styles.error}>{errors.portion.message}</Text>
+      ) : null}
 
-        <View style={styles.buttonContainer}>
-          <Link href='/(tabs)/goals' style={{
-            ...styles.button,
-            borderWidth: 1,
-            borderColor: "black",
-            lineHeight: 35
-          }}>
-            Cancelar
-          </Link>
+      <View style={styles.buttonContainer}>
+        <Link href='/(tabs)/goals' style={{
+          ...styles.button,
+          borderWidth: 1,
+          borderColor: "black",
+          lineHeight: 35
+        }}>
+          Cancelar
+        </Link>
 
-          <Button
-            style={{ ...styles.button, backgroundColor: Colors.lightblue }}
-            mode="contained"
-            onPress={handleSubmit((form) => {
-              onSubmit({ ...form });
-            })}
-          >
-            <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
-          </Button>
+        <Button
+          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
+          mode="contained"
+          onPress={handleSubmit((form) => {
+            onSubmit({ ...form });
+          })}
+        >
+          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
+        </Button>
 
-        </View>
+      </View>
 
-        {/* Use a light status bar on iOS to account for the black space above the modal */}
-        <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-      </SafeAreaView>
-    </ScrollView>
+      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+    </SafeAreaView>
   );
 }
 
@@ -338,7 +250,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    marginTop: '15%',
+    marginTop: '5%',
   },
   title: {
     fontSize: 36,
@@ -363,6 +275,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: 165,
     marginTop: 24,
+    marginBottom: 24,
     textAlign: "center",
     alignSelf: "center",
     fontSize: 16,
