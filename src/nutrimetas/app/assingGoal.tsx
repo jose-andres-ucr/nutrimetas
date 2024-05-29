@@ -35,13 +35,13 @@ export const partialGoalForm = z.object({
 
 type GoalFormType = z.infer<typeof partialGoalForm>
 
-type CommonType = {
+export type CommonType = {
   id: string;
   name: string;
 };
 
 
-const fetchCollectionData = (
+export const fetchCollectionData = (
   collectionName: string,
   setData: React.Dispatch<React.SetStateAction< CommonType[] >>,
   errorMessage: string
@@ -143,191 +143,193 @@ export default function AssignGoal() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Asignar Meta</Text>
-      <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-      <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
+    <ScrollView>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
+        <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
-      <View style={[styles.textInfo, { paddingTop: 0 }]}>
-        <Text>Tipo</Text>
-      </View>
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, name } }) => (
-          <Dropdown
-            ref={refs.typeRef}
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={typeData}
-            search
-            maxHeight={220}
-            labelField="name"
-            valueField="id"
-            placeholder="Seleccione un tipo"
-            searchPlaceholder="Buscar..."
-            value={name}
-            onChange={(item) => onChange(item?.id || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="type"
-      />
-      {errors.type ? (
-        <Text style={styles.error}>{errors.type.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 0 }]}>
+          <Text>Tipo</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.typeRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={typeData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione un tipo"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="type"
+        />
+        {errors.type ? (
+          <Text style={styles.error}>{errors.type.message}</Text>
+        ) : null}
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Acción</Text>
-      </View>
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, name } }) => (
-          <Dropdown
-            ref={refs.actionRef}
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={actionData}
-            search
-            maxHeight={220}
-            labelField="name"
-            valueField="id"
-            placeholder="Seleccione una acción"
-            searchPlaceholder="Buscar..."
-            value={name}
-            onChange={(item) => onChange(item?.id || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="action"
-      />
-      {errors.action ? (
-        <Text style={styles.error}>{errors.action.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Acción</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.actionRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={actionData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione una acción"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="action"
+        />
+        {errors.action ? (
+          <Text style={styles.error}>{errors.action.message}</Text>
+        ) : null}
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Rubro</Text>
-      </View>
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, name } }) => (
-          <Dropdown
-            ref={refs.rubricRef}
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={rubricData}
-            search
-            maxHeight={220}
-            labelField="name"
-            valueField="id"
-            placeholder="Seleccione un rubro"
-            searchPlaceholder="Buscar..."
-            value={name}
-            onChange={(item) => onChange(item?.id || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="rubric"
-      />
-      {errors.rubric ? (
-        <Text style={styles.error}>{errors.rubric.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Rubro</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.rubricRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={rubricData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione un rubro"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="rubric"
+        />
+        {errors.rubric ? (
+          <Text style={styles.error}>{errors.rubric.message}</Text>
+        ) : null}
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Cantidad</Text>
-      </View>
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, name } }) => (
-          <Dropdown
-            ref={refs.amountRef}
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={amountData}
-            search
-            maxHeight={220}
-            labelField="name"
-            valueField="id"
-            placeholder="Seleccione una cantidad"
-            searchPlaceholder="Buscar..."
-            value={name}
-            onChange={(item) => onChange(item?.id || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="amount"
-      />
-      {errors.amount ? (
-        <Text style={styles.error}>{errors.amount.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Cantidad</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.amountRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={amountData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione una cantidad"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="amount"
+        />
+        {errors.amount ? (
+          <Text style={styles.error}>{errors.amount.message}</Text>
+        ) : null}
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Porción</Text>
-      </View>
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, name } }) => (
-          <Dropdown
-            ref={refs.portionRef}
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={portionData}
-            search
-            maxHeight={220}
-            labelField="name"
-            valueField="id"
-            placeholder="Seleccione una porción"
-            searchPlaceholder="Buscar..."
-            value={name}
-            onChange={(item) => onChange(item?.id || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="portion"
-      />
-      {errors.portion ? (
-        <Text style={styles.error}>{errors.portion.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Porción</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.portionRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={portionData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione una porción"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="portion"
+        />
+        {errors.portion ? (
+          <Text style={styles.error}>{errors.portion.message}</Text>
+        ) : null}
 
-      <View style={styles.buttonContainer}>
-        <Link href='/(tabs)/goals' style={{
-          ...styles.button,
-          borderWidth: 1,
-          borderColor: "black",
-          lineHeight: 35
-        }}>
-          Cancelar
-        </Link>
+        <View style={styles.buttonContainer}>
+          <Link href='/(tabs)/goals' style={{
+            ...styles.button,
+            borderWidth: 1,
+            borderColor: "black",
+            lineHeight: 35
+          }}>
+            Cancelar
+          </Link>
 
-        <Button
-          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
-          mode="contained"
-          onPress={handleSubmit((form) => {
-            onSubmit({ ...form });
-          })}
-        >
-          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
-        </Button>
+          <Button
+            style={{ ...styles.button, backgroundColor: Colors.lightblue }}
+            mode="contained"
+            onPress={handleSubmit((form) => {
+              onSubmit({ ...form });
+            })}
+          >
+            <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
+          </Button>
 
-      </View>
+        </View>
 
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </SafeAreaView>
+        {/* Use a light status bar on iOS to account for the black space above the modal */}
+        <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
