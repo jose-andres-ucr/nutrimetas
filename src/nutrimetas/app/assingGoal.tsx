@@ -34,12 +34,12 @@ export const partialGoalForm = z.object({
 
 type GoalFormType = z.infer<typeof partialGoalForm>
 
-type CommonType = {
+export type CommonType = {
   id: string;
   name: string;
 };
 
-const fetchCollectionData = (
+export const fetchCollectionData = (
   collectionName: string,
   setData: React.Dispatch<React.SetStateAction<CommonType[]>>,
   errorMessage: string
