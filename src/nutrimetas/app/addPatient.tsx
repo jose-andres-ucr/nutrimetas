@@ -170,7 +170,6 @@ export default function AddPatient() {
             error={errors.firstName?true:false}
             keyboardType="default"
             returnKeyType="next"
-            autoFocus
             onSubmitEditing={() => {
               refs.lastNameRef.current?.focus();
             }}
