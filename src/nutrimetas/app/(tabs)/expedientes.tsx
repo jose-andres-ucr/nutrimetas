@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
     lineHeight: 50
   },
   title: {
+    marginVertical: 20,
     fontSize: 36,
     fontWeight: 'bold',
     backgroundColor: Colors.white,

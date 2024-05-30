@@ -1,20 +1,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
+import { Platform, StyleSheet, TextInput as TextInputRn ,  ScrollView} from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
+import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 
+const MAX_LINES = 6;
 
-const goalForm = z.object({
+export const partialGoalForm = z.object({
   title: z
     .string()
     .min(1, { message: "Debe digitar un título" }),
@@ -26,10 +28,17 @@ const goalForm = z.object({
     .min(1, { message: "Debe seleccionar alguna categoría" }),
 });
 
-type GoalFormType = z.infer<typeof goalForm>
+type GoalFormType = z.infer<typeof partialGoalForm>
+
+type Category = {
+  label: string;
+  value: string;
+};
 
 export default function AssignGoal() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const patientId = route.params?.sessionDocId;
   const {
     control,
     handleSubmit,
@@ -40,29 +49,40 @@ export default function AssignGoal() {
       description: '',
       category: '',
     },
-    resolver: zodResolver(goalForm),
+    resolver: zodResolver(partialGoalForm),
   });
 
   const refs = {
     titleRef: React.useRef<TextInputRn>(null),
     descriptionRef: React.useRef<TextInputRn>(null),
-    categoryRef: React.useRef<TextInputRn>(null),
+    categoryRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
-    navigation.navigate('configGoal', { formData: data });
-  };
+    console.log("Patient sent: ", patientId);
+    navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
+  };  
 
-  const [categoryData, setCategoryData] = useState([]);
+  const [categoryData, setCategoryData] = useState<Category[]>([]);
 
   useEffect(() => {
-    const unsubscribe = firestore().collection('Category').onSnapshot(querySnapshot => {
-      const categoryData = querySnapshot.docs.map(doc => {
-        return { label: doc.data().Type, value: doc.data().Type };
-      });
-      setCategoryData(categoryData);
-    });
-
+    const unsubscribe = firestore().collection('Category').onSnapshot(
+      (querySnapshot) => {
+        try {
+          const categoryData = querySnapshot.docs.map(doc => ({
+            label: doc.data().Type,
+            value: doc.data().Type
+          }));
+          setCategoryData(categoryData);
+        } catch (error) {
+          console.error("Error fetching categories:", error);
+        }
+      },
+      (error) => {
+        console.error("Error listening to categories collection:", error);
+      }
+    );
+  
     return () => unsubscribe();
   }, []);
 
@@ -70,7 +90,7 @@ export default function AssignGoal() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Asignar Meta</Text>
       <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
       <Controller
         control={control}
@@ -84,8 +104,9 @@ export default function AssignGoal() {
             value={value}
             error={errors.title ? true : false}
             returnKeyType="next"
+            autoFocus
             onSubmitEditing={() => {
-              refs.titleRef.current?.focus();
+              refs.descriptionRef.current?.focus();
             }}
             blurOnSubmit={false}
           />
@@ -99,17 +120,19 @@ export default function AssignGoal() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
+            ref={refs.descriptionRef}
             mode="outlined"
             label="Descripción"
-            style={[styles.inputField, { minHeight: 110 }]}
-            multiline
+            style={[styles.inputField, { minHeight: 140, maxHeight: 140 }]}
+            multiline        
+            numberOfLines={MAX_LINES}
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
             error={errors.description ? true : false}
             returnKeyType="next"
             onSubmitEditing={() => {
-              refs.descriptionRef.current?.focus();
+              refs.categoryRef.current?.open();
             }}
             blurOnSubmit={false}
           />
@@ -123,6 +146,7 @@ export default function AssignGoal() {
         control={control}
         render={({ field: { onChange, onBlur, value } }) => (
           <Dropdown
+            ref={refs.categoryRef}
             style={styles.dropdown}
             placeholderStyle={styles.placeholderStyle}
             selectedTextStyle={styles.selectedTextStyle}
@@ -163,7 +187,7 @@ export default function AssignGoal() {
             onSubmit({ ...form });
           })}
         >
-          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
+          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Crear</Text>
         </Button>
 
       </View>
@@ -179,7 +203,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    color: "#FFFFFF"
   },
   title: {
     fontSize: 36,
@@ -217,7 +240,7 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   error: {
-    color: "red",
+    color: Colors.red,
   },
   dropdown: {
     margin: 16,
@@ -225,10 +248,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "70%",
     height: 50,
-    borderColor: 'gray',
+    borderColor: Colors.gray,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: 'white'
+    backgroundColor: Colors.white
   },
   placeholderStyle: {
     fontSize: 16,
