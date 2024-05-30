@@ -8,6 +8,7 @@ import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
 import { showMessage } from "react-native-flash-message";
 
 import Colors from '@/constants/Colors';
@@ -37,7 +38,7 @@ const patientForm = z.object({
     .email({message: "El correo es inválido."}),
   password: z      
     .string()
-    .min(5, { message: "La contraseña debe tener al menos 5 caracteres" })
+    .min(6, { message: "La contraseña debe tener al menos 6 caracteres" })
 });
 
 type PatientFormType = z.infer<typeof patientForm>
@@ -80,30 +81,38 @@ export default function AddPatient() {
   }
 
   const onSubmit = async (data: PatientFormType) => {
-    const userExists = await idExists(data.idNumber)
-    if (!userExists) {
-      firestore()
-        .collection('Patient')
-        .add({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          idNumber: data.idNumber,
-          phone: data.phone,
-          email: data.email,
-          password: data.password,
-        })
-        .then(() => {
-          console.log('Usuario agregado!')
-          router.replace('/(tabs)/expedientes')
-          successfulAddition()
-        })
-        .catch((error: Error) => {
-          console.log("Error tratando de agregar paciente: ", error)
+    try {
+      const userExists = await idExists(data.idNumber);
+      if (!userExists) {
+        const doc = await firestore()
+          .collection('Patient')
+          .add({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            idNumber: data.idNumber,
+            phone: data.phone,
+            email: data.email,
+          });
+  
+        try {
+          await auth().createUserWithEmailAndPassword(data.email, data.password);
+          console.log('Usuario agregado!');
+          router.replace('/(tabs)/expedientes');
+          successfulAddition();
+        } catch (error) {
+          // Si ocurre un error al crear el usuario en Auth, elimina el documento agregado previamente en Firestore
+          console.log("Error guardando credenciales del usuario: ", error);
+          await firestore().collection('Patient').doc(doc.id).delete();
+          console.log('Documento eliminado debido a error en la creación del usuario');
           somethingWentWrong();
-        });
-    } else {
-      console.log("El usuario ya existe")
-      alreadyExistAlert()
+        }
+      } else {
+        console.log("El usuario ya existe");
+        alreadyExistAlert();
+      }
+    } catch (error) {
+      console.log("Error tratando de agregar paciente: ", error);
+      somethingWentWrong();
     }
   };
 
@@ -347,6 +356,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     color: Colors.white,
+    marginTop: 50
   },
   title: {
     fontSize: 36,
