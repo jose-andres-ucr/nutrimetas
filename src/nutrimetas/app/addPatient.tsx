@@ -95,10 +95,17 @@ export default function AddPatient() {
           });
   
         try {
-          await auth().createUserWithEmailAndPassword(data.email, data.password);
-          console.log('Usuario agregado!');
-          router.replace('/(tabs)/expedientes');
-          successfulAddition();
+          const authUser = await auth().createUserWithEmailAndPassword(data.email, data.password);
+          // Se agrega el campo uid al usuario en firestore
+          await firestore()
+            .collection('Patient')
+            .doc(doc.id)
+            .update({
+              'uid': authUser.user.uid
+            })
+          console.log('Usuario agregado!')
+          router.replace('/(tabs)/expedientes')
+          successfulAddition()
         } catch (error) {
           // Si ocurre un error al crear el usuario en Auth, elimina el documento agregado previamente en Firestore
           console.log("Error guardando credenciales del usuario: ", error);
