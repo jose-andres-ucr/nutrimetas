@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link, useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Control, Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView } from 'react-native';
 import { Text, Button } from "react-native-paper";
 import { z } from "zod";
@@ -19,7 +19,10 @@ import { partialGoalForm } from "./assingGoal";
 import { useRoute } from '@react-navigation/native';
 import { CommonType, fetchCollectionData } from './assingGoal';
 
-const goalSecondaryForm = z.object({
+const goalSecondaryForm = z.object({  
+  portion: z
+    .string()
+    .min(1, { message: "Debe seleccionar una porción" }),
   frequency: z
     .string()
     .min(1, { message: "Debe seleccionar alguna frecuencia" }),
@@ -56,6 +59,7 @@ export default function InfoGoals() {
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
   const [frequencyData, setFrequencyData] = useState<CommonType[]>([]);
+  const [portionData, setPortionData] = useState<CommonType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const navigation = useNavigation();
   const route = useRoute();
@@ -73,7 +77,8 @@ export default function InfoGoals() {
     handleSubmit,
     formState: { errors },
   } = useForm({
-    defaultValues: {
+    defaultValues: {      
+      portion: '',
       frequency: '',
       notificationTime: resetTimeToZero(today), 
       startDate: today,
@@ -82,7 +87,8 @@ export default function InfoGoals() {
     resolver: zodResolver(goalSecondaryForm),
   });
 
-  const refs = {
+  const refs = {    
+    portionRef: React.useRef<IDropdownRef>(null),
     frequencyRef: React.useRef<IDropdownRef>(null),
     notificationTimeRef: React.useRef<DatePickerOptions>(null),
     startDateRef: React.useRef<DatePickerOptions>(null),
@@ -158,13 +164,22 @@ export default function InfoGoals() {
   };
 
   useEffect(() => {
+    const unsubscribePortion = fetchCollectionData(
+      'Portion',
+      setPortionData,
+      "Error fetching portions:"
+    );     
+
     const unsubscribeFrequency = fetchCollectionData(
       'Frequency',
       setFrequencyData,
       "Error fetching frequency:"
     );
 
-    return () => unsubscribeFrequency();
+    return () => {
+      unsubscribePortion();
+      unsubscribeFrequency();
+    };
   }, []);
 
   return (
@@ -173,6 +188,37 @@ export default function InfoGoals() {
         <Text style={styles.title}>Asignar Meta</Text>
         <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
         <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
+
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Porción</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.portionRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={portionData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione una porción"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="portion"
+        />
+        {errors.portion ? (
+          <Text style={styles.error}>{errors.portion.message}</Text>
+        ) : null}
 
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Frecuencia</Text>

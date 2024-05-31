@@ -27,9 +27,6 @@ export const partialGoalForm = z.object({
   amount: z
     .string()
     .min(1, { message: "Debe seleccionar una cantidad" }),
-  portion: z
-    .string()
-    .min(1, { message: "Debe seleccionar una porción" }),
 });
 
 type GoalFormType = z.infer<typeof partialGoalForm>
@@ -62,7 +59,7 @@ export const fetchCollectionData = (
   );
 };
 
-export const renderDropdown = (
+const renderDropdown = (
   name: keyof GoalFormType,
   data: CommonType[],
   control: Control<GoalFormType>,
@@ -103,7 +100,7 @@ export default function AssignGoal() {
   const [typeData, setTypeData] = useState<CommonType[]>([]);
   const [rubricData, setRubricData] = useState<CommonType[]>([]);
   const [amountData, setAmountData] = useState<CommonType[]>([]);
-  const [portionData, setPortionData] = useState<CommonType[]>([]);
+  
   const {
     control,
     handleSubmit,
@@ -114,7 +111,6 @@ export default function AssignGoal() {
       action: '',
       rubric: '',
       amount: '',
-      portion: '',
     },
     resolver: zodResolver(partialGoalForm),
   });
@@ -124,7 +120,6 @@ export default function AssignGoal() {
     actionRef: React.useRef<IDropdownRef>(null),
     rubricRef: React.useRef<IDropdownRef>(null),
     amountRef: React.useRef<IDropdownRef>(null),
-    portionRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
@@ -156,92 +151,79 @@ export default function AssignGoal() {
       setAmountData,
       "Error fetching amounts:"
     );
-
-    const unsubscribePortion = fetchCollectionData(
-      'Portion',
-      setPortionData,
-      "Error fetching portions:"
-    );
-
+    
     return () => {
       unsubscribeType();
       unsubscribeAction();
       unsubscribeRubric();
-      unsubscribeAmount();
-      unsubscribePortion();
+      unsubscribeAmount();      
     };
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Asignar Meta</Text>
-      <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-      <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
+    <ScrollView>    
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
+        <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
-      <View style={[styles.textInfo, { paddingTop: 0 }]}>
-        <Text>Tipo</Text>
-      </View>
-      {renderDropdown('type', typeData, control, refs, "Seleccione un tipo")}
-      {errors.type ? (
-        <Text style={styles.error}>{errors.type.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 0 }]}>
+          <Text>Tipo</Text>
+        </View>
+        {renderDropdown('type', typeData, control, refs, "Seleccione un tipo")}
+        {errors.type ? (
+          <Text style={styles.error}>{errors.type.message}</Text>
+        ) : null}
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Acción</Text>
-      </View>
-      {renderDropdown('action', actionData, control, refs, "Seleccione una acción")}
-      {errors.action ? (
-        <Text style={styles.error}>{errors.action.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Acción</Text>
+        </View>
+        {renderDropdown('action', actionData, control, refs, "Seleccione una acción")}
+        {errors.action ? (
+          <Text style={styles.error}>{errors.action.message}</Text>
+        ) : null}
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Rubro</Text>
-      </View>
-      {renderDropdown('rubric', rubricData, control, refs, "Seleccione un rubro")}
-      {errors.rubric ? (
-        <Text style={styles.error}>{errors.rubric.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Rubro</Text>
+        </View>
+        {renderDropdown('rubric', rubricData, control, refs, "Seleccione un rubro")}
+        {errors.rubric ? (
+          <Text style={styles.error}>{errors.rubric.message}</Text>
+        ) : null}
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Cantidad</Text>
-      </View>
-      {renderDropdown('amount', amountData, control, refs, "Seleccione una cantidad")}
-      {errors.amount ? (
-        <Text style={styles.error}>{errors.amount.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Cantidad</Text>
+        </View>
+        {renderDropdown('amount', amountData, control, refs, "Seleccione una cantidad")}
+        {errors.amount ? (
+          <Text style={styles.error}>{errors.amount.message}</Text>
+        ) : null}        
 
-      <View style={[styles.textInfo, { paddingTop: 5 }]}>
-        <Text>Porción</Text>
-      </View>
-      {renderDropdown('portion', portionData, control, refs, "Seleccione una porción")}
-      {errors.portion ? (
-        <Text style={styles.error}>{errors.portion.message}</Text>
-      ) : null}
+        <View style={styles.buttonContainer}>
+          <Link href='/(tabs)/goals' style={{
+            ...styles.button,
+            borderWidth: 1,
+            borderColor: "black",
+            lineHeight: 35
+          }}>
+            Cancelar
+          </Link>
 
-      <View style={styles.buttonContainer}>
-        <Link href='/(tabs)/goals' style={{
-          ...styles.button,
-          borderWidth: 1,
-          borderColor: "black",
-          lineHeight: 35
-        }}>
-          Cancelar
-        </Link>
+          <Button
+            style={{ ...styles.button, backgroundColor: Colors.lightblue }}
+            mode="contained"
+            onPress={handleSubmit((form) => {
+              onSubmit({ ...form });
+            })}
+          >
+            <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
+          </Button>
 
-        <Button
-          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
-          mode="contained"
-          onPress={handleSubmit((form) => {
-            onSubmit({ ...form });
-          })}
-        >
-          <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
-        </Button>
+        </View>
 
-      </View>
-
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </SafeAreaView>
+        <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -249,7 +231,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     marginTop: '5%',
   },
   title: {
