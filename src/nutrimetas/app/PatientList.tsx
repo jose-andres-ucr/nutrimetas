@@ -12,14 +12,27 @@ const PatientList = () => {
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Patient')
-            .orderBy('lastName') 
             .onSnapshot((snapshot) => {
                 const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-                setPatients(data);
+                setPatients(sortPatients(data));
             });
 
         return () => unsubscribe();
     }, []);
+
+    const normalizeString = (str: string) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    };
+
+    const sortPatients = (patientsList: any[]) => {
+        return patientsList.sort((a, b) => {
+            const lastNameA = normalizeString(a.lastName);
+            const lastNameB = normalizeString(b.lastName);
+            if (lastNameA < lastNameB) return -1;
+            if (lastNameA > lastNameB) return 1;
+            return 0;
+        });
+    };
 
     const onPressHandle = async (patientDocId: string) => {
         navigation.navigate('GoalList', { sessionDocId: patientDocId });
@@ -27,15 +40,16 @@ const PatientList = () => {
 
     const filteredPatients = patients.filter(patient => {
 
-        const searchTermLower = searchTerm.toLowerCase();
+        const searchTermLower = normalizeString(searchTerm);
 
-        const firstNameMatch = patient.firstName.toLowerCase().includes(searchTermLower);
-        const lastNameMatch = patient.lastName.toLowerCase().includes(searchTermLower);
+        const firstNameMatch = normalizeString(patient.firstName).includes(searchTermLower);
+        const lastNameMatch = normalizeString(patient.lastName).includes(searchTermLower);
         const idMatch = patient.idNumber.toLowerCase().startsWith(searchTermLower.replace(/-/g, ''));
-        
-        const fullNameWithLastName = patient.lastName.toLowerCase().trim() + " " + patient.firstName.toLowerCase().trim();
-        const fullNameWithFirstName = patient.firstName.toLowerCase().trim() + " " + patient.lastName.toLowerCase().trim();
+
+        const fullNameWithLastName = normalizeString(patient.lastName.trim() + " " + patient.firstName.trim());
+        const fullNameWithFirstName = normalizeString(patient.firstName.trim() + " " + patient.lastName.trim());
         const fullNameMatch = fullNameWithLastName.includes(searchTermLower) || fullNameWithFirstName.includes(searchTermLower);
+
 
         if(firstNameMatch){
             return firstNameMatch;
