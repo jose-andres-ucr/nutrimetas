@@ -33,7 +33,17 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "flipper": false
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
