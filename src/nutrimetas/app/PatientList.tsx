@@ -22,7 +22,8 @@ const PatientList = () => {
     }, []);
 
     const onPressHandle = async (patientDocId: string) => {
-        navigation.navigate('GoalList', { sessionDocId: patientDocId });
+        //navigation.navigate('GoalList', { sessionDocId: patientDocId });
+        navigation.navigate('showComment');
     };
 
     const filteredPatients = patients.filter(patient => {
