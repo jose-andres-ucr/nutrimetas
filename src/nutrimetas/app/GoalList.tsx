@@ -3,21 +3,24 @@ import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react
 import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { router, useRouter, useSearchParams } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
+import { useGlobalSearchParams } from 'expo-router';
 
 const GoalList = () => {
-    const route = useRoute();
+    // const route = useRoute();
     const navigation = useNavigation();
-    const { role } = useContext(SessionContext);  
-    const patientId = route.params?.sessionDocId;
+    const { patientId } = useGlobalSearchParams();
+    const { role } = useContext(SessionContext);
+    // const patientId = route.params?.sessionDocId;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
+    console.log(patientId);
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Patient')
-            .doc(patientId)
+            .doc(patientId.toString())
             .onSnapshot((snapshot) => {
                 const patientData = snapshot.data();
                 const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
@@ -33,7 +36,7 @@ const GoalList = () => {
         return () => unsubscribe();
     }, [patientId]);
 
-    const fetchGoalsFromFirebase = async (patientGoals) => {
+    const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
 
         for (const goalId of patientGoals) {
@@ -67,7 +70,7 @@ const GoalList = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <TouchableOpacity onPress={() => router.back()}>
                     <Icon name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
                 <Text style={styles.title}>Metas</Text>
