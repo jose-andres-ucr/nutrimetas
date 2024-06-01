@@ -158,32 +158,31 @@ export default function AddPatient() {
         <Text style={styles.title}>Registro de pacientes</Text>
         <Text style={styles.subtitle}>NUTRI<Text style={{color: Colors.lightblue}}>METAS</Text></Text>
         <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
-
-        <Controller
-          control={control}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              mode="outlined"
-              label="Nombre"
-              style={styles.inputField}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.firstName?true:false}
-              keyboardType="default"
-              returnKeyType="next"
-              autoFocus
-              onSubmitEditing={() => {
-                refs.lastNameRef.current?.focus();
-              }}
-              blurOnSubmit={false}
-            />
-          )}
-          name="firstName"
-        />
-        {errors.firstName ? (
-          <Text style={styles.error}>{errors.firstName.message}</Text>
-        ) : null}
+        
+      <Controller
+        control={control}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            mode="outlined"
+            label="Primer Nombre"
+            style={styles.inputField}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.firstName?true:false}
+            keyboardType="default"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              refs.lastNameRef.current?.focus();
+            }}
+            blurOnSubmit={false}
+          />
+        )}
+        name="firstName"
+      />
+      {errors.firstName ? (
+        <Text style={styles.error}>{errors.firstName.message}</Text>
+      ) : null}
 
         <Controller
           control={control}
