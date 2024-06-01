@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAv
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, Send, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
-import sendIcon3 from '../assets/images/sendIcon3.png'
+import sendIcon3 from '../assets/images/sendIcon2.png'
 
 const initialMessages: IMessage[] = [
   {
@@ -122,7 +122,6 @@ const ShowComment = () => {
           placeholder="Haz un comentario"
           renderInputToolbar={renderInputToolbar}
         />
-        <View style={styles.separator} />
         </KeyboardAvoidingView>
       
     </SafeAreaView>
@@ -133,7 +132,6 @@ export default ShowComment;
 
 const styles = StyleSheet.create({
   containerchatBar: {
-    marginBottom: -17, 
     borderRadius: 5,
     width: '90%',
     marginHorizontal: 20,
@@ -141,7 +139,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    //backgroundColor: '#f8f9fa',
     bottom: 30
   },
   header: {
@@ -164,8 +161,7 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
     marginVertical: 5,
     borderRadius: 10,
-    padding: 10,
-    //marginBottom: 30,
+    padding: 10
   },
   userBubble: {
     backgroundColor: Colors.lightblue, 
@@ -204,25 +200,15 @@ const styles = StyleSheet.create({
   sendButton: {
     justifyContent: 'center',
     alignItems: 'center',
-    //backgroundColor: Colors.lightblue,
     borderRadius: 5,
-    //height: 35,
-    //width: 35,
-    //margin: 10,
   },
   sendButtonText: {
     color: Colors.white,
     fontSize: 16,
   },
   sendIcon: {
-    width: 50,
-    height: 50,
-    //tintColor: Colors.white
-  },
-  separator: {
-    height: 1.5,
-    backgroundColor: Colors.lightGray,
-    width: '100%',
-    bottom: 45
-  },
+    width: 30,
+    height: 30,
+    margin: 5
+  }
 });
