@@ -1,5 +1,3 @@
-"use strict"
-
 // Dependencies
 // Core React hooks & misc. stuff
 import React, { useState, useEffect, useContext, useRef } from "react";

@@ -1,5 +1,3 @@
-"use strict"
-
 // Dependencies
 // Core React Native UI
 import { View, Text, StyleSheet, Pressable, ImageSourcePropType, Modal, 

@@ -1,5 +1,3 @@
-"use strict"
-
 // Dependencies
 // React Hooks & References
 import { useRef } from "react";

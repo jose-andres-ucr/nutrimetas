@@ -1,5 +1,3 @@
-"use-strict"
-
 // Dependencies
 // Core React hooks & misc. stuff
 import { ReactNode, Dispatch, createContext, useReducer } from "react";
