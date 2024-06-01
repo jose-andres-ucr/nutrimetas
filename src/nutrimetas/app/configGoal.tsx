@@ -1,38 +1,55 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, Link } from 'expo-router';
+import { router, Link, useNavigation } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn, TouchableOpacity, Image } from 'react-native';
-import { Text, TextInput, Button } from "react-native-paper";
+import { Control, Controller, useForm } from 'react-hook-form';
+import { Platform, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView } from 'react-native';
+import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
-import { useRoute } from '@react-navigation/native';
+import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import firestore from '@react-native-firebase/firestore';
 import FlashMessage, { showMessage } from "react-native-flash-message";
+import { partialGoalForm } from "./assingGoal";
+import { useRoute } from '@react-navigation/native';
+import { CommonType, fetchCollectionData } from './assingGoal';
 
-const goalForm = z.object({
-  modality: z
+const goalSecondaryForm = z.object({  
+  portion: z
     .string()
-    .min(1, { message: "Debe seleccionar alguna modalidad" }),
+    .min(1, { message: "Debe seleccionar una porción" }),
   frequency: z
-    .number({ message: "Debe digitar un valor numerico" })
-    .min(1, { message: "Debe digitar un valor mayor a 0" })
-    .max(100, { message: "Debe digitar un valor menor o igual a 100" }),
+    .string()
+    .min(1, { message: "Debe seleccionar alguna frecuencia" }),
+  notificationTime: z
+    .date()
+    .optional(),
   startDate: z
     .date(),
   deadline: z
     .date(),
 }).refine(schema => {
-  const startDate = schema.startDate.getDate();
-  const deadline = schema.deadline.getDate();  
-  return deadline >= startDate;
+  const startDate = schema.startDate;
+  const deadline = schema.deadline;
+  const startYear = startDate.getFullYear();
+  const startMonth = startDate.getMonth();
+  const startDay = startDate.getDate();
+
+  const deadlineYear = deadline.getFullYear();
+  const deadlineMonth = deadline.getMonth();
+  const deadlineDay = deadline.getDate();
+
+  return startYear < deadlineYear || 
+    (startYear === deadlineYear && startMonth < deadlineMonth) || 
+    (startYear === deadlineYear && startMonth === deadlineMonth && startDay <= deadlineDay);
 }, {message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"]},);
+
+const goalForm = goalSecondaryForm.and(partialGoalForm)
 
 type GoalFormType = z.infer<typeof goalForm>
 type CallbackFunction = () => void;
@@ -40,239 +57,325 @@ type CallbackFunction = () => void;
 export default function InfoGoals() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
-  const [modalityData, setModalityData] = useState([]);
+  const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
+  const [frequencyData, setFrequencyData] = useState<CommonType[]>([]);
+  const [portionData, setPortionData] = useState<CommonType[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const navigation = useNavigation();
   const route = useRoute();
   const firstGoalData = route.params?.formData;
+  const patientId = route.params?.sessionDocId;
   const today = new Date();
-  
+  console.log("Goo", firstGoalData)
+
+  function resetTimeToZero(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  }
+
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm({
-    defaultValues: {
-      modality: '',
-      frequency: 0,
+    defaultValues: {      
+      portion: '',
+      frequency: '',
+      notificationTime: resetTimeToZero(today), 
       startDate: today,
       deadline: today,
     },
-    resolver: zodResolver(goalForm),
+    resolver: zodResolver(goalSecondaryForm),
   });
 
-  const refs = {
-    modalityRef: React.useRef<TextInputRn>(null),
-    frequencyRef: React.useRef<TextInputRn>(null),
+  const refs = {    
+    portionRef: React.useRef<IDropdownRef>(null),
+    frequencyRef: React.useRef<IDropdownRef>(null),
+    notificationTimeRef: React.useRef<DatePickerOptions>(null),
     startDateRef: React.useRef<DatePickerOptions>(null),
     deadlineRef: React.useRef<DatePickerOptions>(null),
   } as const;
 
   
-  const showSuccessMessage =  (callback: CallbackFunction) => {
+  const showSuccessMessage = (callback: CallbackFunction) => {
     showMessage({
       type: "success",
       message: "Success",
       description: "La meta fue agregada exitosamente",
-      backgroundColor: "#6dc067", 
-      color: "#FFFFFF", 
+      backgroundColor: Colors.green, 
+      color: Colors.white, 
       icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png'}} {...props} />,
       style: {
-      borderRadius: 10, 
+        borderRadius: 10, 
       },
-  })
-  setTimeout(callback, 2000);
-}
+    });
+    setTimeout(callback, 2000);
+  }
 
   const onSubmit = (data: GoalFormType) => {
-    console.log("Enviados correctamente ", data)    
-    firestore()
-      .collection('Goal')
-      .add({
-        Deadline: data.deadline,
-        Description: data.description,
-        Frequency: data.frequency,
-        Modality: data.modality,
-        StartDate: data.startDate,
-        Title: data.title,
-      })
-      .then(() => {
-        console.log('Goal added!');
+    setLoading(true);
+    console.log("Enviados correctamente ", data)   
+    const newGoalId = firestore().collection('Goal').doc().id
+    const newGoalData = {
+      Deadline: data.deadline,
+      Frequency: data.frequency,
+      StartDate: data.startDate,
+      NotificationTime: data.notificationTime,
+      Type: data.type,
+      Action: data.action,
+      Rubric: data.rubric,
+      Amount: data.amount,
+      Portion: data.portion,
+    }
+    const goalDocRef = firestore().collection('Goal').doc(newGoalId);
+    goalDocRef.set(newGoalData)
+    .then(() => {
+      console.log('Goal added!');
+      if (patientId !== undefined) {
+        firestore()
+        .collection('Patient')
+        .doc(patientId)
+        .update({
+          Goals: firestore.FieldValue.arrayUnion(goalDocRef)
+        })
+        .then(() => {
+          console.log("Patient sent: ", patientId);
+          setLoading(false);
+          navigation.navigate('GoalList', { sessionDocId: patientId });
+          showSuccessMessage(() => {
+          });
+          console.log('Patient Goal added!');
+        })
+        .catch((error) => {
+          setLoading(false);
+          console.error('Error adding goal to patient: ', error);
+        });
+      } else {
+        setLoading(false);
         showSuccessMessage(() => {
           router.navigate('/(tabs)/goals');
         });
-      })
-      .catch((error) => {
-        console.error('Error adding goal: ', error);
-      });
+      }
+    })
+    .catch((error) => {
+      setLoading(false);
+      console.error('Error adding goal: ', error);
+    });
       
   };
 
-
   useEffect(() => {
-    const unsubscribe = firestore().collection('Modality').onSnapshot(querySnapshot => {
-      const modalityData = querySnapshot.docs.map(doc => {
-        return { label: doc.data().Type, value: doc.data().Type };
-      });
-      setModalityData(modalityData);
-    });
+    const unsubscribePortion = fetchCollectionData(
+      'Portion',
+      setPortionData,
+      "Error fetching portions:"
+    );     
 
-    return () => unsubscribe();
+    const unsubscribeFrequency = fetchCollectionData(
+      'Frequency',
+      setFrequencyData,
+      "Error fetching frequency:"
+    );
+
+    return () => {
+      unsubscribePortion();
+      unsubscribeFrequency();
+    };
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Asignar Meta</Text>
-      <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+    <ScrollView>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
+        <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={modalityData}
-            search
-            maxHeight={300}
-            labelField="label"
-            valueField="value"
-            placeholder="Seleccione una modalidad"
-            searchPlaceholder="Buscar..."
-            value={value}
-            onChange={(item) => onChange(item?.value || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="modality"
-      />
-      {errors.modality ? (
-        <Text style={styles.error}>{errors.modality.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Porción</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.portionRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={portionData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione una porción"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="portion"
+        />
+        {errors.portion ? (
+          <Text style={styles.error}>{errors.portion.message}</Text>
+        ) : null}
 
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            mode="outlined"
-            label="Frecuencia"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={(text) => {
-              const numericValue = parseFloat(text);
-              if (!isNaN(numericValue)) {
-                onChange(numericValue);
-              } else {
-                onChange(text);
-              }
-            }}
-            value={value.toString()}
-            error={errors.frequency ? true : false}
-            keyboardType="numeric"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.frequencyRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="frequency" />
-      {errors.frequency ? (
-        <Text style={styles.error}>{errors.frequency.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Frecuencia</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, onBlur, name } }) => (
+            <Dropdown
+              ref={refs.frequencyRef}
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={frequencyData}
+              search
+              maxHeight={220}
+              labelField="name"
+              valueField="id"
+              placeholder="Seleccione una frecuencia"
+              searchPlaceholder="Buscar..."
+              value={name}
+              onChange={(item) => onChange(item?.id || '')}
+              onBlur={onBlur}
+            />
+          )}
+          name="frequency"
+        />
+        {errors.frequency ? (
+          <Text style={styles.error}>{errors.frequency.message}</Text>
+        ) : null}
 
-      <View style={[styles.textDate, { paddingTop: 5 }]}>
-        <Text>Fecha de Inicio</Text>
-      </View>
-      <Controller
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <View>
-            <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
-              <Text>{value.toDateString()}</Text>
-              <FontAwesome name="calendar" size={24} color="gray" />
-            </TouchableOpacity>
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={value}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowStartDatePicker(false);
-                  onChange(selectedDate);
-                }}
-                minimumDate={today}
-                negativeButton={{ label: 'Cancelar' }}
-                positiveButton={{ label: 'Aceptar' }}
-              />
-            )}
-          </View>
-        )}
-        name="startDate"
-        defaultValue={today}
-      />
-      {errors.startDate ? (
-        <Text style={styles.error}>{errors.startDate.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5, paddingBottom: 10}]}>
+          <Text>Hora de Notificación</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View>
+              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowNotificationTimePicker(true)}>
+                <Text>{value.toLocaleTimeString()}</Text>
+                <FontAwesome name="clock-o" size={24} color="gray" />
+              </TouchableOpacity>
+              {showNotificationTimePicker && (
+                <DateTimePicker
+                  value={new Date(value)}
+                  mode="time"
+                  display="default"
+                  onChange={(_, selectedDate) => {
+                    setShowNotificationTimePicker(false);
+                    onChange(selectedDate);
+                  }}
+                  negativeButton={{ label: 'Cancelar' }}
+                  positiveButton={{ label: 'Aceptar' }}
+                />
+              )}
+            </View>
+          )}
+          name="notificationTime"
+          defaultValue={resetTimeToZero(today)}
+        />
 
-      <View style={[styles.textDate, { paddingTop: 15 }]}>
-        <Text>Fecha Límite</Text>
-      </View>
-      <Controller
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <View>
-            <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowDeadlineDatePicker(true)}>
-              <Text>{value.toDateString()}</Text>
-              <FontAwesome name="calendar" size={24} color="gray" />
-            </TouchableOpacity>
-            {showDeadlineDatePicker && (
-              <DateTimePicker
-                value={value}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowDeadlineDatePicker(false);
-                  onChange(selectedDate);
-                }}
-                minimumDate={today}
-                negativeButton={{ label: 'Cancelar' }}
-                positiveButton={{ label: 'Aceptar' }}
-              />
-            )}
-          </View>
-        )}
-        name="deadline" />
-      {errors.deadline ? (
-        <Text style={styles.error}>{errors.deadline.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10}]}>
+          <Text>Fecha de Inicio</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View>
+              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
+                <Text>{value.toDateString()}</Text>
+                <FontAwesome name="calendar" size={24} color="gray" />
+              </TouchableOpacity>
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={value}
+                  mode="date"
+                  display="default"
+                  onChange={(_, selectedDate) => {
+                    setShowStartDatePicker(false);
+                    onChange(selectedDate);
+                  }}
+                  minimumDate={today}
+                  negativeButton={{ label: 'Cancelar' }}
+                  positiveButton={{ label: 'Aceptar' }}
+                />
+              )}
+            </View>
+          )}
+          name="startDate"
+          defaultValue={today}
+        />
+        {errors.startDate ? (
+          <Text style={styles.error}>{errors.startDate.message}</Text>
+        ) : null}
 
-      <View style={styles.buttonContainer}>
-        <Link href='/assingGoal' style={{
-          ...styles.button,
-          borderWidth: 1,
-          borderColor: "black",
-          lineHeight: 35
-        }}>
-          Cancelar
-        </Link>
+        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
+          <Text>Fecha Límite</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View>
+              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowDeadlineDatePicker(true)}>
+                <Text>{value.toDateString()}</Text>
+                <FontAwesome name="calendar" size={24} color="gray" />
+              </TouchableOpacity>
+              {showDeadlineDatePicker && (
+                <DateTimePicker
+                  value={value}
+                  mode="date"
+                  display="default"
+                  onChange={(_, selectedDate) => {
+                    setShowDeadlineDatePicker(false);
+                    onChange(selectedDate);
+                  }}
+                  minimumDate={today}
+                  negativeButton={{ label: 'Cancelar' }}
+                  positiveButton={{ label: 'Aceptar' }}
+                />
+              )}
+            </View>
+          )}
+          name="deadline" />
+        {errors.deadline ? (
+          <Text style={styles.error}>{errors.deadline.message}</Text>
+        ) : null}
 
-        <Button
-          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
-          mode="contained"
-          onPress={handleSubmit((secondGoalData) => {
-            onSubmit({ ...firstGoalData, ...secondGoalData });
-          })}
-        >
-          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
-        </Button>
-      </View>
-      <FlashMessage position="top" />
+        <View style={styles.buttonContainer}>
+          <Link href='/assingGoal' style={{
+            ...styles.button,
+            borderWidth: 1,
+            borderColor: "black",
+            lineHeight: 35
+          }}>
+            Retroceder
+          </Link>
 
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </SafeAreaView>
+          <Button
+            style={{ ...styles.button, backgroundColor: Colors.lightblue }}
+            mode="contained"
+            disabled={loading}
+            onPress={handleSubmit((secondGoalData) => {
+              onSubmit({ ...firstGoalData, ...secondGoalData });
+            })}
+          >
+            {loading && <ActivityIndicator
+              animating={loading}
+              hidesWhenStopped={true}
+              />}
+            <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>{loading ? "Cargando" : "Crear"}</Text>
+          </Button>        
+        </View>
+        {/* Use a light status bar on iOS to account for the black space above the modal */}
+        <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -281,7 +384,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    color: "#FFFFFF"
   },
   title: {
     fontSize: 36,
@@ -319,7 +421,7 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   error: {
-    color: "red",
+    color: Colors.red,
   },
   dropdown: {
     margin: 16,
@@ -327,10 +429,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "70%",
     height: 50,
-    borderColor: 'gray',
+    borderColor: Colors.gray,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: 'white',
+    backgroundColor: Colors.white,
   },
   placeholderStyle: {
     fontSize: 16,
@@ -351,12 +453,12 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: 'gray',
+    borderColor: Colors.gray,
     justifyContent: 'space-between',
     alignItems: 'center',
     flexDirection: 'row',
   },
-  textDate: {
+  textInfo: {
     justifyContent: 'flex-start',
     width: '70%',
     backgroundColor: 'transparent',

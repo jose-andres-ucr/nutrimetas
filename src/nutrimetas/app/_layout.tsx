@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import FlashMessage from "react-native-flash-message";
 
 // Login session and its dispatching context 
 import { LoginSessionProvider } from '@/shared/LoginSession';
@@ -58,6 +59,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <FlashMessage position="top" />
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

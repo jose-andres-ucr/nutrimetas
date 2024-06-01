@@ -1,11 +1,15 @@
 
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
 
 const GoalList = () => {
     const route = useRoute();
+    const navigation = useNavigation();
+    const { role } = useContext(SessionContext);  
     const patientId = route.params?.sessionDocId;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -22,7 +26,7 @@ const GoalList = () => {
                     fetchGoalsFromFirebase(patientGoals);
                 } else {
                     setLoading(false); // No hay metas, actualiza el estado de carga
-                    console.log('El paciente no tiene objetivos.');
+                    console.log('El paciente no tiene metas.');
                 }
             });
 
@@ -56,14 +60,23 @@ const GoalList = () => {
         console.log(selectedGoal);
     };
 
+    const handleAddGoal = () => {
+        navigation.navigate('assingGoal', { sessionDocId: patientId });
+    };
+
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Metas</Text>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Icon name="arrow-back" size={24} color="black" />
+                </TouchableOpacity>
+                <Text style={styles.title}>Metas</Text>
+            </View>
             {loading ? (
                 <Text>Cargando...</Text>
             ) : goals.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No tiene objetivos pendientes.</Text>
+                    <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
                 </View>
             ) : (
                 <FlatList
@@ -85,6 +98,11 @@ const GoalList = () => {
                     keyExtractor={(item, index) => index.toString()} // TODO: Utilizar llave primaria de BD
                 />
             )}
+            {role === 'professional' && (
+                <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
+                    <Icon name="add" size={24} color="white" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }
@@ -96,12 +114,18 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingTop: 50,
         paddingLeft: 20,
+        paddingRight: 20, // Added paddingRight for space for the tittle
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        marginBottom: 10,
+        marginLeft: 10, // Margin on the left to separate the button from the title
     },
     item: {
         flexDirection: 'row',
@@ -132,9 +156,20 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         textAlign: 'center'
-    }
+    },
+    floatingButton: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: 'green',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+    },
 });
-
 
 
 /*

@@ -1,176 +1,229 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput as TextInputRn } from 'react-native';
-import { Text, TextInput, Button } from "react-native-paper";
+import { Control, Controller, useForm } from 'react-hook-form';
+import { Platform, StyleSheet, ScrollView } from 'react-native';
+import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
+import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 
-
-const goalForm = z.object({
-  title: z
+export const partialGoalForm = z.object({
+  type: z
     .string()
-    .min(1, { message: "Debe digitar un título" }),
-  description: z
+    .min(1, { message: "Debe seleccionar un tipo" }),
+  action: z
     .string()
-    .min(1, { message: "Debes digitar una descripción" }),
-  category: z
+    .min(1, { message: "Debe seleccionar una acción" }),
+  rubric: z
     .string()
-    .min(1, { message: "Debe seleccionar alguna categoría" }),
+    .min(1, { message: "Debe seleccionar un rubro" }),
+  amount: z
+    .string()
+    .min(1, { message: "Debe seleccionar una cantidad" }),
 });
 
-type GoalFormType = z.infer<typeof goalForm>
+type GoalFormType = z.infer<typeof partialGoalForm>
+
+export type CommonType = {
+  id: string;
+  name: string;
+};
+
+export const fetchCollectionData = (
+  collectionName: string,
+  setData: React.Dispatch<React.SetStateAction<CommonType[]>>,
+  errorMessage: string
+) => {
+  return firestore().collection(collectionName).onSnapshot(
+    (snapshot) => {
+      try {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().Name
+        }));
+        setData(data);
+      } catch (error) {
+        console.error(errorMessage, error);
+      }
+    },
+    (error) => {
+      console.error(`Error listening to ${collectionName} collection:`, error);
+    }
+  );
+};
+
+const renderDropdown = (
+  name: keyof GoalFormType,
+  data: CommonType[],
+  control: Control<GoalFormType>,
+  refs: { [key: string]: React.MutableRefObject<IDropdownRef | null> },
+  placeholder: string
+) => (
+  <Controller
+    control={control}
+    render={({ field: { onChange, onBlur, value } }) => (
+      <Dropdown
+        ref={refs[`${name}Ref`]}
+        style={styles.dropdown}
+        placeholderStyle={styles.placeholderStyle}
+        selectedTextStyle={styles.selectedTextStyle}
+        inputSearchStyle={styles.inputSearchStyle}
+        iconStyle={styles.iconStyle}
+        data={data}
+        search
+        maxHeight={220}
+        labelField="name"
+        valueField="id"
+        placeholder={placeholder}
+        searchPlaceholder="Buscar..."
+        value={value}
+        onChange={(item) => onChange(item?.id || '')}
+        onBlur={onBlur}
+      />
+    )}
+    name={name}
+  />
+);
 
 export default function AssignGoal() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const patientId = route.params?.sessionDocId;
+  const [actionData, setActionData] = useState<CommonType[]>([]);
+  const [typeData, setTypeData] = useState<CommonType[]>([]);
+  const [rubricData, setRubricData] = useState<CommonType[]>([]);
+  const [amountData, setAmountData] = useState<CommonType[]>([]);
+  
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      title: '',
-      description: '',
-      category: '',
+      type: '',
+      action: '',
+      rubric: '',
+      amount: '',
     },
-    resolver: zodResolver(goalForm),
+    resolver: zodResolver(partialGoalForm),
   });
 
   const refs = {
-    titleRef: React.useRef<TextInputRn>(null),
-    descriptionRef: React.useRef<TextInputRn>(null),
-    categoryRef: React.useRef<TextInputRn>(null),
+    typeRef: React.useRef<IDropdownRef>(null),
+    actionRef: React.useRef<IDropdownRef>(null),
+    rubricRef: React.useRef<IDropdownRef>(null),
+    amountRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
-    navigation.navigate('configGoal', { formData: data });
+    console.log("Patient sent: ", patientId);
+    navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
   };
 
-  const [categoryData, setCategoryData] = useState([]);
-
   useEffect(() => {
-    const unsubscribe = firestore().collection('Category').onSnapshot(querySnapshot => {
-      const categoryData = querySnapshot.docs.map(doc => {
-        return { label: doc.data().Type, value: doc.data().Type };
-      });
-      setCategoryData(categoryData);
-    });
+    const unsubscribeType = fetchCollectionData(
+      'Type',
+      setTypeData,
+      "Error fetching types:"
+    );
 
-    return () => unsubscribe();
+    const unsubscribeAction = fetchCollectionData(
+      'Action',
+      setActionData,
+      "Error fetching actions:"
+    );
+
+    const unsubscribeRubric = fetchCollectionData(
+      'Rubric',
+      setRubricData,
+      "Error fetching rubrics:"
+    );
+
+    const unsubscribeAmount = fetchCollectionData(
+      'Amount',
+      setAmountData,
+      "Error fetching amounts:"
+    );
+    
+    return () => {
+      unsubscribeType();
+      unsubscribeAction();
+      unsubscribeRubric();
+      unsubscribeAmount();      
+    };
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Asignar Meta</Text>
-      <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+    <ScrollView>    
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
+        <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            mode="outlined"
-            label="Título"
-            style={styles.inputField}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.title ? true : false}
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.titleRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="title" />
-      {errors.title ? (
-        <Text style={styles.error}>{errors.title.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 0 }]}>
+          <Text>Tipo</Text>
+        </View>
+        {renderDropdown('type', typeData, control, refs, "Seleccione un tipo")}
+        {errors.type ? (
+          <Text style={styles.error}>{errors.type.message}</Text>
+        ) : null}
 
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            mode="outlined"
-            label="Descripción"
-            style={[styles.inputField, { minHeight: 110 }]}
-            multiline
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            error={errors.description ? true : false}
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              refs.descriptionRef.current?.focus();
-            }}
-            blurOnSubmit={false}
-          />
-        )}
-        name="description" />
-      {errors.description ? (
-        <Text style={styles.error}>{errors.description.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Acción</Text>
+        </View>
+        {renderDropdown('action', actionData, control, refs, "Seleccione una acción")}
+        {errors.action ? (
+          <Text style={styles.error}>{errors.action.message}</Text>
+        ) : null}
 
-      <Controller
-        control={control}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={categoryData}
-            search
-            maxHeight={300}
-            labelField="label"
-            valueField="value"
-            placeholder="Seleccione una categoría"
-            searchPlaceholder="Buscar..."
-            value={value}
-            onChange={(item) => onChange(item?.value || '')}
-            onBlur={onBlur}
-          />
-        )}
-        name="category"
-      />
-      {errors.category ? (
-        <Text style={styles.error}>{errors.category.message}</Text>
-      ) : null}
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Rubro</Text>
+        </View>
+        {renderDropdown('rubric', rubricData, control, refs, "Seleccione un rubro")}
+        {errors.rubric ? (
+          <Text style={styles.error}>{errors.rubric.message}</Text>
+        ) : null}
 
-      <View style={styles.buttonContainer}>
-        <Link href='/(tabs)/goals' style={{
-          ...styles.button,
-          borderWidth: 1,
-          borderColor: "black",
-          lineHeight: 35
-        }}>
-          Cancelar
-        </Link>
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Cantidad</Text>
+        </View>
+        {renderDropdown('amount', amountData, control, refs, "Seleccione una cantidad")}
+        {errors.amount ? (
+          <Text style={styles.error}>{errors.amount.message}</Text>
+        ) : null}        
 
-        <Button
-          style={{ ...styles.button, backgroundColor: Colors.lightblue }}
-          mode="contained"
-          onPress={handleSubmit((form) => {
-            onSubmit({ ...form });
-          })}
-        >
-          <Text style={{ fontSize: 16, color: "white", fontWeight: 'bold' }}>Crear</Text>
-        </Button>
+        <View style={styles.buttonContainer}>
+          <Link href='/(tabs)/goals' style={{
+            ...styles.button,
+            borderWidth: 1,
+            borderColor: "black",
+            lineHeight: 35
+          }}>
+            Cancelar
+          </Link>
 
-      </View>
+          <Button
+            style={{ ...styles.button, backgroundColor: Colors.lightblue }}
+            mode="contained"
+            onPress={handleSubmit((form) => {
+              onSubmit({ ...form });
+            })}
+          >
+            <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
+          </Button>
 
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </SafeAreaView>
+        </View>
+
+        <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -179,7 +232,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    color: "#FFFFFF"
+    marginTop: '5%',
   },
   title: {
     fontSize: 36,
@@ -204,6 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: 165,
     marginTop: 24,
+    marginBottom: 24,
     textAlign: "center",
     alignSelf: "center",
     fontSize: 16,
@@ -217,18 +271,18 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   error: {
-    color: "red",
+    color: Colors.red,
   },
   dropdown: {
-    margin: 16,
-    padding: 10,
+    margin: 13,
+    padding: 7,
     marginVertical: 10,
     width: "70%",
     height: 50,
-    borderColor: 'gray',
+    borderColor: Colors.gray,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: 'white'
+    backgroundColor: Colors.white
   },
   placeholderStyle: {
     fontSize: 16,
@@ -244,4 +298,9 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
+  textInfo: {
+    justifyContent: 'flex-start',
+    width: '70%',
+    backgroundColor: 'transparent',
+  }
 });
