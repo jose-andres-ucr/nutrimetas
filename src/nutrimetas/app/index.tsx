@@ -6,9 +6,6 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import { View, Text, StyleSheet, ImageSourcePropType } 
 from "react-native";
 
-// React Navigation
-import { useNavigation } from '@react-navigation/native';
-
 // Expo UI
 import { useAssets } from 'expo-asset'; 
 import { Image } from "expo-image";
@@ -56,8 +53,6 @@ let patientDocId : string | undefined = undefined;
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
-    const navigation = useNavigation();
-
     // Keep track of current login state...
     const [loginState, setLoginState] = 
         useState({value: "pending"} as LoginStatus);
@@ -198,8 +193,13 @@ export default function LoginPage(
             switch (potentialSession.current?.role)
             {
                 case "patient": {
-                    // TODO: Changed to proper patient route
-                    navigation.navigate('GoalList', { sessionDocId: patientDocId });
+                    // TODO: Change to proper patient route
+                    router.push({
+                        pathname: '/GoalList', 
+                        params: {
+                            sessionDocId: patientDocId?? ""
+                        },
+                    });
                     break;
                 }
 
