@@ -16,7 +16,7 @@ const GoalList = () => {
     // const patientId = route.params?.sessionDocId;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    console.log(patientId);
+    // console.log(patientId);
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Patient')
@@ -44,7 +44,16 @@ const GoalList = () => {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
                 if (goalDoc.exists) {
-                    goalsFromFirebase.push(goalDoc.data());
+                    // console.log(goalDoc.data());
+                    const goalData = goalDoc.data();
+                    if (goalData) { // Verificar si goalData está definido
+                        const title = await buildTitle(goalData.Rubric);
+                        const description = await buildDescription(goalData);
+                        goalsFromFirebase.push({ ...goalData, title, description });
+                    } else {
+                        console.error('Goal data is undefined for goal ID:', goalId.id);
+                    }
+                    // goalsFromFirebase.push(goalDoc.data());
                 }
             } else {
                 console.error('Invalid goal ID:', goalId);
@@ -55,9 +64,59 @@ const GoalList = () => {
         setLoading(false); // Actualiza el estado de carga
     };
 
-    const getDescription = (goal: any) => {
-        return `${goal.Description} a ${goal.Frequency} veces, ${goal.Modality}`;
+    const buildTitle = async (rubricRef: string) => {
+        try {
+            const rubricDoc = await firestore().collection('Rubric').doc(rubricRef).get();
+            if (rubricDoc.exists) {
+                const rubricData = rubricDoc.data();
+                if (rubricData && rubricData.Name) {
+                    return rubricData.Name;
+                } else {
+                    throw new Error('Rubric data or Name is missing');
+                }
+            } else {
+                throw new Error('Rubric document does not exist');
+            }
+        } catch (error) {
+            console.error('Error fetching rubric:', error);
+            return 'Meta'; // O valor predeterminado
+        }
     };
+
+    const fetchReferenceData = async (collection: string, docId: string) => {
+        const doc = await firestore().collection(collection).doc(docId).get();
+        return doc.exists ? doc.data() : null;
+    };
+
+    const buildDescription = async (goalData: any) => {
+        try {
+            const [typeData, actionData, rubricData, amountData, portionData, frequencyData] = await Promise.all([
+                fetchReferenceData('Type', goalData.Type),
+                fetchReferenceData('Action', goalData.Action),
+                fetchReferenceData('Rubric', goalData.Rubric),
+                fetchReferenceData('Amount', goalData.Amount),
+                fetchReferenceData('Portion', goalData.Portion),
+                fetchReferenceData('Frequency', goalData.Frequency),
+            ]);
+
+            if (!typeData || !actionData || !rubricData || !amountData || !portionData || !frequencyData) {
+                console.error('Missing data for building description');
+                return '';
+            }
+            let typePrefix;
+            if (typeData.Name === 'Aumentar' || typeData.Name === 'Disminuir') {
+                typePrefix = 'a';
+            } else {
+                typePrefix = 'en';
+            }
+            const portionName = amountData.Value === 1 ? portionData.Name : portionData.Plural;
+            return `${typeData.Name} ${actionData.Name} ${rubricData.Name} ${typePrefix} ${amountData.Value} ${portionName} ${frequencyData.Name}`;
+        } catch (error) {
+            console.error('Error building description:', error);
+            return '';
+        }
+    };
+
 
     const onPressHandle = (selectedGoal: any) => {
         console.log(selectedGoal);
@@ -92,8 +151,8 @@ const GoalList = () => {
                                     source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
                                 />
                                 <View style={styles.goalDetails}>
-                                    <Text style={styles.itemTitle}>{item.Title}</Text>
-                                    <Text style={styles.itemDescription}>{getDescription(item)}</Text>
+                                    <Text style={styles.itemTitle}>{item.title}</Text>
+                                    <Text style={styles.itemDescription}>{item.description}</Text>
                                 </View>
                             </View>
                         </TouchableOpacity>
