@@ -7,41 +7,40 @@ import sendIcon3 from '../assets/images/sendIcon2.png'
 import firebase from '@react-native-firebase/app';
 import { useGlobalSearchParams } from 'expo-router';
 
-
-const initialMessages: IMessage[] = [
-  {
-    _id: 1,
-    text: 'Hola como estas.',
-    createdAt: new Date(),
-    user: {
+const ShowComment = (props: {rol: string}) => {
+  const initialMessages: IMessage[] = [
+    {
       _id: 1,
-      name: 'Usuario',
-      avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
+      text: 'Hola como estas.',
+      createdAt: new Date(),
+      user: {
+        _id: 1,
+        name: 'Usuario',
+        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
+      },
     },
-  },
-  {
-    _id: 2,
-    text: 'Muy bien y tu?',
-    createdAt: new Date(),
-    user: {
+    {
       _id: 2,
-      name: 'Profesional',
-      avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
+      text: 'Muy bien y tu?',
+      createdAt: new Date(),
+      user: {
+        _id: 2,
+        name: 'Profesional',
+        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
+      },
     },
-  },
-  {
-    _id: 3,
-    text: 'Me alegro mucho por Ti. Te puedo hacer una pregunta?',
-    createdAt: new Date(),
-    user: {
-      _id: 1,
-      name: 'Usuario',
-      avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
+    {
+      _id: 3,
+      text: 'Me alegro mucho por Ti. Te puedo hacer una pregunta?',
+      createdAt: new Date(),
+      user: {
+        _id: 1,
+        name: 'Usuario',
+        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
+      },
     },
-  },
-];
+  ];
 
-const ShowComment = () => {
   const [messages, setMessages] = useState(initialMessages);
   const { patientId } = useGlobalSearchParams();
 
@@ -55,8 +54,8 @@ const ShowComment = () => {
         text: newMessage[0].text,
         createdAt: newMessage[0].createdAt,
         user: {
-          _id: newMessage[0].user._id,
-          name: "Profesional",
+          _id: props.rol == "patient"? 2 : 1,
+          name: props.rol,
           avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
       });
@@ -143,7 +142,7 @@ const ShowComment = () => {
           placeholder="Haz un comentario"
           renderInputToolbar={renderInputToolbar}
         />
-        </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
       
     </SafeAreaView>
   );
@@ -156,14 +155,12 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: '90%',
     marginHorizontal: 20,
-    borderBlockColor: Colors.white
+    borderBlockColor: Colors.white,
   },
   container: {
     flex: 1,
-    bottom: 30
   },
   header: {
-    top: '46%',
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightGray,
@@ -171,12 +168,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    top: 9
   },
   chatContainer: {
-    flex: 1,
+    height: "50%",
     maxHeight: Dimensions.get('window').height / 2,
-    top: "46%"
   },
   bubble: {
     maxWidth: '80%',
