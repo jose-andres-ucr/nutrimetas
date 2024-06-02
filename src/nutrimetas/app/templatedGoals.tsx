@@ -4,16 +4,67 @@ import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
-import { useGlobalSearchParams } from 'expo-router';
+import { useGlobalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TemplatedGoals = () => {
+    const router = useRouter();
+    const [templatedGoals, setTemplatedGoals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = firestore()
+            .collection('Goal')
+            .where('Template', '==', true)
+            .onSnapshot(
+            snapshot => {
+                const goalsList = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+                setTemplatedGoals(goalsList);
+                setLoading(false);
+            },
+            error => {
+                console.error("Error fetching goals: ", error);
+                setLoading(false);
+            }
+            );
+        console.log(templatedGoals)
+        return () => unsubscribe();
+    }, []);
+
+    if (loading) {
+        return <Text>Loading...</Text>;
+    }   
+
+    const onPressHandle = async (goalDocId: string) => {
+        router.push({ pathname: '/CheckboxPatients', params: { patientId: goalDocId } });
+        // navigation.navigate('GoalList', { sessionDocId: patientDocId });
+    };
+
     return (
-       <SafeAreaView>
-            
-       </SafeAreaView>
+        <SafeAreaView>
+            <FlatList
+                data={templatedGoals}
+                keyExtractor={item => item.id}
+                renderItem={({ item }) => (
+                    <TouchableOpacity onPress={() => onPressHandle(item.id)}>
+                        <View style={styles.item}>
+                            <Image
+                                style={styles.itemImage}
+                                source={{ uri: 'https://icons-for-free.com/iff/png/512/flag+24px-131985190044767854.png' }}
+                            />
+                            <View>
+                                <Text style={styles.itemName}> {item.id} </Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                )}
+            />
+        </SafeAreaView>
     );
-}
+};
 
 export default TemplatedGoals;
 
@@ -22,7 +73,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingTop: 50,
         paddingLeft: 20,
-        paddingRight: 20, // Added paddingRight for space for the tittle
+        paddingRight: 20, 
     },
     header: {
         flexDirection: 'row',
@@ -33,7 +84,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        marginLeft: 10, // Margin on the left to separate the button from the title
+        marginLeft: 10, 
     },
     item: {
         flexDirection: 'row',
@@ -65,16 +116,8 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center'
     },
-    floatingButton: {
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: 'green',
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
+    itemName: {
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
