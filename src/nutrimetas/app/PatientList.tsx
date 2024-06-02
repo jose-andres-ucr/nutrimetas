@@ -37,7 +37,7 @@ const PatientList = () => {
     };
 
     const onPressHandle = async (patientDocId: string) => {
-        router.push(`/showComment?patientId=${patientDocId}`);
+        router.push(`/GoalList?patientId=${patientDocId}`);
     };
 
     const filteredPatients = patients.filter(patient => {
