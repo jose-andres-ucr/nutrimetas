@@ -39,7 +39,7 @@ const TemplatedGoals = () => {
     }   
 
     const onPressHandle = async (goalDocId: string) => {
-        router.push({ pathname: '/CheckboxPatients', params: { patientId: goalDocId } });
+        router.push({ pathname: '/CheckboxPatients', params: { goalDocId: goalDocId } });
         // navigation.navigate('GoalList', { sessionDocId: patientDocId });
     };
 

@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, Image, StyleSheet } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import Colors from '@/constants/Colors';
-import { useRouter } from 'expo-router';
+import { useRouter, useGlobalSearchParams } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { showMessage } from 'react-native-flash-message';
+
+type CallbackFunction = () => void;
 
 
 const CheckboxPatients = () => {
     const router = useRouter();
+    const { goalDocId } = useGlobalSearchParams();
     const [patients, setPatients] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
         const unsubscribe = firestore()
@@ -51,31 +56,57 @@ const CheckboxPatients = () => {
         toggleSelection(patientDocId);
     };
 
+    const showSuccessMessage = (callback: CallbackFunction) => {
+        showMessage({
+            type: "success",
+            message: "Success",
+            description: "La meta fue agregada exitosamente a todos los pacientes",
+            backgroundColor: Colors.green,
+            color: Colors.white,
+            icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png' }} {...props} />,
+            style: {
+                borderRadius: 10,
+            },
+        });
+        setTimeout(callback, 4000);
+    }
+
     const onSubmit = () => {
-       
-        console.log("IDs seleccionados:", selectedIds);
-    };
+        setLoading(true);
+        const goalDocRef = firestore().collection('Goal').doc(goalDocId.toString());
+        if (selectedIds.length > 0) { 
+            const updatePromises = selectedIds.map(patientId => (
+                firestore()
+                    .collection('Patient')
+                    .doc(patientId)
+                    .update({
+                        Goals: firestore.FieldValue.arrayUnion(goalDocRef) 
+                    })
+                    .then(() => {
+                        console.log("Patient sent: ", patientId);
+                    })
+                    .catch((error) => {
+                        console.error('Error adding goal to patient: ', error);
+                    })
+            ));
 
-    const renderItem = ({ item }: { item: any }) => {
-        const isChecked = selectedIds.includes(item.id);
-
-        return (
-            <View>
-                <View style={styles.item}>
-                    <TouchableOpacity onPress={() => handleCheckboxPress(item.id)}>
-                        <View style={[styles.checkbox, isChecked && styles.checked]} />
-                    </TouchableOpacity>
-                    <Image
-                        style={styles.itemImage}
-                        source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                    />
-                    <View style={styles.nameAndIdContainer}>
-                        <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
-                        <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
-                    </View>
-                </View>
-            </View>
-        );
+            Promise.all(updatePromises)
+                .then(() => {
+                    setLoading(false);
+                    router.push({ pathname: '/templatedGoals', params: { patientId: selectedIds } }); // Usa selectedIds en lugar de patientId
+                    showSuccessMessage(() => { });
+                    console.log('Patients Goals added!');
+                })
+                .catch((error) => {
+                    setLoading(false);
+                    console.error('Error updating goals for patients: ', error);
+                });
+        } else {
+            setLoading(false);
+            showSuccessMessage(() => {
+                router.navigate('/(tabs)/templatedGoals');
+            });
+        }
     };
 
     const formatId = (idNumber: string) => {
@@ -98,6 +129,28 @@ const CheckboxPatients = () => {
         }
         return false;
     });
+
+    const renderItem = ({ item }: { item: any }) => {
+        const isChecked = selectedIds.includes(item.id);
+
+        return (
+            <View>
+                <View style={styles.item}>
+                    <TouchableOpacity onPress={() => handleCheckboxPress(item.id)}>
+                        <View style={[styles.checkbox, isChecked && styles.checked]} />
+                    </TouchableOpacity>
+                    <Image
+                        style={styles.itemImage}
+                        source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                    />
+                    <View style={styles.nameAndIdContainer}>
+                        <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
+                        <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
+                    </View>
+                </View>
+            </View>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -132,7 +185,7 @@ const CheckboxPatients = () => {
                 <Text style={styles.addButtonText}>Asignar platilla</Text>
             </TouchableOpacity>
         </View>
-        
+
     );
 }
 
@@ -141,7 +194,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingTop: 50,
         paddingLeft: 20,
-        paddingRight: 20, 
+        paddingRight: 20,
         paddingBottom: 50.4,
     },
     header: {
@@ -152,7 +205,7 @@ const styles = StyleSheet.create({
     addButton: {
         backgroundColor: Colors.lightblue,
         fontWeight: "bold",
-        width: '110%',
+        width: '116%',
         height: 55,
         position: "absolute",
         bottom: 0,
@@ -173,7 +226,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        marginLeft: 10, 
+        marginLeft: 10,
     },
     searchContainer: {
         flexDirection: 'row',
