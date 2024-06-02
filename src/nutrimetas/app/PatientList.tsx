@@ -2,12 +2,14 @@ import { StyleSheet, TouchableOpacity, FlatList, View, Text, TextInput, Image } 
 import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PatientList = () => {
-    const navigation = useNavigation();
+    const router = useRouter();
+    // const navigation = useNavigation();
     const [patients, setPatients] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -53,16 +55,16 @@ const PatientList = () => {
         const fullNameMatch = fullNameWithLastName.includes(searchTermLower) || fullNameWithFirstName.includes(searchTermLower);
 
 
-        if(firstNameMatch){
+        if (firstNameMatch) {
             return firstNameMatch;
         }
-        if(lastNameMatch){
+        if (lastNameMatch) {
             return lastNameMatch;
         }
-        if(fullNameMatch){
+        if (fullNameMatch) {
             return fullNameMatch;
         }
-        if(idMatch){
+        if (idMatch) {
             return idMatch;
         }
     });
@@ -92,7 +94,7 @@ const PatientList = () => {
                 keyExtractor={(item) => item.idNumber}
                 ListHeaderComponent={
                     <View style={styles.searchContainer}>
-                        <View style={styles.inputContainer}>  
+                        <View style={styles.inputContainer}>
                             <Image
                                 style={styles.searchIcon}
                                 source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         borderColor: Colors.lightGray,
         borderWidth: 1,
-        borderRadius: 10, 
+        borderRadius: 10,
     },
     inputContainer: {
         flexDirection: 'row',
@@ -126,8 +128,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     searchIcon: {
-        width: 24, 
-        height: 24, 
+        width: 24,
+        height: 24,
         marginRight: 5,
     },
     searchBar: {
@@ -151,7 +153,7 @@ const styles = StyleSheet.create({
     },
     itemId: {
         color: Colors.gray,
-        fontStyle: 'italic', 
+        fontStyle: 'italic',
         marginLeft: '2%',
     },
     nameAndIdContainer: {
