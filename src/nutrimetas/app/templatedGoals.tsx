@@ -1,11 +1,9 @@
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
 import React, { useState, useEffect, useContext } from 'react';
-import firestore from '@react-native-firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
-import { useGlobalSearchParams, useRouter } from 'expo-router';
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Colors from '@/constants/Colors';
 
 const TemplatedGoals = () => {
     const router = useRouter();
@@ -17,34 +15,96 @@ const TemplatedGoals = () => {
             .collection('Goal')
             .where('Template', '==', true)
             .onSnapshot(
-            snapshot => {
-                const goalsList = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-                setTemplatedGoals(goalsList);
-                setLoading(false);
-            },
-            error => {
-                console.error("Error fetching goals: ", error);
-                setLoading(false);
-            }
+                async snapshot => {
+                    try {
+                        const goalsListPromises = snapshot.docs.map(async doc => {
+                            const goalData = doc.data();
+                            const rubricRef = goalData.Rubric;
+                            const rubricGoal = await fetchRubricGoal(rubricRef);
+                            const descriptionGoal = await fetchDescriptionGoal(goalData);
+                            return { id: doc.id, rubric: rubricGoal, description:descriptionGoal};
+                        });
+    
+                        const goalsList = await Promise.all(goalsListPromises);
+                        setTemplatedGoals(goalsList);
+                        setLoading(false);
+                    } catch (error) {
+                        console.error("Error fetching goals: ", error);
+                        setLoading(false);
+                    }
+                },
+                error => {
+                    console.error("Error fetching goals: ", error);
+                    setLoading(false);
+                }
             );
-        console.log(templatedGoals)
+    
         return () => unsubscribe();
     }, []);
 
+    const fetchReferenceData = async (collection: string, docId: string) => {
+        const doc = await firestore().collection(collection).doc(docId).get();
+        return doc.exists ? doc.data() : null;
+    };
+
+    const fetchDescriptionGoal = async (goalData: FirebaseFirestoreTypes.DocumentData) => {
+        try {
+            const fetchAllReferences = [
+                fetchReferenceData('Type', goalData.Type),
+                fetchReferenceData('Action', goalData.Action),
+                fetchReferenceData('Rubric', goalData.Rubric),
+                fetchReferenceData('Amount', goalData.Amount),
+                fetchReferenceData('Portion', goalData.Portion),
+                fetchReferenceData('Frequency', goalData.Frequency)
+            ];
+    
+            const [
+                typeData,
+                actionData,
+                rubricData,
+                amountData,
+                portionData,
+                frequencyData
+            ] = await Promise.all(fetchAllReferences);
+    
+            if (!typeData || !actionData || !rubricData || !amountData || !portionData || !frequencyData) {
+                console.error('Missing data for building description');
+                return '';
+            }
+    
+            const typePrefix = (typeData.Name === 'Aumentar' || typeData.Name === 'Disminuir') ? 'a' : 'en';
+            const portionName = (amountData.Value === 1) ? portionData.Name : portionData.Plural;
+    
+            return `${typeData.Name} ${actionData.Name} ${rubricData.Name} ${typePrefix} ${amountData.Value} ${portionName} ${frequencyData.Name}`;
+        } catch (error) {
+            console.error('Error building description:', error);
+            return '';
+        }
+    };
+
+    const fetchRubricGoal = async (rubricRef: string) => {
+        try {
+            const rubricData = await fetchReferenceData('Rubric', rubricRef);
+            if (!rubricData) {
+                throw new Error('Rubric data is missing');
+            }    
+            return rubricData.Name;
+        } catch (error) {
+            console.error('Error fetching rubric:', error);
+            return 'Meta';
+        }
+    };
+
     if (loading) {
-        return <Text>Loading...</Text>;
+        return <Text>Cargando...</Text>;
     }   
 
     const onPressHandle = async (goalDocId: string) => {
         router.push({ pathname: '/CheckboxPatients', params: { goalDocId: goalDocId } });
-        // navigation.navigate('GoalList', { sessionDocId: patientDocId });
     };
 
     return (
-        <SafeAreaView>
+        <SafeAreaView style={styles.container}>
             <FlatList
                 data={templatedGoals}
                 keyExtractor={item => item.id}
@@ -55,8 +115,9 @@ const TemplatedGoals = () => {
                                 style={styles.itemImage}
                                 source={{ uri: 'https://icons-for-free.com/iff/png/512/flag+24px-131985190044767854.png' }}
                             />
-                            <View>
-                                <Text style={styles.itemName}> {item.id} </Text>
+                            <View style={styles.goalDetails}>
+                                <Text style={styles.itemTitle}> {item.rubric} </Text>
+                                <Text style={styles.itemDescription}>{item.description}</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -71,14 +132,8 @@ export default TemplatedGoals;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: 50,
         paddingLeft: 20,
         paddingRight: 20, 
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
     },
     title: {
         fontSize: 28,
@@ -98,14 +153,17 @@ const styles = StyleSheet.create({
         marginRight: 10
     },
     goalDetails: {
-        flex: 1
+        flexDirection: 'column',
+        padding: 10,
     },
     itemTitle: {
         fontWeight: 'bold',
-        fontSize: 16
+        fontSize: 16,
     },
     itemDescription: {
-        fontSize: 14
+        fontSize: 14,
+        flexWrap: 'wrap',
+        width: '70%',
     },
     emptyContainer: {
         flex: 1,
@@ -115,9 +173,5 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         textAlign: 'center'
-    },
-    itemName: {
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
+    }
 });
