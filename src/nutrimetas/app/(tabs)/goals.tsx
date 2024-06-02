@@ -2,11 +2,12 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
-import FlashMessage from "react-native-flash-message";
+import TemplatedGoals from '../templatedGoals';
 
 export default function Goals() {
   return (
     <SafeAreaView style={styles.container}>
+      <TemplatedGoals />
       <Link push href="/assingGoal" style={styles.button}>
             Crear Meta
       </Link>
