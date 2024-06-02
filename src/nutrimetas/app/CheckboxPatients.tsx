@@ -93,7 +93,7 @@ const CheckboxPatients = () => {
             Promise.all(updatePromises)
                 .then(() => {
                     setLoading(false);
-                    router.push({ pathname: '/templatedGoals', params: { patientId: selectedIds } }); // Usa selectedIds en lugar de patientId
+                    router.back(); 
                     showSuccessMessage(() => { });
                     console.log('Patients Goals added!');
                 })
@@ -104,7 +104,7 @@ const CheckboxPatients = () => {
         } else {
             setLoading(false);
             showSuccessMessage(() => {
-                router.navigate('/(tabs)/templatedGoals');
+                router.back();
             });
         }
     };
@@ -181,7 +181,7 @@ const CheckboxPatients = () => {
                     </View>
                 }
             />
-            <TouchableOpacity onPress={onSubmit} style={styles.addButton}>
+            <TouchableOpacity onPress={onSubmit} style={[styles.addButton, !selectedIds.length && styles.addButtonDisabled]} disabled={!selectedIds.length}>
                 <Text style={styles.addButtonText}>Asignar platilla</Text>
             </TouchableOpacity>
         </View>
@@ -215,6 +215,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 50
     },
+    addButtonDisabled: {
+        backgroundColor: Colors.gray,
+    },    
     addButtonText: {
         color: Colors.white,
         fontWeight: 'bold',
