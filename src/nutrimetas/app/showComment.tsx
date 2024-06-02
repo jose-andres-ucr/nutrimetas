@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GiftedChat, IMessage, Send, InputToolbar } from 'react-native-gifted-chat';
+import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
 import sendIcon3 from '../assets/images/sendIcon2.png'
+import firebase from '@react-native-firebase/app';
+import { useGlobalSearchParams } from 'expo-router';
+
 
 const initialMessages: IMessage[] = [
   {
@@ -40,9 +43,27 @@ const initialMessages: IMessage[] = [
 
 const ShowComment = () => {
   const [messages, setMessages] = useState(initialMessages);
+  const { patientId } = useGlobalSearchParams();
 
-  const onSend = (newMessage: IMessage[]) => {
+  const onSend = async (newMessage: IMessage[]) => {
     setMessages(GiftedChat.append(messages, newMessage));
+    console.log("Guardando el mensaje:", newMessage)
+
+    try {
+      const db = firebase.firestore();
+      await db.collection('Patient').doc(patientId as string).collection('comments').add({
+        text: newMessage[0].text,
+        createdAt: newMessage[0].createdAt,
+        user: {
+          _id: newMessage[0].user._id,
+          name: "Profesional",
+          avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
+        }
+      });
+      console.log("Guardado!")
+    } catch (error) {
+      console.error("Error saving message to Firestore: ", error);
+    }
   };
 
   const renderInputToolbar = (props: any) => {
