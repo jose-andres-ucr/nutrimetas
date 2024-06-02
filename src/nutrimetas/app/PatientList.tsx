@@ -4,6 +4,8 @@ import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
+import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PatientList = () => {
     const router = useRouter();
@@ -73,40 +75,42 @@ const PatientList = () => {
     }
 
     return (
-        <FlatList
-            data={filteredPatients}
-            renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => onPressHandle(item.id)}>
-                    <View style={styles.item}>
-                        <Image
-                            style={styles.itemImage}
-                            source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                        />
-                        <View style={styles.nameAndIdContainer}>
-                            <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
-                            <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
+        <SafeAreaView>
+            <FlatList
+                data={filteredPatients}
+                renderItem={({ item }) => (
+                    <TouchableOpacity onPress={() => onPressHandle(item.id)}>
+                        <View style={styles.item}>
+                            <Image
+                                style={styles.itemImage}
+                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                            />
+                            <View style={styles.nameAndIdContainer}>
+                                <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
+                                <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.idNumber}
+                ListHeaderComponent={
+                    <View style={styles.searchContainer}>
+                        <View style={styles.inputContainer}>
+                            <Image
+                                style={styles.searchIcon}
+                                source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
+                            />
+                            <TextInput
+                                style={styles.searchBar}
+                                placeholder="Paciente"
+                                onChangeText={setSearchTerm}
+                                value={searchTerm}
+                            />
                         </View>
                     </View>
-                </TouchableOpacity>
-            )}
-            keyExtractor={(item) => item.idNumber}
-            ListHeaderComponent={
-                <View style={styles.searchContainer}>
-                    <View style={styles.inputContainer}>
-                        <Image
-                            style={styles.searchIcon}
-                            source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
-                        />
-                        <TextInput
-                            style={styles.searchBar}
-                            placeholder="Paciente"
-                            onChangeText={setSearchTerm}
-                            value={searchTerm}
-                        />
-                    </View>
-                </View>
-            }
-        />
+                }
+            />
+        </SafeAreaView>
     );
 }
 
