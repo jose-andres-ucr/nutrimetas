@@ -5,9 +5,13 @@ import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
 import sendIcon3 from '../assets/images/sendIcon2.png'
 import firebase from '@react-native-firebase/app';
-import { useGlobalSearchParams } from 'expo-router';
 
-const ShowComment = (props: {rol: string}) => {
+type messageProps = {
+  role: string,
+  goalId: string
+};
+
+const ShowComment = (props: messageProps) => {
   const initialMessages: IMessage[] = [
     {
       _id: 1,
@@ -42,7 +46,6 @@ const ShowComment = (props: {rol: string}) => {
   ];
 
   const [messages, setMessages] = useState(initialMessages);
-  const { patientId } = useGlobalSearchParams();
 
   const onSend = async (newMessage: IMessage[]) => {
     setMessages(GiftedChat.append(messages, newMessage));
@@ -50,12 +53,12 @@ const ShowComment = (props: {rol: string}) => {
 
     try {
       const db = firebase.firestore();
-      await db.collection('Patient').doc(patientId as string).collection('comments').add({
+      await db.collection('Goal').doc(props.goalId).collection('comments').add({
         text: newMessage[0].text,
         createdAt: newMessage[0].createdAt,
         user: {
-          _id: props.rol == "patient"? 2 : 1,
-          name: props.rol,
+          _id: props.role == "patient"? 2 : 1,
+          name: props.role,
           avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
       });
