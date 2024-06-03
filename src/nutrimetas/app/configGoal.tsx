@@ -17,9 +17,10 @@ import firestore from '@react-native-firebase/firestore';
 import FlashMessage, { showMessage } from "react-native-flash-message";
 import { partialGoalForm } from "./assingGoal";
 import { useRoute } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { CommonType, fetchCollectionData } from './assingGoal';
 
-const goalSecondaryForm = z.object({  
+const goalSecondaryForm = z.object({
   portion: z
     .string()
     .min(1, { message: "Debe seleccionar una porción" }),
@@ -44,10 +45,10 @@ const goalSecondaryForm = z.object({
   const deadlineMonth = deadline.getMonth();
   const deadlineDay = deadline.getDate();
 
-  return startYear < deadlineYear || 
-    (startYear === deadlineYear && startMonth < deadlineMonth) || 
+  return startYear < deadlineYear ||
+    (startYear === deadlineYear && startMonth < deadlineMonth) ||
     (startYear === deadlineYear && startMonth === deadlineMonth && startDay <= deadlineDay);
-}, {message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"]},);
+}, { message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"] },);
 
 const goalForm = goalSecondaryForm.and(partialGoalForm)
 
@@ -63,6 +64,7 @@ export default function InfoGoals() {
   const [loading, setLoading] = useState<boolean>(false);
   const navigation = useNavigation();
   const route = useRoute();
+  const router = useRouter(); // Expo router
   const firstGoalData = route.params?.formData;
   const patientId = route.params?.sessionDocId;
   const today = new Date();
@@ -77,17 +79,17 @@ export default function InfoGoals() {
     handleSubmit,
     formState: { errors },
   } = useForm({
-    defaultValues: {      
+    defaultValues: {
       portion: '',
       frequency: '',
-      notificationTime: resetTimeToZero(today), 
+      notificationTime: resetTimeToZero(today),
       startDate: today,
       deadline: today,
     },
     resolver: zodResolver(goalSecondaryForm),
   });
 
-  const refs = {    
+  const refs = {
     portionRef: React.useRef<IDropdownRef>(null),
     frequencyRef: React.useRef<IDropdownRef>(null),
     notificationTimeRef: React.useRef<DatePickerOptions>(null),
@@ -95,17 +97,17 @@ export default function InfoGoals() {
     deadlineRef: React.useRef<DatePickerOptions>(null),
   } as const;
 
-  
+
   const showSuccessMessage = (callback: CallbackFunction) => {
     showMessage({
       type: "success",
       message: "Success",
       description: "La meta fue agregada exitosamente",
-      backgroundColor: Colors.green, 
-      color: Colors.white, 
-      icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png'}} {...props} />,
+      backgroundColor: Colors.green,
+      color: Colors.white,
+      icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png' }} {...props} />,
       style: {
-        borderRadius: 10, 
+        borderRadius: 10,
       },
     });
     setTimeout(callback, 2000);
@@ -113,7 +115,7 @@ export default function InfoGoals() {
 
   const onSubmit = (data: GoalFormType) => {
     setLoading(true);
-    console.log("Enviados correctamente ", data)   
+    console.log("Enviados correctamente ", data)
     const newGoalId = firestore().collection('Goal').doc().id
     const newGoalData = {
       Deadline: data.deadline,
@@ -128,39 +130,40 @@ export default function InfoGoals() {
     }
     const goalDocRef = firestore().collection('Goal').doc(newGoalId);
     goalDocRef.set(newGoalData)
-    .then(() => {
-      console.log('Goal added!');
-      if (patientId !== undefined) {
-        firestore()
-        .collection('Patient')
-        .doc(patientId)
-        .update({
-          Goals: firestore.FieldValue.arrayUnion(goalDocRef)
-        })
-        .then(() => {
-          console.log("Patient sent: ", patientId);
+      .then(() => {
+        console.log('Goal added!');
+        if (patientId !== undefined) {
+          firestore()
+            .collection('Patient')
+            .doc(patientId)
+            .update({
+              Goals: firestore.FieldValue.arrayUnion(goalDocRef)
+            })
+            .then(() => {
+              console.log("Patient sent: ", patientId);
+              setLoading(false);
+              // navigation.navigate('GoalList', { sessionDocId: patientId });
+              router.push({ pathname: '/GoalList', params: { patientId: patientId } });
+              showSuccessMessage(() => {
+              });
+              console.log('Patient Goal added!');
+            })
+            .catch((error) => {
+              setLoading(false);
+              console.error('Error adding goal to patient: ', error);
+            });
+        } else {
           setLoading(false);
-          navigation.navigate('GoalList', { sessionDocId: patientId });
           showSuccessMessage(() => {
+            router.navigate('/(tabs)/goals');
           });
-          console.log('Patient Goal added!');
-        })
-        .catch((error) => {
-          setLoading(false);
-          console.error('Error adding goal to patient: ', error);
-        });
-      } else {
+        }
+      })
+      .catch((error) => {
         setLoading(false);
-        showSuccessMessage(() => {
-          router.navigate('/(tabs)/goals');
-        });
-      }
-    })
-    .catch((error) => {
-      setLoading(false);
-      console.error('Error adding goal: ', error);
-    });
-      
+        console.error('Error adding goal: ', error);
+      });
+
   };
 
   useEffect(() => {
@@ -168,7 +171,7 @@ export default function InfoGoals() {
       'Portion',
       setPortionData,
       "Error fetching portions:"
-    );     
+    );
 
     const unsubscribeFrequency = fetchCollectionData(
       'Frequency',
@@ -251,7 +254,7 @@ export default function InfoGoals() {
           <Text style={styles.error}>{errors.frequency.message}</Text>
         ) : null}
 
-        <View style={[styles.textInfo, { paddingTop: 5, paddingBottom: 10}]}>
+        <View style={[styles.textInfo, { paddingTop: 5, paddingBottom: 10 }]}>
           <Text>Hora de Notificación</Text>
         </View>
         <Controller
@@ -281,7 +284,7 @@ export default function InfoGoals() {
           defaultValue={resetTimeToZero(today)}
         />
 
-        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10}]}>
+        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
           <Text>Fecha de Inicio</Text>
         </View>
         <Controller
@@ -368,9 +371,9 @@ export default function InfoGoals() {
             {loading && <ActivityIndicator
               animating={loading}
               hidesWhenStopped={true}
-              />}
+            />}
             <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>{loading ? "Cargando" : "Crear"}</Text>
-          </Button>        
+          </Button>
         </View>
         {/* Use a light status bar on iOS to account for the black space above the modal */}
         <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
