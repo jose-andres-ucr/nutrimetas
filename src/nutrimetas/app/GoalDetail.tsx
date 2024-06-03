@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
         marginVertical: 25,
     },
     commentsContainer: {
-        flex: 1,
+        flex: 2,
         alignContent: 'flex-end',
     },
 });

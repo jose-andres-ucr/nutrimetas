@@ -165,15 +165,15 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
+    borderTopWidth: 1,
+    borderTopColor: Colors.lightGray,
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
   },
   chatContainer: {
-    height: "50%",
+    flex: 1,
     maxHeight: Dimensions.get('window').height / 2,
   },
   bubble: {
