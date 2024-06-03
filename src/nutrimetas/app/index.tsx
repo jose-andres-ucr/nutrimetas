@@ -10,6 +10,9 @@ from "react-native";
 import { useAssets } from 'expo-asset';
 import { Image } from "expo-image";
 
+// Image assets
+import AppBanner from '@/assets/images/logo.png';
+
 // Expo navigation
 import { router, useFocusEffect } from "expo-router";
 
@@ -167,7 +170,7 @@ export default function LoginPage(
 
             let reason = (unexpectedError === null) ?
                 "Credenciales incorrectas" :
-                `Error inesperado: ${error?.name}. Inténtelo más tarde.`;
+                `Error inesperado: ${unexpectedError}. Inténtelo más tarde.`;
 
             setLoginState({ value: "invalid", message: reason });
         }
@@ -217,11 +220,6 @@ export default function LoginPage(
         }
     }, [loginState]);
 
-    // Register the icon loading hook
-    const [icon, error] = useAssets([
-        require('@/assets/images/logo.png')
-    ]);
-
     // Render login form
     return (
         <View style={LoginStyles.OverallView}>
@@ -231,8 +229,10 @@ export default function LoginPage(
             { /* App logo */}
             <View style={LoginStyles.LogoView}>
                 <Image
-                    source={icon ? icon[0] as ImageSourcePropType : undefined}
-                    onError={() => { console.error("Error loading image:", error); }}
+                    source={AppBanner}
+                    onError={(error) => {
+                        console.error("Error loading image:", error);
+                    }}
 
                     contentFit="contain"
                     contentPosition="top center"
@@ -258,7 +258,7 @@ export default function LoginPage(
                     () => { setLoginState({ value: "signed-out" }) }
                 }
 
-                icon={icon != undefined ? icon[0] as ImageSourcePropType : undefined}
+                icon={AppBanner as ImageSourcePropType}
                 description={
                     {
                         content: (loginState.value === "pending") ?

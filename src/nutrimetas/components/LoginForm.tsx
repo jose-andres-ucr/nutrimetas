@@ -3,12 +3,14 @@
 import { useRef } from "react";
 
 // Core React Native UI
-import { View, Text, TextInput, StyleSheet, Pressable, 
-    ImageSourcePropType } from "react-native";
+import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
 
 // Expo UI
-import { useAssets } from 'expo-asset'; 
 import { Image } from "expo-image";
+
+// Image assets
+import MailIcon from '@/assets/images/mail.svg';
+import LockIcon from '@/assets/images/lock.svg';
 
 // Form structure and hooks
 import { useForm, SubmitHandler, Controller, Form } from "react-hook-form";
@@ -63,12 +65,6 @@ export default function LoginForm(
         passwordRef: useRef<TextInput>(null),
     } as const;
 
-    // Register the icon loading hook
-    const [icon, error] = useAssets([
-        require('@/assets/images/mail.svg'), 
-        require('@/assets/images/lock.svg')
-    ]);
-
     // Render login form
     return (
         // Overall form frame
@@ -79,8 +75,10 @@ export default function LoginForm(
                 {/* Input */}
                 <View style={FormStyles.FieldInputView}>
                     <Image 
-                        source={icon? icon[0] as ImageSourcePropType : undefined}
-                        onError={() => {console.error("Error loading image:", error);}}
+                        source={MailIcon}
+                        onError={(error) => {
+                            console.error("Error loading image:", error);
+                        }}
 
                         style={FormStyles.InputTextIcon}
                         contentFit="contain"
@@ -127,9 +125,10 @@ export default function LoginForm(
                 {/* Input */}
                 <View style={FormStyles.FieldInputView}>
                     <Image 
-                        source={icon? icon[1] as ImageSourcePropType : undefined}
-                        onError={() => {
-                            console.error("Error loading image:", error);}}
+                        source={LockIcon}
+                        onError={(error) => {
+                            console.error("Error loading image:", error);
+                        }}
 
                         style={FormStyles.InputTextIcon}
                         contentFit="contain"
