@@ -29,7 +29,7 @@ interface GoalData {
 
 const GoalDetail = () => {
     const navigation = useNavigation();
-    const { selectedGoal } = useGlobalSearchParams();
+    const { selectedGoal, role } = useGlobalSearchParams();
     const [goalData, setGoalData] = useState<GoalData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -77,7 +77,9 @@ const GoalDetail = () => {
                 <Text style={styles.detailText}>Tipo: {goalData.title}</Text>
                 <Text style={styles.detailText}>Cantidad: {goalData.description}</Text>
             </View>
-            <ShowComment role='professional' goalId= {selectedGoal as string}/>
+            <View style={styles.commentsContainer}>
+                <ShowComment role={role as string} goalId= {selectedGoal as string}/>
+            </View>
         </SafeAreaView>
     );
 }
@@ -122,5 +124,9 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: 'bold',
         marginVertical: 25,
+    },
+    commentsContainer: {
+        flex: 1,
+        alignContent: 'flex-end',
     },
 });

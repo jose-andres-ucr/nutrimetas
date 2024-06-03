@@ -121,7 +121,7 @@ const GoalList = () => {
 
     const onPressHandle = (selectedGoalId: string) => {
         console.log(selectedGoalId);
-        router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId } });
+        router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role } });
     };
 
     const handleAddGoal = () => {
