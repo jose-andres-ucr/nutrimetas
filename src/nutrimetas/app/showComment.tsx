@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
@@ -12,43 +12,36 @@ type messageProps = {
 };
 
 const ShowComment = (props: messageProps) => {
-  const initialMessages: IMessage[] = [
-    {
-      _id: 1,
-      text: 'Hola como estas.',
-      createdAt: new Date(),
-      user: {
-        _id: 1,
-        name: 'Usuario',
-        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
-      },
-    },
-    {
-      _id: 2,
-      text: 'Muy bien y tu?',
-      createdAt: new Date(),
-      user: {
-        _id: 2,
-        name: 'Profesional',
-        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
-      },
-    },
-    {
-      _id: 3,
-      text: 'Me alegro mucho por Ti. Te puedo hacer una pregunta?',
-      createdAt: new Date(),
-      user: {
-        _id: 1,
-        name: 'Usuario',
-        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
-      },
-    },
-  ];
 
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState<IMessage[]>([]);
+  const roleId = props.role == "patient" ? 2 : 1
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      const db = firebase.firestore();
+      const commentsRef = db.collection('Goal').doc(props.goalId).collection('comments');
+      
+      const unsubscribe = commentsRef.orderBy('createdAt', 'desc').onSnapshot((querySnapshot) => {
+        const fetchedMessages: IMessage[] = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            _id: doc.id,
+            text: data.text,
+            createdAt: data.createdAt?.toDate() ?? new Date(),
+            user: data.user,
+          };
+        });
+        setMessages(fetchedMessages);
+      });
+      return () => unsubscribe();
+    };
+
+    fetchComments();
+    console.log("props.role es", props.role)
+  }, [props.goalId]);
 
   const onSend = async (newMessage: IMessage[]) => {
-    setMessages(GiftedChat.append(messages, newMessage));
+    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessage));
     console.log("Guardando el mensaje:", newMessage)
 
     try {
@@ -57,7 +50,7 @@ const ShowComment = (props: messageProps) => {
         text: newMessage[0].text,
         createdAt: newMessage[0].createdAt,
         user: {
-          _id: props.role == "patient"? 2 : 1,
+          _id: roleId,
           name: props.role,
           avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
@@ -95,6 +88,8 @@ const ShowComment = (props: messageProps) => {
     );
   };
 
+  
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -107,7 +102,7 @@ const ShowComment = (props: messageProps) => {
         <GiftedChat
           messages={messages}
           onSend={newMessage => onSend(newMessage)}
-          user={{ _id: 1 }} // ID del usuario actual
+          user={{ _id: roleId }} // ID del usuario actual
           renderAvatar={(props) => (
             <Image
               source={{ uri: props.currentMessage?.user.avatar as string }}
@@ -116,25 +111,16 @@ const ShowComment = (props: messageProps) => {
           )}
           renderBubble={(props) => (
             <View
-              style={[
-                styles.bubble,
-                props.currentMessage?.user._id === 1
-                  ? styles.userBubble // Estilo para las burbujas del usuario actual
-                  : styles.otherBubble // Estilo para las burbujas de otros usuarios
-              ]}
+            style={[
+              styles.bubble,
+              // Cambiamos los estilos para que los mensajes del usuario actual sean celestes y los de la otra persona sean grises
+              props.currentMessage?.user._id === (roleId)
+                ? styles.userBubble // Estilo para las burbujas del usuario actual
+                : styles.otherBubble // Estilo para las burbujas de otros usuarios
+            ]}
             >
-              <Text style={[
-                styles.text,
-                props.currentMessage?.user._id === 1
-                  ? styles.userText // Color del texto para el usuario actual
-                  : styles.otherText // Color del texto para otros usuarios
-              ]}>{props.currentMessage?.text}</Text>
-              <Text style={[
-                styles.timestamp,
-                props.currentMessage?.user._id === 1
-                  ? styles.userTimestamp // Color de la marca de tiempo para el usuario actual
-                  : styles.otherTimestamp // Color de la marca de tiempo para otros usuarios
-              ]}>
+              <Text style={styles.text}>{props.currentMessage?.text}</Text>
+              <Text style={styles.timestamp}>
                 {props.currentMessage?.createdAt
                   ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                   : ''}
@@ -184,30 +170,20 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     backgroundColor: Colors.lightblue, 
-    alignSelf: 'flex-start',
+    //alignSelf: 'flex-end',
   },
   otherBubble: {
     backgroundColor: Colors.gray, 
-    alignSelf: 'flex-end',
+    //alignSelf: 'flex-end',
   },
   text: {
     fontSize: 16,
-  },
-  userText: {
-    color: Colors.white, 
-  },
-  otherText: {
     color: Colors.white,
   },
   timestamp: {
     marginTop: 5,
     fontSize: 10,
     textAlign: 'right',
-  },
-  userTimestamp: {
-    color: Colors.white,
-  },
-  otherTimestamp: {
     color: Colors.white,
   },
   avatar: {
