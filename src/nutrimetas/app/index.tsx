@@ -153,8 +153,8 @@ export default function LoginPage(
         // sucesfully validated, accept the login and pass its credentials
         // along with the user control to the next screens
         if (
-            unexpectedError == null &&
-            potentialSession.current != null &&
+            unexpectedError === null &&
+            potentialSession.current !== null &&
             checkAuth(data.email, data.password, potentialSession.current)
         ) {
             console.log("Login SUCCESFUL");
@@ -165,7 +165,7 @@ export default function LoginPage(
         else {
             console.log("Login FAILED");
 
-            let reason = (unexpectedError == null) ?
+            let reason = (unexpectedError === null) ?
                 "Credenciales incorrectas" :
                 `Error inesperado: ${error?.name}. Inténtelo más tarde.`;
 
@@ -176,7 +176,7 @@ export default function LoginPage(
     /// Succesful attempts
     useEffect(() => {
         // If user is logged in then...
-        if (loginState.value == "signed-in") {
+        if (loginState.value === "signed-in") {
             console.log(`Handling succesful login as ${potentialSession.current?.role ?? "UNKNOWN ROLE"}...`);
 
             // ... update the login session in memory
@@ -261,16 +261,16 @@ export default function LoginPage(
                 icon={icon != undefined ? icon[0] as ImageSourcePropType : undefined}
                 description={
                     {
-                        content: (loginState.value == "pending") ?
+                        content: (loginState.value === "pending") ?
                             "Cargando..." :
                             `No se logró iniciar sesión: ${loginState.message}`,
-                        style: (loginState.value == "pending") ?
+                        style: (loginState.value === "pending") ?
                             LoginStyles.PopupLoadingText :
                             LoginStyles.PopupErrorText,
                     }
                 }
                 actionText={
-                    loginState.value == "pending" ?
+                    loginState.value === "pending" ?
                         "Cargando..." : "Aceptar"
                 }
             />
