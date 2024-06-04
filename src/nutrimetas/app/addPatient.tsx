@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
+import { useMutation } from "@tanstack/react-query"
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -82,7 +83,7 @@ export default function AddPatient() {
   const onSubmit = async (data: PatientFormType) => {
     const userExists = await idExists(data.idNumber)
     if (!userExists) {
-      firestore()
+      const newUser = firestore()
         .collection('Patient')
         .add({
           firstName: data.firstName,
@@ -101,11 +102,17 @@ export default function AddPatient() {
           console.log("Error tratando de agregar paciente: ", error)
           somethingWentWrong();
         });
+      return newUser
     } else {
       console.log("El usuario ya existe")
       alreadyExistAlert()
+      return userExists
     }
   };
+
+  const mutation = useMutation({
+    mutationFn: onSubmit
+  })
 
   const successfulAddition = () => {
     showMessage({
@@ -319,18 +326,33 @@ export default function AddPatient() {
               Cancelar
           </Link>
 
-          <Button
-            style={{...styles.button, backgroundColor: Colors.lightblue}}
-            icon="content-save"
-            mode="contained"
-            onPress={() => {
-              handleSubmit((form) => {
-                onSubmit({...form });
-              })();
-            }}
-          >
-            <Text style={{fontSize: 16, color: "white", fontWeight:'bold'}}>Registrar</Text>
-          </Button>
+          { mutation.isPending ? (
+            <Button
+              style={{...styles.button, backgroundColor: Colors.lightGray}}
+              icon="content-save"
+              mode="contained"
+              onPress={() => {
+                console.log("No se puede presionar")
+              }}
+            >
+              <Text style={{fontSize: 16, color:Colors.white, fontWeight:'bold'}}>Guardando...</Text>  
+            </Button>
+          ) : (
+            <>
+              <Button
+                style={{...styles.button, backgroundColor: Colors.lightblue}}
+                icon="content-save"
+                mode="contained"
+                onPress={() => {
+                  handleSubmit((form) => {
+                    mutation.mutate({...form})
+                  })();
+                }}
+              >
+                <Text style={{fontSize: 16, color:Colors.white, fontWeight:'bold'}}>Registrar</Text>  
+              </Button>
+            </>
+          )}
         </View>
 
         {/* Use a light status bar on iOS to account for the black space above the modal */}

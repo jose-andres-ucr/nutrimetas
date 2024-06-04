@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import FlashMessage from "react-native-flash-message";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Login session and its dispatching context 
 import { LoginSessionProvider } from '@/shared/LoginSession';
@@ -31,6 +32,8 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
+  const queryClient = new QueryClient
+
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
@@ -48,9 +51,11 @@ export default function RootLayout() {
 
   // Inject login session state and handling 
   return (
-    <LoginSessionProvider>
-      <RootLayoutNav />
-    </LoginSessionProvider>
+    <QueryClientProvider client={queryClient}>
+      <LoginSessionProvider>
+        <RootLayoutNav />
+      </LoginSessionProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -59,7 +64,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <FlashMessage position="top" />
+      <FlashMessage position="bottom" />
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
