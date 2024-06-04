@@ -4,8 +4,11 @@ import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
+import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
+
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const GoalList = () => {
     const router = useRouter();
@@ -14,6 +17,16 @@ const GoalList = () => {
     const { role } = useContext(SessionContext);
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [selectedOption, setSelectedOption] = useState("");
+
+    // estados para las fechas
+    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+    const [startDate, setStartDate] = useState(new Date());
+    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    const [endDate, setEndDate] = useState(new Date());
 
     useEffect(() => {
         if (patientId) {
@@ -27,14 +40,13 @@ const GoalList = () => {
                     if (patientGoals.length > 0) {
                         fetchGoalsFromFirebase(patientGoals);
                     } else {
-                        setLoading(false); // No hay metas, actualiza el estado de carga
+                        setLoading(false);
                         console.log('El paciente no tiene metas.');
                     }
                 });
 
             return () => unsubscribe();
         } else {
-            // console.error('patientId is undefined');
             setLoading(false);
         }
     }, [patientId]);
@@ -43,7 +55,6 @@ const GoalList = () => {
         const goalsFromFirebase = [];
 
         for (const goalId of patientGoals) {
-            // Verificar si goalId es una cadena (ID de objetivo)
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
                 const goalSelectId = goalDoc.id;
@@ -63,7 +74,7 @@ const GoalList = () => {
         }
 
         setGoals(goalsFromFirebase);
-        setLoading(false); // Actualiza el estado de carga
+        setLoading(false);
     };
 
     const buildTitle = async (rubricRef: string) => {
@@ -81,7 +92,7 @@ const GoalList = () => {
             }
         } catch (error) {
             console.error('Error fetching rubric:', error);
-            return 'Meta'; // O valor predeterminado
+            return 'Meta';
         }
     };
 
@@ -105,12 +116,14 @@ const GoalList = () => {
                 console.error('Missing data for building description');
                 return '';
             }
+
             let typePrefix;
             if (typeData.Name === 'Aumentar' || typeData.Name === 'Disminuir') {
                 typePrefix = 'a';
             } else {
                 typePrefix = 'en';
             }
+
             const portionName = amountData.Value === 1 ? portionData.Name : portionData.Plural;
             return `${typeData.Name} ${actionData.Name} ${rubricData.Name} ${typePrefix} ${amountData.Value} ${portionName} ${frequencyData.Name}`;
         } catch (error) {
@@ -128,6 +141,77 @@ const GoalList = () => {
         navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
 
+    const handleFilterPress = () => {
+        console.log('Icono de filtro presionado');
+        setShowPopup(true);
+    };
+
+    const handleButtonPress = (option) => {
+        console.log("Botón presionado:", option);
+        setSelectedOption(option);
+        setShowPopup(false);
+    };
+
+    const handleCancel = () => {
+        console.log('Cancelar');
+        setShowPopup(false);
+    };
+
+    const handleConfirm = () => {
+        console.log('Confirmar');
+        // Verificar las fechas 
+        console.log('Fecha de Inicio:', startDate);
+        console.log('Fecha Límite:', endDate);
+        filterGoalsByDateRange();
+        setShowPopup(false);
+    };
+
+    const handleStartDateChange = (event, selectedDate) => {
+        setShowStartDatePicker(false);
+        if (selectedDate) {
+            setStartDate(selectedDate);
+            console.log('Fecha de Inicio seleccionada:', selectedDate);
+        }
+    };
+
+    const handleEndDateChange = (event, selectedDate) => {
+        setShowEndDatePicker(false);
+        if (selectedDate) {
+            setEndDate(selectedDate);
+            console.log('Fecha Límite seleccionada:', selectedDate);
+        }
+    };
+
+    const filterGoalsByDateRange = async () => {
+        if (patientId) {
+            setLoading(true);
+            
+            // Realizar consulta para StartDate
+            const startGoalsQuerySnapshot = await firestore()
+                .collection('Goal')
+                .where('PatientId', '==', patientId)
+                .where('StartDate', '>=', startDate)
+                .get();
+    
+            // Realizar consulta para Deadline
+            const endGoalsQuerySnapshot = await firestore()
+                .collection('Goal')
+                .where('PatientId', '==', patientId)
+                .where('Deadline', '<=', endDate)
+                .get();
+    
+            // Combinar los resultados de ambas consultas
+            const startGoals = startGoalsQuerySnapshot.docs.map(doc => doc.data());
+            const endGoals = endGoalsQuerySnapshot.docs.map(doc => doc.data());
+            const filteredGoals = startGoals.filter(goal => {
+                return endGoals.some(endGoal => endGoal.id === goal.id);
+            });
+    
+            setGoals(filteredGoals);
+            setLoading(false);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -135,7 +219,54 @@ const GoalList = () => {
                     <Icon name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
                 <Text style={styles.title}>Metas</Text>
+                <TouchableOpacity onPress={handleFilterPress} style={styles.filterContainer}>
+                    <Image 
+                        style={styles.filterImage} 
+                        source={{ uri: 'https://icons-for-free.com/iff/png/512/filter-131979013401653166.png' }}
+                    />
+                </TouchableOpacity>
             </View>
+
+            {/* Ventana emergente */}
+            {showPopup && (
+                <View style={styles.popupContainer}>
+                    <Text>Fecha de Inicio</Text>
+                    <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
+                        <Text>{startDate.toDateString()}</Text>
+                        <FontAwesome name="calendar" size={24} color="gray" />
+                    </TouchableOpacity>
+                    {showStartDatePicker && (
+                        <DateTimePicker
+                            value={startDate}
+                            mode="date"
+                            display="default"
+                            onChange={handleStartDateChange}
+                        />
+                    )}
+
+                    <Text>Fecha Límite</Text>
+                    <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
+                        <Text>{endDate.toDateString()}</Text>
+                        <FontAwesome name="calendar" size={24} color="gray" />
+                    </TouchableOpacity>
+                    {showEndDatePicker && (
+                        <DateTimePicker
+                            value={endDate}
+                            mode="date"
+                            display="default"
+                            onChange={handleEndDateChange}
+                        />
+                    )}
+
+                    <TouchableOpacity style={styles.button} onPress={handleCancel}>
+                        <Text style={styles.buttonText}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={handleConfirm}>
+                        <Text style={styles.buttonText}>Confirmar</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             {loading ? (
                 <Text>Cargando...</Text>
             ) : goals.length === 0 ? (
@@ -159,7 +290,7 @@ const GoalList = () => {
                             </View>
                         </TouchableOpacity>
                     )}
-                    keyExtractor={(item, index) => `${item.title}-${index}`} // Aseguramos un key único
+                    keyExtractor={(item, index) => `${item.title}-${index}`}
                 />
             )}
             {role === 'professional' && (
@@ -174,11 +305,38 @@ const GoalList = () => {
 export default GoalList;
 
 const styles = StyleSheet.create({
+    button: {
+        backgroundColor: '#007bff',
+        padding: 10,
+        borderRadius: 5,
+        marginTop: 10,
+    },
+    buttonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    popupContainer: {
+        position: 'absolute',
+        backgroundColor: 'white',
+        padding: 20,
+        marginTop: '20%',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'black',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '80%',
+        height: '50%',
+        top: '25%',
+        left: '10%',
+        zIndex: 999,
+    },
     container: {
         flex: 1,
         paddingTop: 50,
         paddingLeft: 20,
-        paddingRight: 20, // Added paddingRight for space for the tittle
+        paddingRight: 20,
     },
     header: {
         flexDirection: 'row',
@@ -189,7 +347,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        marginLeft: 10, // Margin on the left to separate the button from the title
+        marginLeft: 10,
     },
     item: {
         flexDirection: 'row',
@@ -200,7 +358,20 @@ const styles = StyleSheet.create({
     itemImage: {
         width: 60,
         height: 60,
-        marginRight: 10
+        marginRight: 10,
+    },
+    filterContainer: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: 30,
+        height: 25,
+        marginTop: 8,
+        marginRight: 8,
+    },
+    filterImage: {
+        width: 30,
+        height: 25,
     },
     goalDetails: {
         flex: 1
@@ -232,5 +403,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
+    },
+    datePickerStyle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 10,
+        marginVertical: 10,
+        borderWidth: 1,
+        borderRadius: 5,
+        borderColor: 'gray',
     },
 });
