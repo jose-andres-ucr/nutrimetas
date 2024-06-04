@@ -15,19 +15,45 @@ const CheckboxPatients = () => {
     const [patients, setPatients] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const [clicked, setClicked] = useState<boolean>(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = firestore()
-            .collection('Patient')
-            .onSnapshot((snapshot) => {
-                const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-                setPatients(sortPatients(data));
-            });
-
-        return () => unsubscribe();
+        const fetchData = () => {
+            setLoading(true);  
+            const unsubscribe = firestore()
+                .collection('Patient')
+                .onSnapshot(
+                    (snapshot) => {
+                        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                        setPatients(sortPatients(data));
+                        setLoading(false);
+                    },
+                    (error) => {
+                        console.error("Error fetching patients: ", error);
+                        setLoading(false);
+                        showMessage({
+                            type: "danger",
+                            message: "Error",
+                            description: "Hubo un problema al obtener los datos de los pacientes.",
+                            backgroundColor: Colors.red,
+                            color: Colors.white,
+                        });
+                    }
+                );
+            return unsubscribe;
+        };
+    
+        const unsubscribe = fetchData();
+    
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
     }, []);
 
+    
     const normalizeString = (str: string) => {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
@@ -55,6 +81,7 @@ const CheckboxPatients = () => {
     const handleCheckboxPress = (patientDocId: string) => {
         toggleSelection(patientDocId);
     };
+    
 
     const showSuccessMessage = (callback: CallbackFunction) => {
         showMessage({
@@ -72,15 +99,16 @@ const CheckboxPatients = () => {
     }
 
     const onSubmit = () => {
-        setLoading(true);
+        if (clicked) return;
+        setClicked(true);
         const goalDocRef = firestore().collection('Goal').doc(goalDocId.toString());
-        if (selectedIds.length > 0) { 
+        if (selectedIds.length > 0) {
             const updatePromises = selectedIds.map(patientId => (
                 firestore()
                     .collection('Patient')
                     .doc(patientId)
                     .update({
-                        Goals: firestore.FieldValue.arrayUnion(goalDocRef) 
+                        Goals: firestore.FieldValue.arrayUnion(goalDocRef)
                     })
                     .then(() => {
                         console.log("Patient sent: ", patientId);
@@ -92,17 +120,17 @@ const CheckboxPatients = () => {
 
             Promise.all(updatePromises)
                 .then(() => {
-                    setLoading(false);
-                    router.back(); 
+                    setClicked(false);
+                    router.back();
                     showSuccessMessage(() => { });
                     console.log('Patients Goals added!');
                 })
                 .catch((error) => {
-                    setLoading(false);
+                    setClicked(false);
                     console.error('Error updating goals for patients: ', error);
                 });
         } else {
-            setLoading(false);
+            setClicked(false);
             showSuccessMessage(() => {
                 router.back();
             });
@@ -130,6 +158,7 @@ const CheckboxPatients = () => {
         return false;
     });
 
+
     const renderItem = ({ item }: { item: any }) => {
         const isChecked = selectedIds.includes(item.id);
 
@@ -151,6 +180,15 @@ const CheckboxPatients = () => {
             </View>
         );
     };
+
+    if (loading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text>Cargando...</Text>
+            </View>
+        );
+    }
+    
 
     return (
         <View style={styles.container}>
@@ -181,7 +219,11 @@ const CheckboxPatients = () => {
                     </View>
                 }
             />
-            <TouchableOpacity onPress={onSubmit} style={[styles.addButton, !selectedIds.length && styles.addButtonDisabled]} disabled={!selectedIds.length}>
+            <TouchableOpacity
+                onPress={onSubmit}
+                style={[styles.addButton, (!selectedIds.length || clicked) && styles.addButtonDisabled]}
+                disabled={!selectedIds.length || clicked}
+            >
                 <Text style={styles.addButtonText}>Asignar platilla</Text>
             </TouchableOpacity>
         </View>
@@ -217,7 +259,7 @@ const styles = StyleSheet.create({
     },
     addButtonDisabled: {
         backgroundColor: Colors.gray,
-    },    
+    },
     addButtonText: {
         color: Colors.white,
         fontWeight: 'bold',
