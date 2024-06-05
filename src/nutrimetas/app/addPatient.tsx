@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import { useMutation } from "@tanstack/react-query"
+import loadingGif from '../assets/images/loading.gif'
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -327,16 +328,11 @@ export default function AddPatient() {
           </Link>
 
           { mutation.isPending ? (
-            <Button
-              style={{...styles.button, backgroundColor: Colors.lightGray}}
-              icon="content-save"
-              mode="contained"
-              onPress={() => {
-                console.log("No se puede presionar")
-              }}
-            >
-              <Text style={{fontSize: 16, color:Colors.white, fontWeight:'bold'}}>Guardando...</Text>  
-            </Button>
+            <>
+              <View style={{... styles.button, backgroundColor: Colors.lightGray, alignItems: "center", paddingVertical: 5}}>
+                <Image style={{width: 30, height: 30}} source={loadingGif}/>
+              </View>
+            </>
           ) : (
             <>
               <Button
