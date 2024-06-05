@@ -1,12 +1,16 @@
 // Dependencies
 // React Hooks & References
-import { useRef } from "react";
+import { useRef, ElementRef } from "react";
 
 // Core React Native UI
-import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
+import { StyleSheet, Pressable } from "react-native";
 
 // Expo UI
 import { Image } from "expo-image";
+
+// Color palettes
+import Colors from "@/constants/Colors";
+import { View, Text, TextInput } from "@/components/Themed";
 
 // Image assets
 import MailIcon from '@/assets/images/mail.svg';
@@ -61,9 +65,9 @@ export default function LoginForm(
 
     // Register the login form's field refs
     const {emailRef, passwordRef} = {
-        emailRef: useRef<TextInput>(null),
-        passwordRef: useRef<TextInput>(null),
-    } as const;
+        emailRef: useRef<ElementRef<typeof TextInput>>(null),
+        passwordRef: useRef<ElementRef<typeof TextInput>>(null),
+    } as const; // 
 
     // Render login form
     return (
@@ -215,13 +219,13 @@ const FormStyles = StyleSheet.create({
         justifyContent: "flex-start",
 
         borderBottomWidth: 1,
-        borderBottomColor: '#A6A6A6',
+        borderBottomColor: Colors.gray,
         // backgroundColor: "green"
     },
     InputTextIcon: {
         width: 25,
         height: 25,
-        color: '#A6A6A6',
+        color: Colors.gray,
     },
     FieldInputText: {
         fontWeight: "normal",
@@ -234,7 +238,7 @@ const FormStyles = StyleSheet.create({
         fontWeight: "bold",
         fontFamily: "sans-serif-light",
         fontStyle: "italic",
-        color: "red",
+        color: Colors.red,
 
         textAlign: "left",
     },
@@ -247,15 +251,15 @@ const FormStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         
-        backgroundColor: '#00C0F3',
+        backgroundColor: Colors.lightblue,
     },
     LoginButtonText: {
         fontWeight: "bold",
         fontFamily: "sans-serif-light",
         fontStyle: "normal",
-        color: "white",
+        color: Colors.white,
 
         textAlign: "justify",
-        borderBottomColor: '#A6A6A6',
+        borderBottomColor: Colors.gray,
     },
 });

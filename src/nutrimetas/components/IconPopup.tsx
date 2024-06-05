@@ -1,10 +1,14 @@
 // Dependencies
 // Core React Native UI
-import { View, Text, StyleSheet, Pressable, ImageSourcePropType, Modal, 
+import { StyleSheet, Pressable, ImageSourcePropType, Modal, 
     TextStyle} from "react-native";
 
 // Expo UI
 import { Image } from "expo-image";
+
+// Color palettes
+import Colors from "@/constants/Colors";
+import { View, Text, TextInput } from "@/components/Themed";
 
 // Login form rendering and hooks
 export default function ImagePopup(
@@ -79,7 +83,7 @@ const PopupStyles = StyleSheet.create({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "transparent"
+        backgroundColor: Colors.transparent,
     },
     BoxView: {
         padding: 20,
@@ -92,7 +96,6 @@ const PopupStyles = StyleSheet.create({
         alignSelf: "center",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "white",
     },
     IconView: {
         width: 200,
@@ -115,15 +118,15 @@ const PopupStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         
-        backgroundColor: '#00C0F3',
+        backgroundColor: Colors.greenUCR,
     },
     ActionText: {
         fontWeight: "bold",
         fontFamily: "sans-serif-light",
         fontStyle: "normal",
-        color: "white",
+        color: Colors.white,
 
         textAlign: "justify",
-        borderBottomColor: '#A6A6A6',
+        borderBottomColor: Colors.gray,
     },
 });

@@ -3,15 +3,18 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 
 // Core React Native UI
-import { View, Text, StyleSheet, ImageSourcePropType } 
+import { StyleSheet, ImageSourcePropType, useColorScheme } 
 from "react-native";
 
 // Expo UI
-import { useAssets } from 'expo-asset';
 import { Image } from "expo-image";
 
 // Image assets
 import AppBanner from '@/assets/images/logo.png';
+
+// Color palettes
+import Colors from "@/constants/Colors";
+import { View, Text } from "@/components/Themed";
 
 // Expo navigation
 import { router, useFocusEffect } from "expo-router";
@@ -224,7 +227,10 @@ export default function LoginPage(
     return (
         <View style={LoginStyles.OverallView}>
             { /* Form title */}
-            <Text style={LoginStyles.Title}> Iniciar Sesión </Text>
+            <Text 
+                style={LoginStyles.Title}> 
+                Iniciar Sesión 
+            </Text>
 
             { /* App logo */}
             <View style={LoginStyles.LogoView}>
@@ -288,7 +294,6 @@ const LoginStyles = StyleSheet.create({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "white"
     },
     Title: {
         fontWeight: "bold",
@@ -343,7 +348,7 @@ const LoginStyles = StyleSheet.create({
         fontWeight: "bold",
         fontFamily: "sans-serif-light",
         fontStyle: "italic",
-        color: "red",
+        color: Colors.red,
 
         textAlign: "left",
     },
