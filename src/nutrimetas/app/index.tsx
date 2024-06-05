@@ -1,9 +1,9 @@
 // Dependencies
 // Core React hooks & misc. stuff
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext } from "react";
 
 // Core React Native UI
-import { StyleSheet, ImageSourcePropType, useColorScheme } 
+import { StyleSheet, ImageSourcePropType } 
 from "react-native";
 
 // Expo UI
@@ -17,7 +17,7 @@ import Colors from "@/constants/Colors";
 import { View, Text } from "@/components/Themed";
 
 // Expo navigation
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 
 // Login form 
 import LoginForm from "@/components/LoginForm";
@@ -28,161 +28,249 @@ import IconPopup from "@/components/IconPopup";
 // Firestore DB
 import firestore from '@react-native-firebase/firestore';
 
-// Session Context
+// Firestore Authentication
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+
+// Session Context, User Data
 import {
-    SessionContext, SessionDispatchContext,
-    LoginSession
+    LoginSession, SessionDispatchContext,
+    UserData
 } from "@/shared/LoginSession";
 
-/// Credential verification
-const checkAuth = function (email: string, password: string, credentials: any) {
-    console.log("Checking credentials...");
-    console.log("Pulled", credentials);
-    console.log("Passed", email, password);
-
-    return (
-        credentials.email === email &&
-        credentials.password === password
-    );
-}
-
 // Possible login states 
-type LoginData = {
+type LoginAttempt = {
     state: "pending" | "invalid" | "signed-in" | "signed-out",
     errorMessage?: string,
     session?: LoginSession, 
 };
 
+// Sign-in errors 
+type SignInError = {message : string, isExpected: boolean};
+
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
     // Keep track of current login state
-    const [loginData, setLoginData] =
-        useState({ state: "pending" } as LoginData);
+    const [loginAttempt, setLoginAttempt] =
+        useState({ state: "pending" } as LoginAttempt);
 
-    // Access the shared context of said data
-    const session = useContext(SessionContext);
+    // Access the shared context of the user's session
     const sessionDispatch = useContext(SessionDispatchContext);
 
-    // Assume initial login state is to be signed out whenever the login
-    // screen is opened
-    useFocusEffect(
-        React.useCallback(
-            () => {
-                console.log("Signing out on login page landing")
+    // Subscribe to Firebase authentication state
+    useEffect(() => {
+        const authSuscriber = auth().onAuthStateChanged(onAuthStateChanged);
+        return authSuscriber;
+    }, []);
 
-                // Clear up any session had in memory...
-                sessionDispatch({
-                    type: "reset",
-                    newSession: undefined,
-                });
+    // Trigger...
 
-                // And in this screen
-                setLoginData({ state: "signed-out" });
-            }, [])
-    )
+    // Failed sign-in state
+    const triggerFailedSignIn = function (error : SignInError) {
+        console.log("Sign-in FAILED");
 
-    // Login handling for...
-
-    // Attempts
-    const handleLoginAttempt = async function (
-        data: { email: string, password: string }
-    ) {
-        console.log("Attempting to log in...");
-        
-        // Keep track of... 
-        // ... the current state of login
-        setLoginData({ state: "pending" });
-
-        // ... the potential session to be acquired
-        let potentialSession = null;
-
-        // ...and unexpected DB errors
-        let unexpectedError = null;
-
-        // Find the proper person associated with said credentials
-        // Be it a patient...
-        await firestore()
-            .collection("Patient")
-            .where("email", "==", data.email)
-            .limit(1)
-            .get()
-            .then(
-                (QuerySnapshot) => {
-                    if (QuerySnapshot.size > 0) {
-                        potentialSession = {
-                            documentId : QuerySnapshot.docs[0].id, 
-                            role: "patient",
-                            ...QuerySnapshot.docs[0].data(),
-                        };
-                    }
-                },
-                (Error) => {
-                    unexpectedError = Error;
-                    console.error(
-                        "Unexpected error while authenticating against \
-                        patients",
-                        Error
-                    )
-                }
-            );
-
-        // Or a professional
-        unexpectedError ?? await firestore()
-            .collection("Professionals")
-            .where("email", "==", data.email)
-            .limit(1)
-            .get()
-            .then(
-                (QuerySnapshot) => {
-                    if (QuerySnapshot.size > 0) {
-                        potentialSession = {
-                            docId : QuerySnapshot.docs[0].id, 
-                            role: "professional",
-                            ...QuerySnapshot.docs[0].data(),
-                        };
-                    }
-                },
-                (Error) => {
-                    unexpectedError = Error;
-                    console.error(
-                        "Unexpected error while authenticating against \
-                        professionals",
-                        Error
-                    )
-                }
-            );
-
-        // If an associated person is found and its credentials are
-        // sucesfully validated, accept the login and pass its credentials
-        // along with the user control to the next screens
-        if (
-            unexpectedError === null &&
-            potentialSession !== null &&
-            checkAuth(data.email, data.password, potentialSession)
-        ) {
-            console.log("Login SUCCESFUL");
-            setLoginData({ state: "signed-in", session: potentialSession });
-        }
-
-        // Otherwise, reject the login
-        else {
-            console.log("Login FAILED");
-
-            let rejectionReason = (unexpectedError === null) ?
-                "Credenciales incorrectas" :
-                `Error inesperado: ${unexpectedError}. Inténtelo más tarde.`;
-
-            setLoginData({ state: "invalid", errorMessage: rejectionReason });
-        }
+        setLoginAttempt({ 
+            state: "invalid", 
+            errorMessage: error.isExpected ? 
+                error.message : 
+                "Error inesperado: " + error.message 
+                + " Inténtelo más tarde." 
+        });
     }
 
-    /// Succesful attempts
+    // Succesfull sign-in state
+    const triggerSuccesfulSignIn = function (
+        userData : UserData, userId : string
+    ) {
+        const userSession : LoginSession = {
+            uid: userId!,
+            role: userData.role,
+            docId: userData.docId,
+            ...userData.docContents,
+        };
+
+        setLoginAttempt({
+            state: "signed-in", 
+            session: userSession
+        });
+    }
+
+    // Handle...
+
+    // ... Retrieval of user data
+    const handleRetrievalAttempt = function (email: string) : UserData {
+        // Both DB errors arising from the access promise and unexpected
+        //  ones arising from asignment are dealt with the same
+        const handleDbError = (dbError : Error) => { throw(dbError) };
+
+        // Find the data as a patient...
+        firestore()
+            .collection("Patient")
+            .where("email", "==", email)
+            .limit(1)
+            .get()
+            .then(
+                (QuerySnapshot) => {
+                    if (QuerySnapshot.size > 0) {
+                        console.log("User data retrieval SUCCESFUL");
+
+                        return ({
+                            docId : QuerySnapshot.docs[0].id, 
+                            role: "patient",
+                            docContents: QuerySnapshot.docs[0].data(),
+                        }) as UserData;
+                    }
+                },
+                handleDbError
+            )
+            .catch(handleDbError);
+
+        // Or a professional
+        firestore()
+            .collection("Professionals")
+            .where("email", "==", email)
+            .limit(1)
+            .get()
+            .then(
+                (QuerySnapshot) => {
+                    if (QuerySnapshot.size > 0) {
+                        console.log("User data retrieval SUCCESFUL");
+
+                        return ({
+                            docId : QuerySnapshot.docs[0].id, 
+                            role: "professional",
+                            docContents: QuerySnapshot.docs[0].data(),
+                        }) as UserData;
+                    }
+                },
+                handleDbError
+            )
+            .catch(handleDbError);
+
+        // If no data could be found for the user, mark it down as an 
+        // error
+        throw(Error("No se encontraron los datos del usuario."));
+    }
+    
+    // ... Sign-in attempts by the user
+    const handleLoginAttempt = function (
+        data: { email: string, password: string }
+    ) {
+        // Mark the login state as pending and begin working on it
+        console.log("Attempting to sign in...");
+        setLoginAttempt({ state: "pending" });
+
+        // Authenticate via Firebase Auth
+        auth()
+            .signInWithEmailAndPassword(data.email, data.password)
+            .then(
+                (Credentials : FirebaseAuthTypes.UserCredential) => {
+                    console.log('Authentication SUCCESFUL');          
+                    
+                    const userId : string = Credentials.user.uid;
+                    console.log('UID', userId);
+
+                    return userId;
+                }, 
+                (authError) => {
+                    console.log('Authentication FAILED');
+
+                    if (authError.code === 'auth/invalid-email') {
+                        console.error('Email address is invalid!');
+
+                        triggerFailedSignIn({
+                            message: "Dirección de correo incorrecta.",
+                            isExpected: true,
+                        });
+                    }
+                    else if (authError.code === 'auth/invalid-password') {
+                        console.error('Password is invalid!');
+
+                        triggerFailedSignIn({
+                            message: "Contraseña incorrecta.",
+                            isExpected: true,
+                        });
+                    }
+                    else {
+                        console.error("Unexpected error while authenticating "
+                        + "sign-in via Firebase", authError);
+
+                        triggerFailedSignIn({
+                            message: `No se logró autenticar al usuario: ${authError}.`,
+                            isExpected: false,
+                        });
+                    }
+
+                    throw(authError);
+                }
+            )
+        // Pull user's data sheet
+            .then(
+                (userId : string) => {
+                    const userData : UserData 
+                        = handleRetrievalAttempt(data.email);
+                    return {userId, userData};
+                }
+            )
+        // Build user session
+            .then(
+                ({userData, userId}) =>
+                    triggerSuccesfulSignIn(userData, userId),
+                (dbError) => triggerFailedSignIn({
+                    message: dbError.message,
+                    isExpected: false,
+                })
+            )
+        // Ignore any other unhandled rejection
+            .catch(() => {});
+    }
+
+    // ... Pre-existing authentication
+    const onAuthStateChanged = function (
+        User : FirebaseAuthTypes.User | null
+    ) {
+        // If user is null, sign-out
+        if (User == null) {
+            setLoginAttempt({state: "signed-out"});
+        }
+
+        // If the user isn't nulll, sign-in after attempting to retrieve their
+        // data sheet
+        else {
+            const userDataRetrieved = new Promise<UserData>(
+                (resolve, reject) => {
+                    if (User.email === null) {
+                        reject(Error("Usuario no tiene correo asociado."));
+                    } else {
+                        resolve(handleRetrievalAttempt(User.email));
+                    }
+                }
+            );
+
+            userDataRetrieved.then(
+                (UserData) => triggerSuccesfulSignIn(UserData, User.uid),
+                (dbError) => triggerFailedSignIn({
+                    message: dbError.message,
+                    isExpected: false,
+                })
+            ).catch((dbError) => triggerFailedSignIn({
+                message: dbError.message,
+                isExpected: false,
+            }));
+        }
+    };
+
+    // ... Succesful authentication
     useEffect(() => {
         // If user is logged in then...
-        if (loginData.state === "signed-in") {
-            const session = loginData.session;
-            console.log(`Handling succesful login as ${session?.role ?? "UNKNOWN ROLE"}...`);
+        if (loginAttempt.state === "signed-in") {
+            // ... Extract their session data
+            const session = loginAttempt.session!;
+
+            console.log(
+                `Handling succesful login as ${session.uid}.`,
+                `With role as ${session.role}.`,
+            );
 
             // ... update the login session in memory
             sessionDispatch({
@@ -191,13 +279,13 @@ export default function LoginPage(
             });
 
             // ... and redirect it to the proper screen of interest
-            switch (session?.role) {
+            switch (session.role) {
                 case "patient": {
                     // TODO: Change to proper patient route
                     router.push({
                         pathname: '/GoalList', 
                         params: {
-                            sessionDocId: session.docId?? ""
+                            sessionDocId: session.docId
                         },
                     });
                     break;
@@ -211,16 +299,20 @@ export default function LoginPage(
 
                 // If role is unknown, report an error
                 default: {
-                    setLoginData({
+                    console.error("Unknown page for role. Can't redirect. " 
+                    + "Signing-out");
+
+                    setLoginAttempt({
                         state: "invalid",
-                        errorMessage: "Error inesperado: Rol desconocido. Inténtelo más tarde."
+                        errorMessage: "Error inesperado: Rol desconocido. "
+                        + "Inténtelo más tarde."
                     });
+
                     break;
                 }
-
             }
         }
-    }, [loginData]);
+    }, [loginAttempt]);
 
     // Render login form
     return (
@@ -254,28 +346,28 @@ export default function LoginPage(
 
             { /* Icon Popup */}
             <IconPopup
-                isActive={["invalid", "pending"].includes(loginData.state)}
-                isPressable={loginData.state != "pending"}
+                isActive={["invalid", "pending"].includes(loginAttempt.state)}
+                isPressable={loginAttempt.state != "pending"}
                 onCloseRequest={
-                    () => { setLoginData({ state: "signed-out" }) }
+                    () => { setLoginAttempt({ state: "signed-out" }) }
                 }
                 onActionRequest={
-                    () => { setLoginData({ state: "signed-out" }) }
+                    () => { setLoginAttempt({ state: "signed-out" }) }
                 }
 
                 icon={AppBanner as ImageSourcePropType}
                 description={
                     {
-                        content: (loginData.state === "pending") ?
+                        content: (loginAttempt.state === "pending") ?
                             "Cargando..." :
-                            `No se logró iniciar sesión: ${loginData.errorMessage}`,
-                        style: (loginData.state === "pending") ?
+                            `No se logró iniciar sesión: ${loginAttempt.errorMessage}`,
+                        style: (loginAttempt.state === "pending") ?
                             LoginStyles.PopupLoadingText :
                             LoginStyles.PopupErrorText,
                     }
                 }
                 actionText={
-                    loginData.state === "pending" ?
+                    loginAttempt.state === "pending" ?
                         "Cargando..." : "Aceptar"
                 }
             />

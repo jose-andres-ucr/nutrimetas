@@ -10,13 +10,23 @@ export const SessionContext =
 export const SessionDispatchContext = 
     createContext<Dispatch<LoginAction>>(() => {console.log("AAA")});
 
-// Understand the session data and constraints...
+// User roles on the app
 export type UserRole = "professional" | "patient";
+
+// User data on the DB
+export type UserData = {
+    role: UserRole,
+    docId: string,
+    docContents: any,
+}
+
+// User session on the app
 export type LoginSession = {
+    // TODO: Opt for DB schema instead of wildcard key-value type annotations
     [key: string]: any, 
-    role? : UserRole,
-    // TODO: Get rid of antipattern of user-specific doc ID
-    docId? : string,
+    uid: string, // Account's Auth UID
+    docId : string, // Datasheet's DB ID
+    role: UserRole, // Role on the app
 } | undefined;
 
 // ... the actions that can be taken on a given session...
