@@ -197,7 +197,7 @@ export default function LoginPage(
                     router.push({
                         pathname: '/GoalList', 
                         params: {
-                            sessionDocId: session.docId?? ""
+                            patientId: session.docId?? ""
                         },
                     });
                     break;
