@@ -1,5 +1,6 @@
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
 import React, { useState, useEffect, useContext } from 'react';
+import Colors from '@/constants/Colors';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -28,7 +29,7 @@ const GoalList = () => {
 
     const [originalGoals, setOriginalGoals] = useState<any[]>([]);
     const [originalGoalsSaved, setOriginalGoalsSaved] = useState(false); // Variable para controlar si se han guardado los datos originales
-
+    const [showBackdrop, setShowBackdrop] = useState(false); //oscurece la pantalla 
     useEffect(() => {
         // Guarda las metas originales solo la primera vez que se cargan
         if (!originalGoalsSaved) {
@@ -162,6 +163,7 @@ const GoalList = () => {
     const handleFilterPress = () => {
         console.log('Icono de filtro presionado');
         setShowPopup(true);
+        setShowBackdrop(true);
     };
 
     const handleButtonPress = (option) => {
@@ -172,9 +174,8 @@ const GoalList = () => {
 
     const handleCancel = () => {
         console.log('Cancelar');
-        // Restaurar la lista original de metas
-        setGoals(originalGoals);
         setShowPopup(false);
+        setShowBackdrop(false);
     };
 
     const handleConfirm = () => {
@@ -192,6 +193,7 @@ const GoalList = () => {
     
         filterGoalsByDateRange(startDate, endDate);
         setShowPopup(false);
+        setShowBackdrop(false);
     };
 
     const handleStartDateChange = (event, selectedDate) => {
@@ -205,7 +207,8 @@ const GoalList = () => {
     const handleReset = () => {
         setShowPopup(false); // Oculta el pop-up
         setGoals(originalGoals); // Restablece las metas a los valores originales
-        console.log(originalGoals);
+        //console.log(originalGoals);
+        setShowBackdrop(false);
     }
 
     const filterGoalsByDateRange = async (startDate, endDate) => {
@@ -249,11 +252,15 @@ const GoalList = () => {
                     />
                 </TouchableOpacity>
             </View>
-
+            {showBackdrop && <View style={styles.backdrop} />}
             {/* Ventana emergente */}
             {showPopup && (
+                
                 <View style={styles.popupContainer}>
-                    <Text>Fecha de Inicio</Text>
+                    <View style={styles.filtersHeader}>
+                        <Text style={styles.filterTitle}>Filtros</Text>
+                    </View>
+                    <Text style={styles.dateTitle} >Fecha de Inicio</Text>
                     <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
                         <Text>{startDate.toDateString()}</Text>
                         <FontAwesome name="calendar" size={24} color="gray" />
@@ -266,15 +273,16 @@ const GoalList = () => {
                             onChange={handleStartDateChange}
                         />
                     )}
-
-                    <TouchableOpacity style={styles.button} onPress={handleCancel}>
-                        <Text style={styles.buttonText}>Cancelar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={handleConfirm}>
-                        <Text style={styles.buttonText}>Confirmar</Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row' }}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                            <Text style={styles.buttonText}>Cancelar</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+                            <Text style={styles.buttonText}>Confirmar</Text>
+                        </TouchableOpacity>
+                    </View>
                     <TouchableOpacity style={styles.button} onPress={handleReset}>
-                        <Text style={styles.buttonText}>Reset</Text>
+                        <Text style={styles.buttonText}>Eliminar Filtros</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -317,32 +325,69 @@ const GoalList = () => {
 export default GoalList;
 
 const styles = StyleSheet.create({
-    button: {
-        backgroundColor: '#007bff',
-        padding: 10,
-        borderRadius: 5,
-        marginTop: 10,
-    },
-    buttonText: {
-        color: '#ffffff',
-        fontWeight: 'bold',
-        textAlign: 'center',
+    backdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Ajusta la opacidad según lo desees
+        zIndex: 998, // Asegura que esté detrás del pop-up
     },
     popupContainer: {
         position: 'absolute',
-        backgroundColor: 'white',
+        flex: 1,
+        backgroundColor: Colors.white,
         padding: 20,
         marginTop: '20%',
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: 'black',
+        borderColor: Colors.black,
         alignItems: 'center',
         justifyContent: 'center',
-        width: '80%',
-        height: '50%',
-        top: '25%',
-        left: '10%',
         zIndex: 999,
+        left: '45%', 
+    },
+    filtersHeader: {
+        position: 'absolute',
+        top: 10,
+        left: 10,       
+    },
+    filterTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'left',
+        marginLeft: 10,
+    },
+    dateTitle:{
+        marginTop: 10,
+        marginBottom: -10,
+    },
+    button: {
+        backgroundColor: Colors.lightblue,
+        padding: 10,
+        borderRadius: 5,
+        marginTop: 10,
+        
+    },
+    buttonText: {
+        color: Colors.white,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    cancelButton: {
+        backgroundColor: Colors.red, // Puedes cambiar esto a tu color deseado
+        padding: 10,
+        borderRadius: 5,
+        marginTop: 10,
+        marginRight: 5, // Espacio adicional entre los botones
+    },
+    confirmButton: {
+        backgroundColor: Colors.green, // Puedes cambiar esto a tu color deseado
+        padding: 10,
+        borderRadius: 5,
+        marginTop: 10,
+        marginLeft: 5, // Espacio adicional entre los botones
     },
     container: {
         flex: 1,
