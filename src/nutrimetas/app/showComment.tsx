@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView, Button, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
 import firebase from '@react-native-firebase/app';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'react-native-image-picker';
 
-import attachment from '../assets/images/attachment.png' 
-import sendIcon3 from '../assets/images/sendIcon2.png'
+import attachment from '../assets/images/attachment.png';
+import sendIcon3 from '../assets/images/sendIcon2.png';
 import loadingGif from '../assets/images/loading.gif';
 
 type messageProps = {
@@ -16,44 +16,64 @@ type messageProps = {
   goalId: string
 };
 
-const ShowComment = (props: messageProps) => {
+const getComments = async ({ queryKey }: { queryKey: [typeof GET_COMMENTS_QUERY_KEY, string] }): Promise<IMessage[]> => {
+  const [, goalId] = queryKey;
+  const comments = await firebase.firestore()
+    .collection('Goal')
+    .doc(goalId)
+    .collection('comments')
+    .orderBy('createdAt', 'desc')
+    .get();
+  return comments.docs.map(doc => {
+    const data = doc.data();
+    return {
+      _id: doc.id,
+      text: data.text,
+      createdAt: data.createdAt?.toDate() ?? new Date(),
+      user: data.user,
+    };
+  });
+};
 
-  const [messages, setMessages] = useState<IMessage[]>([]);
+const GET_COMMENTS_QUERY_KEY = ["get-comments"] as const;
+
+const ShowComment = (props: messageProps) => {
+  
+  var queryComments = useQuery({ 
+    queryKey: [GET_COMMENTS_QUERY_KEY, props.goalId], 
+    queryFn: getComments
+  })
+
+  const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
   const roleId = props.role == "patient" ? 2 : 1
 
-  const fetchComments = async () => {
-    const db = firebase.firestore();
-    const commentsRef = db.collection('Goal').doc(props.goalId).collection('comments');
-    
-    const unsubscribe = commentsRef.orderBy('createdAt', 'desc').onSnapshot((querySnapshot) => {
-      const fetchedMessages: IMessage[] = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          _id: doc.id,
-          text: data.text,
-          createdAt: data.createdAt?.toDate() ?? new Date(),
-          user: data.user,
-        };
+  React.useEffect(() => {
+    console.log("Fetching", queryComments.isFetching)
+    const unsubscribe = firebase
+      .firestore()
+      .collection('Goal')
+      .doc(props.goalId)
+      .collection('comments')
+      .orderBy('createdAt', 'desc')
+      .onSnapshot((querySnapshot) => {
+        queryClient.setQueryData(
+          [GET_COMMENTS_QUERY_KEY, props.goalId],
+          querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              _id: doc.id,
+              text: data.text,
+              createdAt: data.createdAt?.toDate() ?? new Date(),
+              user: data.user,
+            };
+          })
+        );
       });
-      setMessages(fetchedMessages);
-    });
     return () => unsubscribe();
-  };
-
-  useEffect(() => {
-    fetchComments();
-  }, [props.goalId]);
-
-  var  { status } = useQuery({ 
-    queryKey: ['comments'], 
-    queryFn: fetchComments 
-  })
+  }, []);
 
   const onSend = async (newMessage: IMessage[]) => {
-    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessage));
-    console.log("Guardando el mensaje:", newMessage)
-
     try {
       const db = firebase.firestore();
       await db.collection('Goal').doc(props.goalId).collection('comments').add({
@@ -146,7 +166,7 @@ const ShowComment = (props: messageProps) => {
     }
   };
 
-  if(status == 'pending'){
+  if( queryComments.isFetching ){
     return(
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -168,7 +188,7 @@ const ShowComment = (props: messageProps) => {
             behavior="height" // Esto es para que la barra de comentarios salga por arriba del teclado cuando se despliega el teclado
           >
             <GiftedChat
-              messages={messages}
+              messages={queryComments.data}
               onSend={newMessage => onSend(newMessage)}
               user={{ _id: roleId }} // ID del usuario actual
               renderAvatar={(props) => (
