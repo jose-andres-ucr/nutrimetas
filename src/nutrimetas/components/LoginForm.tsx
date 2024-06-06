@@ -1,16 +1,20 @@
-"use strict"
-
 // Dependencies
 // React Hooks & References
-import { useRef } from "react";
+import { useRef, ElementRef } from "react";
 
 // Core React Native UI
-import { View, Text, TextInput, StyleSheet, Pressable, 
-    ImageSourcePropType } from "react-native";
+import { StyleSheet, Pressable } from "react-native";
 
 // Expo UI
-import { useAssets } from 'expo-asset'; 
 import { Image } from "expo-image";
+
+// Color palettes
+import Colors from "@/constants/Colors";
+import { View, Text, TextInput } from "@/components/Themed";
+
+// Image assets
+import MailIcon from '@/assets/images/mail.svg';
+import LockIcon from '@/assets/images/lock.svg';
 
 // Form structure and hooks
 import { useForm, SubmitHandler, Controller, Form } from "react-hook-form";
@@ -61,15 +65,9 @@ export default function LoginForm(
 
     // Register the login form's field refs
     const {emailRef, passwordRef} = {
-        emailRef: useRef<TextInput>(null),
-        passwordRef: useRef<TextInput>(null),
-    } as const;
-
-    // Register the icon loading hook
-    const [icon, error] = useAssets([
-        require('@/assets/images/mail.svg'), 
-        require('@/assets/images/lock.svg')
-    ]);
+        emailRef: useRef<ElementRef<typeof TextInput>>(null),
+        passwordRef: useRef<ElementRef<typeof TextInput>>(null),
+    } as const; // 
 
     // Render login form
     return (
@@ -81,8 +79,10 @@ export default function LoginForm(
                 {/* Input */}
                 <View style={FormStyles.FieldInputView}>
                     <Image 
-                        source={icon? icon[0] as ImageSourcePropType : undefined}
-                        onError={() => {console.error("Error loading image:", error);}}
+                        source={MailIcon}
+                        onError={(error) => {
+                            console.error("Error loading image:", error);
+                        }}
 
                         style={FormStyles.InputTextIcon}
                         contentFit="contain"
@@ -129,9 +129,10 @@ export default function LoginForm(
                 {/* Input */}
                 <View style={FormStyles.FieldInputView}>
                     <Image 
-                        source={icon? icon[1] as ImageSourcePropType : undefined}
-                        onError={() => {
-                            console.error("Error loading image:", error);}}
+                        source={LockIcon}
+                        onError={(error) => {
+                            console.error("Error loading image:", error);
+                        }}
 
                         style={FormStyles.InputTextIcon}
                         contentFit="contain"
@@ -218,13 +219,13 @@ const FormStyles = StyleSheet.create({
         justifyContent: "flex-start",
 
         borderBottomWidth: 1,
-        borderBottomColor: '#A6A6A6',
+        borderBottomColor: Colors.gray,
         // backgroundColor: "green"
     },
     InputTextIcon: {
         width: 25,
         height: 25,
-        color: '#A6A6A6',
+        color: Colors.gray,
     },
     FieldInputText: {
         fontWeight: "normal",
@@ -237,7 +238,7 @@ const FormStyles = StyleSheet.create({
         fontWeight: "bold",
         fontFamily: "sans-serif-light",
         fontStyle: "italic",
-        color: "red",
+        color: Colors.red,
 
         textAlign: "left",
     },
@@ -250,15 +251,15 @@ const FormStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         
-        backgroundColor: '#00C0F3',
+        backgroundColor: Colors.lightblue,
     },
     LoginButtonText: {
         fontWeight: "bold",
         fontFamily: "sans-serif-light",
         fontStyle: "normal",
-        color: "white",
+        color: Colors.white,
 
         textAlign: "justify",
-        borderBottomColor: '#A6A6A6',
+        borderBottomColor: Colors.gray,
     },
 });

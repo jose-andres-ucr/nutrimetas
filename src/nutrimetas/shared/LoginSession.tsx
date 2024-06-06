@@ -1,5 +1,3 @@
-"use-strict"
-
 // Dependencies
 // Core React hooks & misc. stuff
 import { ReactNode, Dispatch, createContext, useReducer } from "react";
@@ -14,7 +12,12 @@ export const SessionDispatchContext =
 
 // Understand the session data and constraints...
 export type UserRole = "professional" | "patient";
-export type LoginSession = {[key: string]: any, role? : UserRole} | undefined;
+export type LoginSession = {
+    [key: string]: any, 
+    role? : UserRole,
+    // TODO: Get rid of antipattern of user-specific doc ID
+    docId? : string,
+} | undefined;
 
 // ... the actions that can be taken on a given session...
 export type LoginAction = {
