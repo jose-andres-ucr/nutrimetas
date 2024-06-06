@@ -55,15 +55,23 @@ const ShowComment = (props: messageProps) => {
     queryFn: fetchComments 
   })
 
-  const uploadMediaToStorage = async (uri: string) => {
+  const uploadMediaToStorage = async (uri: string, isImage: boolean) => {
 
     const randomComponent1 = Math.random().toString(36).substring(2, 9);
     const randomComponent2 = Math.random().toString(36).substring(2, 9);
     const uniqueImageId = randomComponent1 + randomComponent2;
 
+    let storageRef 
 
-    const storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.jpg`);
-    console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.jpg`);
+    if (isImage){
+      storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.jpg`);
+      console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.jpg`);
+
+    }else{
+      storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.mp4`);
+      console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.mp4`);
+
+    }
 
     await storageRef.putFile(uri);
 
@@ -93,13 +101,15 @@ const ShowComment = (props: messageProps) => {
 
       if (imageUri) {
         console.log("Entre a imageUri");
-        const imageUrl = await uploadMediaToStorage(imageUri);
+        const isImage = true;
+        const imageUrl = await uploadMediaToStorage(imageUri, isImage);
         messageData.image = imageUrl;
       }
 
       if (videoUri) {
         console.log("Entre a videoUrl");
-        const videoUrl = await uploadMediaToStorage(videoUri);
+        const isImage = false;
+        const videoUrl = await uploadMediaToStorage(videoUri, isImage);
         messageData.video = videoUrl;
       }
 
@@ -177,7 +187,7 @@ const ShowComment = (props: messageProps) => {
         break;
 
       case 'video': 
-        ImagePicker.launchCamera({ mediaType: 'video', durationLimit: 10 }, (response) => {
+        ImagePicker.launchCamera({ mediaType: 'video', durationLimit: 15 }, (response) => {
           if (response.assets && response.assets.length > 0) {
             const video = response.assets[0];
 
