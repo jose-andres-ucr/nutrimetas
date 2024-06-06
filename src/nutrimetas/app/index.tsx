@@ -230,7 +230,7 @@ export default function LoginPage(
         User : FirebaseAuthTypes.User | null
     ) {
         // If user is null, sign-out
-        if (User == null) {
+        if (User === null) {
             setLoginAttempt({state: "signed-out"});
         }
 
