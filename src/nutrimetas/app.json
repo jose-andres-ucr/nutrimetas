@@ -34,16 +34,8 @@
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
-      "expo-asset",
-      "expo-font",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "flipper": false
-          }
-        }
-      ]
+      "@react-native-firebase/auth",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
