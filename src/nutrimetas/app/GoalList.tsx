@@ -25,8 +25,21 @@ const GoalList = () => {
     // estados para las fechas
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [startDate, setStartDate] = useState(new Date());
-    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-    const [endDate, setEndDate] = useState(new Date());
+
+    const [originalGoals, setOriginalGoals] = useState<any[]>([]);
+    const [originalGoalsSaved, setOriginalGoalsSaved] = useState(false); // Variable para controlar si se han guardado los datos originales
+
+    useEffect(() => {
+        // Guarda las metas originales solo la primera vez que se cargan
+        if (!originalGoalsSaved) {
+            setOriginalGoals(goals);
+            setOriginalGoalsSaved(true);
+        }
+    }, [goals, originalGoalsSaved]);
+
+    useEffect(() => {
+        setOriginalGoalsSaved(false);
+    }, [patientId]);
 
     useEffect(() => {
         if (patientId) {
@@ -36,7 +49,7 @@ const GoalList = () => {
                 .onSnapshot((snapshot) => {
                     const patientData = snapshot.data();
                     const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
-
+                    
                     if (patientGoals.length > 0) {
                         fetchGoalsFromFirebase(patientGoals);
                     } else {
@@ -57,6 +70,7 @@ const GoalList = () => {
         for (const goalId of patientGoals) {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
+                console.log('Datos de la meta:', goalDoc.data());
                 const goalSelectId = goalDoc.id;
                 if (goalDoc.exists) {
                     const goalData = goalDoc.data();
@@ -74,6 +88,7 @@ const GoalList = () => {
         }
 
         setGoals(goalsFromFirebase);
+        
         setLoading(false);
     };
 
@@ -98,8 +113,11 @@ const GoalList = () => {
 
     const fetchReferenceData = async (collection: string, docId: string) => {
         const doc = await firestore().collection(collection).doc(docId).get();
-        return doc.exists ? doc.data() : null;
+        const data = doc.exists ? doc.data() : null;
+        console.log('Datos obtenidos de Firebase:', data); // Imprime los datos obtenidos de Firebase
+        return data;
     };
+    
 
     const buildDescription = async (goalData: any) => {
         try {
@@ -154,15 +172,25 @@ const GoalList = () => {
 
     const handleCancel = () => {
         console.log('Cancelar');
+        // Restaurar la lista original de metas
+        setGoals(originalGoals);
         setShowPopup(false);
     };
 
     const handleConfirm = () => {
         console.log('Confirmar');
-        // Verificar las fechas 
-        console.log('Fecha de Inicio:', startDate);
-        console.log('Fecha Límite:', endDate);
-        filterGoalsByDateRange();
+    
+        const formattedStartDate = startDate.toISOString();
+    
+        // Calcular la fecha final como 7 días después de la fecha de inicio
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 7);
+        const formattedEndDate = endDate.toISOString();
+    
+        console.log('Fecha de Inicio:', formattedStartDate);
+        console.log('Fecha Límite:', formattedEndDate);
+    
+        filterGoalsByDateRange(startDate, endDate);
         setShowPopup(false);
     };
 
@@ -174,43 +202,38 @@ const GoalList = () => {
         }
     };
 
-    const handleEndDateChange = (event, selectedDate) => {
-        setShowEndDatePicker(false);
-        if (selectedDate) {
-            setEndDate(selectedDate);
-            console.log('Fecha Límite seleccionada:', selectedDate);
-        }
-    };
+    const handleReset = () => {
+        setShowPopup(false); // Oculta el pop-up
+        setGoals(originalGoals); // Restablece las metas a los valores originales
+        console.log(originalGoals);
+    }
 
-    const filterGoalsByDateRange = async () => {
+    const filterGoalsByDateRange = async (startDate, endDate) => {
         if (patientId) {
             setLoading(true);
-            
-            // Realizar consulta para StartDate
-            const startGoalsQuerySnapshot = await firestore()
-                .collection('Goal')
-                .where('PatientId', '==', patientId)
-                .where('StartDate', '>=', startDate)
-                .get();
+            try {
+                // Ajustar las fechas de inicio y fin para incluir la primera y última hora del día seleccionado
+                const adjustedStartDate = new Date(startDate);
+                adjustedStartDate.setHours(0, 0, 0, 0); // Establecer la primera hora del día
+                const adjustedEndDate = new Date(endDate);
+                adjustedEndDate.setHours(23, 59, 59, 999); // Establecer la última hora del día
     
-            // Realizar consulta para Deadline
-            const endGoalsQuerySnapshot = await firestore()
-                .collection('Goal')
-                .where('PatientId', '==', patientId)
-                .where('Deadline', '<=', endDate)
-                .get();
+                // Filtrar las metas originales por las fechas ajustadas
+                const filteredGoals = originalGoals.filter(goal => {
+                    const goalStartDate = new Date(goal.StartDate.toDate());
+                    return goalStartDate >= adjustedStartDate && goalStartDate <= adjustedEndDate;
+                });
     
-            // Combinar los resultados de ambas consultas
-            const startGoals = startGoalsQuerySnapshot.docs.map(doc => doc.data());
-            const endGoals = endGoalsQuerySnapshot.docs.map(doc => doc.data());
-            const filteredGoals = startGoals.filter(goal => {
-                return endGoals.some(endGoal => endGoal.id === goal.id);
-            });
-    
-            setGoals(filteredGoals);
-            setLoading(false);
+                console.log('Metas filtradas por fecha:', filteredGoals);
+                setGoals(filteredGoals);
+            } catch (error) {
+                console.error("Error filtering goals:", error);
+            } finally {
+                setLoading(false);
+            }
         }
     };
+    
 
     return (
         <View style={styles.container}>
@@ -244,25 +267,14 @@ const GoalList = () => {
                         />
                     )}
 
-                    <Text>Fecha Límite</Text>
-                    <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
-                        <Text>{endDate.toDateString()}</Text>
-                        <FontAwesome name="calendar" size={24} color="gray" />
-                    </TouchableOpacity>
-                    {showEndDatePicker && (
-                        <DateTimePicker
-                            value={endDate}
-                            mode="date"
-                            display="default"
-                            onChange={handleEndDateChange}
-                        />
-                    )}
-
                     <TouchableOpacity style={styles.button} onPress={handleCancel}>
                         <Text style={styles.buttonText}>Cancelar</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.button} onPress={handleConfirm}>
                         <Text style={styles.buttonText}>Confirmar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={handleReset}>
+                        <Text style={styles.buttonText}>Reset</Text>
                     </TouchableOpacity>
                 </View>
             )}
