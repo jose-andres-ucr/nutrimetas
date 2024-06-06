@@ -4,8 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
 import firebase from '@react-native-firebase/app';
+import storage from '@react-native-firebase/storage';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'react-native-image-picker';
+import { v4 as uuidv4 } from 'uuid';
+
 
 import attachment from '../assets/images/attachment.png' 
 import sendIcon3 from '../assets/images/sendIcon2.png'
@@ -31,9 +34,11 @@ const ShowComment = (props: messageProps) => {
         const data = doc.data();
         return {
           _id: doc.id,
-          text: data.text,
+          text: data.text || null, // Si no hay texto, se establece como una cadena vacía
           createdAt: data.createdAt?.toDate() ?? new Date(),
           user: data.user,
+          image: data.image || null, // Si no hay imagen, se establece como null
+          video: data.video || null, // Si no hay video, se establece como null
         };
       });
       setMessages(fetchedMessages);
@@ -50,13 +55,33 @@ const ShowComment = (props: messageProps) => {
     queryFn: fetchComments 
   })
 
-  const onSend = async (newMessage: IMessage[]) => {
+  const uploadMediaToStorage = async (uri: string) => {
+
+    const randomComponent1 = Math.random().toString(36).substring(2, 9);
+    const randomComponent2 = Math.random().toString(36).substring(2, 9);
+    const uniqueImageId = randomComponent1 + randomComponent2;
+
+
+    const storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.jpg`);
+    console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.jpg`);
+
+    await storageRef.putFile(uri);
+
+    const downloadUrl = await storageRef.getDownloadURL();
+    console.log("downloadUrl", downloadUrl);
+
+    return downloadUrl;
+};
+
+
+  const onSend = async (newMessage: IMessage[], imageUri?: string, videoUri?: string) => {
     setMessages(previousMessages => GiftedChat.append(previousMessages, newMessage));
-    console.log("Guardando el mensaje:", newMessage)
+    console.log("Guardando el mensaje:", newMessage);
 
     try {
+      
       const db = firebase.firestore();
-      await db.collection('Goal').doc(props.goalId).collection('comments').add({
+      const messageData: any = {
         text: newMessage[0].text,
         createdAt: newMessage[0].createdAt,
         user: {
@@ -64,12 +89,27 @@ const ShowComment = (props: messageProps) => {
           name: props.role,
           avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
-      });
-      console.log("Guardado!")
+      };
+
+      if (imageUri) {
+        console.log("Entre a imageUri");
+        const imageUrl = await uploadMediaToStorage(imageUri);
+        messageData.image = imageUrl;
+      }
+
+      if (videoUri) {
+        console.log("Entre a videoUrl");
+        const videoUrl = await uploadMediaToStorage(videoUri);
+        messageData.video = videoUrl;
+      }
+
+      await db.collection('Goal').doc(props.goalId).collection('comments').add(messageData);
+      console.log("Guardado!");
     } catch (error) {
       console.error("Error saving message to Firestore: ", error);
     }
   };
+  
 
   const renderInputToolbar = (props: any) => {
     return (
@@ -121,6 +161,17 @@ const ShowComment = (props: messageProps) => {
             const image = response.assets[0];
             // Handle selected image here
             console.log('Image selected: ', image);
+            const newMessage: IMessage = {
+              _id: Math.random().toString(36).substring(7),
+              text: '', 
+              createdAt: new Date(),
+              user: {
+                _id: roleId,
+                name: props.role,
+                avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
+              },
+            };
+            onSend([newMessage], image.uri);
           }
         });
         break;
@@ -128,7 +179,20 @@ const ShowComment = (props: messageProps) => {
       case 'video': 
         ImagePicker.launchCamera({ mediaType: 'video', durationLimit: 10 }, (response) => {
           if (response.assets && response.assets.length > 0) {
-            const image = response.assets[0];
+            const video = response.assets[0];
+
+            console.log('Video selected: ', video);
+            const newMessage: IMessage = {
+              _id: Math.random().toString(36).substring(7),
+              text: '', 
+              createdAt: new Date(),
+              user: {
+                _id: roleId,
+                name: props.role,
+                avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
+              },
+            };
+            onSend([newMessage], undefined, video.uri);
           }
         });
         break;
@@ -179,20 +243,35 @@ const ShowComment = (props: messageProps) => {
               )}
               renderBubble={(props) => (
                 <View
-                style={[
-                  styles.bubble,
-                  // Cambiamos los estilos para que los mensajes del usuario actual sean celestes y los de la otra persona sean grises
-                  props.currentMessage?.user._id === (roleId)
-                    ? styles.userBubble // Estilo para las burbujas del usuario actual
-                    : styles.otherBubble // Estilo para las burbujas de otros usuarios
-                ]}
+                  style={[
+                    styles.bubble,
+                    props.currentMessage?.user._id === roleId ? styles.userBubble : styles.otherBubble
+                  ]}
                 >
-                  <Text style={styles.text}>{props.currentMessage?.text}</Text>
-                  <Text style={styles.timestamp}>
+                  {props.currentMessage?.text && (
+                    <Text style={styles.text}>{props.currentMessage.text}</Text>
+                  )}
+                  {props.currentMessage?.image && (
+                    <View style={{ position: 'relative' }}>
+                    <Image
+                      source={{ uri: props.currentMessage.image }}
+                      style={{ width: 250, height: 250, borderRadius: 5}}
+                      resizeMode="cover"
+                    />
+                    <Text style={styles.timestampImage}>
                     {props.currentMessage?.createdAt
                       ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                       : ''}
-                  </Text>
+                    </Text>
+                    </View>
+                  )}
+                  {!props.currentMessage?.image && (
+                    <Text style={styles.timestamp}>
+                      {props.currentMessage?.createdAt
+                        ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : ''}
+                    </Text>
+                  )}
                 </View>
               )}
               renderSend={renderSend}
@@ -274,6 +353,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'right',
     color: Colors.white,
+  },
+  timestampImage: {
+    marginTop: 5,
+    fontSize: 10,
+    textAlign: 'right',
+    color: Colors.white,
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    marginRight: 5, // Ajusta el espaciado desde el borde derecho de la burbuja
+    marginBottom: 5, 
   },
   avatar: {
     width: 40,
