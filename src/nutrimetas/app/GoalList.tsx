@@ -2,11 +2,13 @@ import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react
 import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
 import { useGlobalSearchParams } from 'expo-router';
 
 const GoalList = () => {
+    const router = useRouter();
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
     const { role } = useContext(SessionContext);
@@ -44,12 +46,13 @@ const GoalList = () => {
             // Verificar si goalId es una cadena (ID de objetivo)
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
+                const goalSelectId = goalDoc.id;
                 if (goalDoc.exists) {
                     const goalData = goalDoc.data();
                     if (goalData) {
                         const title = await buildTitle(goalData.Rubric);
                         const description = await buildDescription(goalData);
-                        goalsFromFirebase.push({ ...goalData, title, description });
+                        goalsFromFirebase.push({ ...goalData, title, description, goalSelectId });
                     } else {
                         console.error('Goal data is undefined for goal ID:', goalId.id);
                     }
@@ -116,8 +119,9 @@ const GoalList = () => {
         }
     };
 
-    const onPressHandle = (selectedGoal: any) => {
-        console.log(selectedGoal);
+    const onPressHandle = (selectedGoalId: string) => {
+        console.log(selectedGoalId);
+        router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId } });
     };
 
     const handleAddGoal = () => {
@@ -142,7 +146,7 @@ const GoalList = () => {
                 <FlatList
                     data={goals}
                     renderItem={({ item }) => (
-                        <TouchableOpacity onPress={() => onPressHandle(item)}>
+                        <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
                             <View style={styles.item}>
                                 <Image
                                     style={styles.itemImage}

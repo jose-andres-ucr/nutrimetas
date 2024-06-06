@@ -115,7 +115,6 @@ export default function InfoGoals() {
   const onSubmit = (data: GoalFormType) => {
     setLoading(true);
     console.log("Enviados correctamente ", data)
-    const template = patientId === undefined ? true : false;
     const newGoalId = firestore().collection('Goal').doc().id
     const newGoalData = {
       Deadline: data.deadline,
@@ -127,7 +126,6 @@ export default function InfoGoals() {
       Rubric: data.rubric,
       Amount: data.amount,
       Portion: data.portion,
-      Template: template,
     }
     const goalDocRef = firestore().collection('Goal').doc(newGoalId);
     goalDocRef.set(newGoalData)
