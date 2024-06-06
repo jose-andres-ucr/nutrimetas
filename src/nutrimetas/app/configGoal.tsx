@@ -62,7 +62,6 @@ export default function InfoGoals() {
   const [frequencyData, setFrequencyData] = useState<CommonType[]>([]);
   const [portionData, setPortionData] = useState<CommonType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const navigation = useNavigation();
   const route = useRoute();
   const router = useRouter(); // Expo router
   const firstGoalData = route.params?.formData;
@@ -142,7 +141,6 @@ export default function InfoGoals() {
             .then(() => {
               console.log("Patient sent: ", patientId);
               setLoading(false);
-              // navigation.navigate('GoalList', { sessionDocId: patientId });
               router.push({ pathname: '/GoalList', params: { patientId: patientId } });
               showSuccessMessage(() => {
               });
