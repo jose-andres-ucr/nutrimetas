@@ -1,9 +1,9 @@
 // Dependencies
 // Core React hooks & misc. stuff
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext } from "react";
 
 // Core React Native UI
-import { StyleSheet, ImageSourcePropType, useColorScheme } 
+import { StyleSheet, ImageSourcePropType } 
 from "react-native";
 
 // Expo UI
@@ -111,7 +111,7 @@ export default function LoginPage(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0) {
                         potentialSession = {
-                            documentId : QuerySnapshot.docs[0].id, 
+                            docId : QuerySnapshot.docs[0].id, 
                             role: "patient",
                             ...QuerySnapshot.docs[0].data(),
                         };
