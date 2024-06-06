@@ -33,8 +33,7 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app",
-      "expo-font"
+      "@react-native-firebase/app"
     ],
     "experiments": {
       "typedRoutes": true
