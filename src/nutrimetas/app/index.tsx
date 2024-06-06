@@ -1,19 +1,20 @@
-"use strict"
-
 // Dependencies
 // Core React hooks & misc. stuff
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext } from "react";
 
 // Core React Native UI
-import { View, Text, StyleSheet, ImageSourcePropType }
-    from "react-native";
-
-// React Navigation
-import { useNavigation } from '@react-navigation/native';
+import { StyleSheet, ImageSourcePropType } 
+from "react-native";
 
 // Expo UI
-import { useAssets } from 'expo-asset';
 import { Image } from "expo-image";
+
+// Image assets
+import AppBanner from '@/assets/images/logo.png';
+
+// Color palettes
+import Colors from "@/constants/Colors";
+import { View, Text } from "@/components/Themed";
 
 // Expo navigation
 import { router, useFocusEffect } from "expo-router";
@@ -34,8 +35,7 @@ import {
 } from "@/shared/LoginSession";
 
 /// Credential verification
-const checkAuth = function (email: string, password: string,
-    credentials: any) {
+const checkAuth = function (email: string, password: string, credentials: any) {
     console.log("Checking credentials...");
     console.log("Pulled", credentials);
     console.log("Passed", email, password);
@@ -47,26 +47,18 @@ const checkAuth = function (email: string, password: string,
 }
 
 // Possible login states 
-type LoginStatus = {
-    value: "pending" | "invalid" | "signed-in" | "signed-out",
-    message?: string,
+type LoginData = {
+    state: "pending" | "invalid" | "signed-in" | "signed-out",
+    errorMessage?: string,
+    session?: LoginSession, 
 };
-
-// TODO: Get rid of antipattern of patient-specific doc ID
-// Patient doc id
-let patientDocId: string | undefined = undefined;
 
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
-    const navigation = useNavigation();
-
-    // Keep track of current login state...
-    const [loginState, setLoginState] =
-        useState({ value: "pending" } as LoginStatus);
-
-    // and the data of whoever is logged on, if at all
-    let potentialSession = useRef({} as LoginSession);
+    // Keep track of current login state
+    const [loginData, setLoginData] =
+        useState({ state: "pending" } as LoginData);
 
     // Access the shared context of said data
     const session = useContext(SessionContext);
@@ -86,7 +78,7 @@ export default function LoginPage(
                 });
 
                 // And in this screen
-                setLoginState({ value: "signed-out" });
+                setLoginData({ state: "signed-out" });
             }, [])
     )
 
@@ -97,17 +89,18 @@ export default function LoginPage(
         data: { email: string, password: string }
     ) {
         console.log("Attempting to log in...");
+        
         // Keep track of... 
-
         // ... the current state of login
-        setLoginState({ value: "pending" });
+        setLoginData({ state: "pending" });
+
+        // ... the potential session to be acquired
+        let potentialSession = null;
 
         // ...and unexpected DB errors
         let unexpectedError = null;
 
         // Find the proper person associated with said credentials
-        potentialSession.current = {};
-
         // Be it a patient...
         await firestore()
             .collection("Patient")
@@ -117,9 +110,11 @@ export default function LoginPage(
             .then(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0) {
-                        potentialSession.current = QuerySnapshot.docs[0].data();
-                        potentialSession.current.role = "patient";
-                        patientDocId = QuerySnapshot.docs[0].id;
+                        potentialSession = {
+                            docId : QuerySnapshot.docs[0].id, 
+                            role: "patient",
+                            ...QuerySnapshot.docs[0].data(),
+                        };
                     }
                 },
                 (Error) => {
@@ -141,9 +136,11 @@ export default function LoginPage(
             .then(
                 (QuerySnapshot) => {
                     if (QuerySnapshot.size > 0) {
-                        potentialSession.current = QuerySnapshot.docs[0].data();
-                        potentialSession.current.role = "professional";
-                        patientDocId = QuerySnapshot.docs[0].id;
+                        potentialSession = {
+                            docId : QuerySnapshot.docs[0].id, 
+                            role: "professional",
+                            ...QuerySnapshot.docs[0].data(),
+                        };
                     }
                 },
                 (Error) => {
@@ -160,82 +157,87 @@ export default function LoginPage(
         // sucesfully validated, accept the login and pass its credentials
         // along with the user control to the next screens
         if (
-            unexpectedError == null &&
-            potentialSession.current != null &&
-            checkAuth(data.email, data.password, potentialSession.current)
+            unexpectedError === null &&
+            potentialSession !== null &&
+            checkAuth(data.email, data.password, potentialSession)
         ) {
             console.log("Login SUCCESFUL");
-            setLoginState({ value: "signed-in" });
+            setLoginData({ state: "signed-in", session: potentialSession });
         }
 
         // Otherwise, reject the login
         else {
             console.log("Login FAILED");
 
-            let reason = (unexpectedError == null) ?
+            let rejectionReason = (unexpectedError === null) ?
                 "Credenciales incorrectas" :
-                `Error inesperado: ${error?.name}. Inténtelo más tarde.`;
+                `Error inesperado: ${unexpectedError}. Inténtelo más tarde.`;
 
-            setLoginState({ value: "invalid", message: reason });
+            setLoginData({ state: "invalid", errorMessage: rejectionReason });
         }
     }
 
     /// Succesful attempts
     useEffect(() => {
         // If user is logged in then...
-        if (loginState.value == "signed-in") {
-            console.log(`Handling succesful login as ${potentialSession.current?.role ?? "UNKNOWN ROLE"}...`);
+        if (loginData.state === "signed-in") {
+            const session = loginData.session;
+            console.log(`Handling succesful login as ${session?.role ?? "UNKNOWN ROLE"}...`);
 
             // ... update the login session in memory
             sessionDispatch({
                 type: "set",
-                newSession: potentialSession.current,
+                newSession: session,
             });
 
             // ... and redirect it to the proper screen of interest
-            switch (potentialSession.current?.role) {
+            switch (session?.role) {
                 case "patient": {
-                    // TODO: Changed to proper patient route
-                    // navigation.navigate('GoalList', { sessionDocId: patientDocId });
-                    router.push({ pathname: '/GoalList', params: { patientId: patientDocId } });
+                    // TODO: Change to proper patient route
+                    router.push({
+                        pathname: '/GoalList', 
+                        params: {
+                            patientId: session.docId?? ""
+                        },
+                    });
                     break;
                 }
 
                 case "professional": {
-                    // TODO: Changed to proper professional route
+                    // TODO: Change to proper professional route
                     router.push("/(tabs)/expedientes")
                     break;
                 }
 
                 // If role is unknown, report an error
                 default: {
-                    setLoginState({
-                        value: "invalid",
-                        message: "Error inesperado: Rol desconocido. Inténtelo más tarde."
+                    setLoginData({
+                        state: "invalid",
+                        errorMessage: "Error inesperado: Rol desconocido. Inténtelo más tarde."
                     });
                     break;
                 }
 
             }
         }
-    }, [loginState]);
-
-    // Register the icon loading hook
-    const [icon, error] = useAssets([
-        require('@/assets/images/logo.png')
-    ]);
+    }, [loginData]);
 
     // Render login form
     return (
         <View style={LoginStyles.OverallView}>
             { /* Form title */}
-            <Text style={LoginStyles.Title}> Iniciar Sesión </Text>
+            <Text 
+                style={LoginStyles.Title}> 
+                Iniciar Sesión 
+            </Text>
 
             { /* App logo */}
             <View style={LoginStyles.LogoView}>
                 <Image
-                    source={icon ? icon[0] as ImageSourcePropType : undefined}
-                    onError={() => { console.error("Error loading image:", error); }}
+                    source={AppBanner}
+                    onError={(error) => {
+                        console.error("Error loading image:", error);
+                    }}
 
                     contentFit="contain"
                     contentPosition="top center"
@@ -252,28 +254,28 @@ export default function LoginPage(
 
             { /* Icon Popup */}
             <IconPopup
-                isActive={["invalid", "pending"].includes(loginState.value)}
-                isPressable={loginState.value != "pending"}
+                isActive={["invalid", "pending"].includes(loginData.state)}
+                isPressable={loginData.state != "pending"}
                 onCloseRequest={
-                    () => { setLoginState({ value: "signed-out" }) }
+                    () => { setLoginData({ state: "signed-out" }) }
                 }
                 onActionRequest={
-                    () => { setLoginState({ value: "signed-out" }) }
+                    () => { setLoginData({ state: "signed-out" }) }
                 }
 
-                icon={icon != undefined ? icon[0] as ImageSourcePropType : undefined}
+                icon={AppBanner as ImageSourcePropType}
                 description={
                     {
-                        content: (loginState.value == "pending") ?
+                        content: (loginData.state === "pending") ?
                             "Cargando..." :
-                            `No se logró iniciar sesión: ${loginState.message}`,
-                        style: (loginState.value == "pending") ?
+                            `No se logró iniciar sesión: ${loginData.errorMessage}`,
+                        style: (loginData.state === "pending") ?
                             LoginStyles.PopupLoadingText :
                             LoginStyles.PopupErrorText,
                     }
                 }
                 actionText={
-                    loginState.value == "pending" ?
+                    loginData.state === "pending" ?
                         "Cargando..." : "Aceptar"
                 }
             />
@@ -291,7 +293,6 @@ const LoginStyles = StyleSheet.create({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "white"
     },
     Title: {
         fontWeight: "bold",
@@ -346,7 +347,7 @@ const LoginStyles = StyleSheet.create({
         fontWeight: "bold",
         fontFamily: "sans-serif-light",
         fontStyle: "italic",
-        color: "red",
+        color: Colors.red,
 
         textAlign: "left",
     },
