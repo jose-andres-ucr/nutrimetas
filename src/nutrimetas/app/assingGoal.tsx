@@ -148,14 +148,13 @@ export default function AssignGoal() {
         ) : null}        
 
         <View style={styles.buttonContainer}>
-          <Link href='/(tabs)/goals' style={{
-            ...styles.button,
-            borderWidth: 1,
-            borderColor: "black",
-            lineHeight: 35
-          }}>
-            Cancelar
-          </Link>
+        <Button
+            style={{ ...styles.button, ...styles.returnButton }}
+            mode="contained"
+            onPress={() =>router.back()}
+          >
+            <Text style={{fontSize: 16, fontWeight: 'bold'}}>Cancelar</Text>
+          </Button>
 
           <Button
             style={{ ...styles.button, backgroundColor: Colors.lightblue }}
@@ -210,6 +209,11 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     fontSize: 16,
     fontWeight: "bold"
+  },
+  returnButton: {
+    borderWidth: 1,
+    borderColor: Colors.black,
+    backgroundColor: "transparent",
   },
   buttonContainer: {
     marginTop: 40,

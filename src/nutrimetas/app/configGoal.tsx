@@ -354,15 +354,16 @@ export default function InfoGoals() {
           <Text style={styles.error}>{errors.deadline.message}</Text>
         ) : null}
 
+
         <View style={styles.buttonContainer}>
-          <Link href='/assingGoal' style={{
-            ...styles.button,
-            borderWidth: 1,
-            borderColor: "black",
-            lineHeight: 35
-          }}>
-            Retroceder
-          </Link>
+          <Button
+            style={{ ...styles.button, ...styles.returnButton }}
+            mode="contained"
+            disabled={loading}
+            onPress={() =>router.back()}
+          >
+            <Text style={{fontSize: 16, fontWeight: 'bold'}}>Retroceder</Text>
+          </Button>
 
           <Button
             style={{ ...styles.button, backgroundColor: Colors.lightblue }}
@@ -419,6 +420,11 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     fontSize: 16,
     fontWeight: "bold"
+  },
+  returnButton: {
+    borderWidth: 1,
+    borderColor: Colors.black,
+    backgroundColor: "transparent",
   },
   buttonContainer: {
     marginTop: 40,
