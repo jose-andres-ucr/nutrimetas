@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router, Link, useNavigation } from 'expo-router';
+import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Control, Controller, useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView } from 'react-native';
 import { Text, Button } from "react-native-paper";
 import { z } from "zod";
@@ -14,11 +14,13 @@ import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/compo
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import firestore from '@react-native-firebase/firestore';
-import FlashMessage, { showMessage } from "react-native-flash-message";
+import { showMessage } from "react-native-flash-message";
 import { partialGoalForm } from "./assingGoal";
 import { useRoute } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { CommonType, fetchCollectionData } from './assingGoal';
+import firebase from '@react-native-firebase/app'
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
 
 const goalSecondaryForm = z.object({
   portion: z
@@ -55,12 +57,11 @@ const goalForm = goalSecondaryForm.and(partialGoalForm)
 type GoalFormType = z.infer<typeof goalForm>
 type CallbackFunction = () => void;
 
+
 export default function InfoGoals() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
-  const [frequencyData, setFrequencyData] = useState<CommonType[]>([]);
-  const [portionData, setPortionData] = useState<CommonType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const route = useRoute();
   const router = useRouter(); // Expo router
@@ -115,6 +116,7 @@ export default function InfoGoals() {
   const onSubmit = (data: GoalFormType) => {
     setLoading(true);
     console.log("Enviados correctamente ", data)
+    const template = patientId === undefined ? true : false;
     const newGoalId = firestore().collection('Goal').doc().id
     const newGoalData = {
       Deadline: data.deadline,
@@ -126,6 +128,7 @@ export default function InfoGoals() {
       Rubric: data.rubric,
       Amount: data.amount,
       Portion: data.portion,
+      Template: template,
     }
     const goalDocRef = firestore().collection('Goal').doc(newGoalId);
     goalDocRef.set(newGoalData)
@@ -164,24 +167,9 @@ export default function InfoGoals() {
 
   };
 
-  useEffect(() => {
-    const unsubscribePortion = fetchCollectionData(
-      'Portion',
-      setPortionData,
-      "Error fetching portions:"
-    );
+  const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
 
-    const unsubscribeFrequency = fetchCollectionData(
-      'Frequency',
-      setFrequencyData,
-      "Error fetching frequency:"
-    );
-
-    return () => {
-      unsubscribePortion();
-      unsubscribeFrequency();
-    };
-  }, []);
+  const { data: frequencyData, error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');  
 
   return (
     <ScrollView>
@@ -196,24 +184,28 @@ export default function InfoGoals() {
         <Controller
           control={control}
           render={({ field: { onChange, onBlur, name } }) => (
-            <Dropdown
-              ref={refs.portionRef}
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={portionData}
-              search
-              maxHeight={220}
-              labelField="name"
-              valueField="id"
-              placeholder="Seleccione una porción"
-              searchPlaceholder="Buscar..."
-              value={name}
-              onChange={(item) => onChange(item?.id || '')}
-              onBlur={onBlur}
-            />
+            portionData ? ( 
+              <Dropdown
+                ref={refs.portionRef}
+                style={styles.dropdown}
+                placeholderStyle={styles.placeholderStyle}
+                selectedTextStyle={styles.selectedTextStyle}
+                inputSearchStyle={styles.inputSearchStyle}
+                iconStyle={styles.iconStyle}
+                data={portionData}
+                search
+                maxHeight={220}
+                labelField="name"
+                valueField="id"
+                placeholder="Seleccione una porción"
+                searchPlaceholder="Buscar..."
+                value={name}
+                onChange={(item) => onChange(item?.id || '')}
+                onBlur={onBlur}
+              />
+            ) : (
+              <ActivityIndicator /> 
+            )
           )}
           name="portion"
         />
@@ -227,6 +219,7 @@ export default function InfoGoals() {
         <Controller
           control={control}
           render={({ field: { onChange, onBlur, name } }) => (
+            frequencyData ? ( 
             <Dropdown
               ref={refs.frequencyRef}
               style={styles.dropdown}
@@ -245,6 +238,9 @@ export default function InfoGoals() {
               onChange={(item) => onChange(item?.id || '')}
               onBlur={onBlur}
             />
+          ) : (
+            <ActivityIndicator /> 
+          )
           )}
           name="frequency"
         />

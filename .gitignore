@@ -1,2 +1,4 @@
 # vs-code workspace & other misc. settings
 .vscode/
+.env
+.node_modules

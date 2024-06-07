@@ -13,6 +13,7 @@ import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
+import { CommonType, useDropDownDataFirestoreQuery } from "@/components/FetchData";
 
 export const partialGoalForm = z.object({
   type: z
@@ -30,34 +31,6 @@ export const partialGoalForm = z.object({
 });
 
 type GoalFormType = z.infer<typeof partialGoalForm>
-
-export type CommonType = {
-  id: string;
-  name: string;
-};
-
-export const fetchCollectionData = (
-  collectionName: string,
-  setData: React.Dispatch<React.SetStateAction<CommonType[]>>,
-  errorMessage: string
-) => {
-  return firestore().collection(collectionName).onSnapshot(
-    (snapshot) => {
-      try {
-        const data = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().Name
-        }));
-        setData(data);
-      } catch (error) {
-        console.error(errorMessage, error);
-      }
-    },
-    (error) => {
-      console.error(`Error listening to ${collectionName} collection:`, error);
-    }
-  );
-};
 
 const renderDropdown = (
   name: keyof GoalFormType,
@@ -96,10 +69,6 @@ export default function AssignGoal() {
   const navigation = useNavigation();
   const route = useRoute();
   const patientId = route.params?.sessionDocId;
-  const [actionData, setActionData] = useState<CommonType[]>([]);
-  const [typeData, setTypeData] = useState<CommonType[]>([]);
-  const [rubricData, setRubricData] = useState<CommonType[]>([]);
-  const [amountData, setAmountData] = useState<CommonType[]>([]);
   
   const {
     control,
@@ -120,45 +89,17 @@ export default function AssignGoal() {
     actionRef: React.useRef<IDropdownRef>(null),
     rubricRef: React.useRef<IDropdownRef>(null),
     amountRef: React.useRef<IDropdownRef>(null),
-  } as const;
-
-  const onSubmit = (data: GoalFormType) => {
-    console.log("Patient sent: ", patientId);
-    navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
-  };
-
-  useEffect(() => {
-    const unsubscribeType = fetchCollectionData(
-      'Type',
-      setTypeData,
-      "Error fetching types:"
-    );
-
-    const unsubscribeAction = fetchCollectionData(
-      'Action',
-      setActionData,
-      "Error fetching actions:"
-    );
-
-    const unsubscribeRubric = fetchCollectionData(
-      'Rubric',
-      setRubricData,
-      "Error fetching rubrics:"
-    );
-
-    const unsubscribeAmount = fetchCollectionData(
-      'Amount',
-      setAmountData,
-      "Error fetching amounts:"
-    );
+    } as const;
     
-    return () => {
-      unsubscribeType();
-      unsubscribeAction();
-      unsubscribeRubric();
-      unsubscribeAmount();      
+    const onSubmit = (data: GoalFormType) => {
+      console.log("Patient sent: ", patientId);
+      navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
     };
-  }, []);
+
+    const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
+    const { data: typeData = [], error: typeError, isLoading: typeLoading } = useDropDownDataFirestoreQuery('Type');
+    const { data: rubricData = [], error: rubricError, isLoading: rubricLoading } = useDropDownDataFirestoreQuery('Rubric');
+    const { data: amountData = [], error: amountError, isLoading: amountLoading } = useDropDownDataFirestoreQuery('Amount');
 
   return (
     <ScrollView>    
