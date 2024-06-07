@@ -1,15 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Control, Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import firestore from '@react-native-firebase/firestore';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
+import { useRouter } from 'expo-router';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
@@ -66,7 +66,7 @@ const renderDropdown = (
 );
 
 export default function AssignGoal() {
-  const navigation = useNavigation();
+  const router = useRouter();
   const route = useRoute();
   const patientId = route.params?.sessionDocId;
   
@@ -93,7 +93,14 @@ export default function AssignGoal() {
     
     const onSubmit = (data: GoalFormType) => {
       console.log("Patient sent: ", patientId);
-      navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
+      const serializedFormData = encodeURIComponent(JSON.stringify(data));
+      router.push({
+        pathname: '/configGoal',
+        params: {
+          formData: serializedFormData,
+          patientId: patientId
+        }
+      });
     };
 
     const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');

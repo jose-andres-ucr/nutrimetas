@@ -16,10 +16,8 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import firestore from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import { partialGoalForm } from "./assingGoal";
-import { useRoute } from '@react-navigation/native';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import firebase from '@react-native-firebase/app'
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
 
 const goalSecondaryForm = z.object({
@@ -57,18 +55,31 @@ const goalForm = goalSecondaryForm.and(partialGoalForm)
 type GoalFormType = z.infer<typeof goalForm>
 type CallbackFunction = () => void;
 
+type ConfigGoalScreenRouteProp = RouteProp<{
+  params: {
+    formData: string;
+    patientId: string;
+  };
+}, 'params'>;
+
 
 export default function InfoGoals() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const route = useRoute();
-  const router = useRouter(); // Expo router
-  const firstGoalData = route.params?.formData;
-  const patientId = route.params?.sessionDocId;
+  const route = useRoute<ConfigGoalScreenRouteProp>();
+  const router = useRouter(); 
+  const { formData, patientId } = route.params;
+  const [firstGoalData, setParsedFormData] = useState(null);
   const today = new Date();
-  console.log("Goo", firstGoalData)
+  
+  useEffect(() => {
+    if (formData) {
+      
+      setParsedFormData(JSON.parse(decodeURIComponent(formData)));
+    }
+  }, [formData]);
 
   function resetTimeToZero(date: Date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
@@ -144,7 +155,6 @@ export default function InfoGoals() {
             .then(() => {
               console.log("Patient sent: ", patientId);
               setLoading(false);
-              router.push({ pathname: '/GoalList', params: { patientId: patientId } });
               showSuccessMessage(() => {
               });
               console.log('Patient Goal added!');
