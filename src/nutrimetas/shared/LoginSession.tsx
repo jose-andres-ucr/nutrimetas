@@ -42,19 +42,12 @@ function sessionReducer(
     switch (action.type) {
         // Set or replace session if none are active already   
         case 'set': {
-        if (currentSession != undefined && currentSession != null)
-        {
-            throw Error(
-                "Can't set session: Active session already in progress (Try resetting first)"
-            );
-        }
-
-        if (action.newSession == undefined && currentSession != null)
-        {
-            throw Error(
-                "Can't set session: New session is nil (Try resetting instead)"
-            );
-        }
+            if (action.newSession === undefined || action.newSession === null)
+            {
+                throw Error(
+                    "Can't set session: New session is nil (Try resetting instead)"
+                );
+            }
 
             console.log("Setting new session data as", action.newSession);
             return action.newSession;

@@ -51,24 +51,16 @@ type SignInError = {message : string, isExpected: boolean};
 // Login form rendering and hooks
 export default function LoginPage(
 ) {
-    // Keep track of current login state
+    // Keep track of current login state...
     const [loginAttempt, setLoginAttempt] =
         useState({ state: "pending" } as LoginAttempt);
 
-    // And whether or not to ignore Firebase Auth's registration call
-    // TODO: Find another way to mitigate extra registration call
-    // See: https://stackoverflow.com/questions/37674823/firebase-android-onauthstatechanged-fire-twice-after-signinwithemailandpasswor
-    const fbAuthRegistered = useRef(false);
-
-    // Access the shared context of the user's session
+    // ... The shared context of the user's session data
     const session = useContext(SessionContext);
     const sessionDispatch = useContext(SessionDispatchContext);
 
-    // Subscribe to Firebase authentication state
-    useEffect(() => {
-        const authSuscriber = auth().onAuthStateChanged(onAuthStateChanged);
-        return authSuscriber;
-    }, []);
+    // ... And the cached user credentials
+    const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
 
     // Trigger...
 
@@ -103,6 +95,20 @@ export default function LoginPage(
     }
 
     // Handle...
+
+    // ... Loss or gain of cached Firebase Auth credentials
+    useEffect(() => {
+        const authUnsuscriber = auth()
+            .onAuthStateChanged(
+                (obtainedUser : FirebaseAuthTypes.User | null) => {
+                    if (obtainedUser === null || 
+                        obtainedUser.uid !== user?.uid) {
+                        setUser(obtainedUser);
+                    }
+                }
+            );
+        return authUnsuscriber;
+    }, []);
 
     // ... Retrieval of user data via Firebase Firestore
     const handleRetrievalAttempt = function (email: string) : Promise<UserData> {
@@ -180,7 +186,7 @@ export default function LoginPage(
                         console.log('Credentials are invalid!');
 
                         triggerFailedSignIn({
-                            message: "Contraseña incorrecta.",
+                            message: "Credenciales incorrectas.",
                             isExpected: true,
                         });
                     }
@@ -256,28 +262,26 @@ export default function LoginPage(
             .catch(() => {});
     }
 
-    // ... Pre-existing authentication
-    const onAuthStateChanged = function (
-        User : FirebaseAuthTypes.User | null
-    ) {
+    // ... Pre-existing firebase credentials
+    useEffect(() => {
         // If user is null, sign-out
-        if (User === null) {
+        if (user === null) {
             console.log("User has no previous firebase credentials");
             setLoginAttempt({state: "signed-out"});
         }
 
         // If the user isn't null, sign-in after attempting to retrieve their
         // data sheet
-        else if (fbAuthRegistered.current) {
-            console.log("Detected previous firebase credentials for", User.uid);
+        else {
+            console.log("Detected previous firebase credentials for", user.uid);
 
             // Check that the user has an email associated to their account
             const userEmailChecked = new Promise<string>(
                 (resolve, reject) => {
-                    if (User.email === null) {
+                    if (user.email === null) {
                         reject(Error("Usuario no tiene correo asociado."));
                     } else {
-                        resolve(User.email);
+                        resolve(user.email);
                     }
                 }
             );
@@ -292,7 +296,7 @@ export default function LoginPage(
                 )
                 .then(
                     (UserData) => {
-                        triggerSuccesfulSignIn(UserData, User.uid)
+                        triggerSuccesfulSignIn(UserData, user.uid)
                     },
                     (dbError) => triggerFailedSignIn({
                         message: dbError.message,
@@ -306,46 +310,40 @@ export default function LoginPage(
                 })
             );
         }
-
-        // After at least one run, mark the Firebase Auth callback
-        // as registered
-        fbAuthRegistered.current = true;
-    };
+    }, [user]);
 
     // ... Succesful authentication
-    useEffect(() => {
-        // Cleanup previous session, if any was active at all
-        if (session !== undefined) {
-            sessionDispatch({
-                type: "reset",
-                newSession: undefined,
-            });
-        }
-
-        // If user is logged in then...
+    useEffect(
+        () => {
+        // If a new user is logged in then...
         if (loginAttempt.state === "signed-in") {
             // ... Extract their session data
-            const session = loginAttempt.session!;
+            const obtainedSession : LoginSession = loginAttempt.session!;
 
             console.log(
-                `Handling succesful login as ${session.uid}`,
-                `with role as ${session.role}.`,
+                `Handling succesful login as ${obtainedSession.uid}`,
+                `with role as ${obtainedSession.role}.`
             );
-
-            // ... update the login session in memory
-            sessionDispatch({
-                type: "set",
-                newSession: session,
-            });
+                
+            // ... And trigger a session update only if the session
+            // doesn't already match the one assigned
+            if (obtainedSession.uid !== session?.uid) {
+                console.log("Updating session")
+                sessionDispatch({
+                    type: "set",
+                    newSession: obtainedSession,
+                });
+            }
+            
 
             // ... and redirect it to the proper screen of interest
-            switch (session.role) {
+            switch (obtainedSession.role) {
                 case "patient": {
                     // TODO: Change to proper patient route
                     router.push({
-                        pathname: '/GoalList', 
+                        pathname: '/(app)/(root)/GoalList', 
                         params: {
-                            patientId: session.docId
+                            patientId: obtainedSession.docId
                         }
                     });
                     break;
@@ -353,7 +351,7 @@ export default function LoginPage(
 
                 case "professional": {
                     // TODO: Change to proper professional route
-                    router.push("/(tabs)/expedientes")
+                    router.push("/(app)/(root)/(tabs)/expedientes")
                     break;
                 }
 
