@@ -7,6 +7,8 @@ import firebase from '@react-native-firebase/app';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import storage from '@react-native-firebase/storage';
 import * as ImagePicker from 'react-native-image-picker';
+//import { Video } from 'react-native-video';
+import Video from "react-native-video"
 
 import attachment from '../assets/images/attachment.png';
 import sendIcon3 from '../assets/images/sendIcon2.png';
@@ -203,7 +205,7 @@ const ShowComment = (props: messageProps) => {
         break;
 
       case 'video': 
-        ImagePicker.launchCamera({ mediaType: 'video', durationLimit: 15 }, (response) => {
+        ImagePicker.launchCamera({ mediaType: 'video' }, (response) => {
           if (response.assets && response.assets.length > 0) {
             const video = response.assets[0];
 
@@ -227,6 +229,18 @@ const ShowComment = (props: messageProps) => {
         ImagePicker.launchImageLibrary({ mediaType: 'photo' }, (response) => {
           if (response.assets && response.assets.length > 0) {
             const image = response.assets[0];
+            console.log('Media selected: ', image);
+            const newMessage: IMessage = {
+              _id: Math.random().toString(36).substring(7),
+              text: '', 
+              createdAt: new Date(),
+              user: {
+                _id: roleId,
+                name: props.role,
+                avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
+              },
+            };
+            onSend([newMessage], image.uri);
           }
         });
         break;
@@ -248,6 +262,7 @@ const ShowComment = (props: messageProps) => {
       </SafeAreaView>
     )
   } else {
+
     return (
       <SafeAreaView style={styles.container}>
           <View style={styles.header}>
@@ -278,7 +293,7 @@ const ShowComment = (props: messageProps) => {
                     <Text style={styles.text}>{props.currentMessage.text}</Text>
                   )}
                   {props.currentMessage?.image && (
-                    <View style={{ position: 'relative' }}>
+                    <View>
                     <Image
                       source={{ uri: props.currentMessage.image }}
                       style={{ width: 250, height: 250, borderRadius: 5}}
@@ -291,7 +306,23 @@ const ShowComment = (props: messageProps) => {
                     </Text>
                     </View>
                   )}
-                  {!props.currentMessage?.image && (
+                  {props.currentMessage?.video && (
+                    <View >
+                      <Video
+                        source={{ uri: props.currentMessage.video }}
+                        style={styles.video}
+                        controls={true}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.timestampImage}>
+                      {props.currentMessage?.createdAt
+                        ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : ''}
+                      </Text>
+                    </View>
+
+                  )}
+                  {!props.currentMessage?.image && !props.currentMessage?.video && (
                     <Text style={styles.timestamp}>
                       {props.currentMessage?.createdAt
                         ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -447,5 +478,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 10,
+  },
+  video: {
+    width: 250,
+    height: 250,
+    borderRadius: 5
   },
 });
