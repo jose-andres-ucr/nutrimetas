@@ -58,6 +58,8 @@ const ShowComment = (props: messageProps) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadingVisible, setUploadingVisible] = useState(false)
   const [modalMessage, setModalMessage] = useState('');
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+
   const roleId = props.role == "patient" ? 2 : 1
 
   React.useEffect(() => {
@@ -203,6 +205,26 @@ const ShowComment = (props: messageProps) => {
     );
   };
 
+  const renderMessageImage = (props: any) => {
+    const { currentMessage } = props;
+    return (
+      <TouchableOpacity onPress={() => setFullScreenImage(currentMessage.image)}>
+        <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: currentMessage.image }}
+          style={styles.messageImage}
+        />
+        <Text style={styles.timestampImage}>
+        {props.currentMessage?.createdAt
+          ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : ''}
+        </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+  
+
   const handleOptionSelect = (option: string) => {
     setModalVisible(false);
     switch (option) {
@@ -309,6 +331,7 @@ const ShowComment = (props: messageProps) => {
                   style={styles.avatar}
                 />
               )}
+              
               renderBubble={(props) => (
                 <View
                   style={[
@@ -319,25 +342,12 @@ const ShowComment = (props: messageProps) => {
                   {props.currentMessage?.text && (
                     <Text style={styles.text}>{props.currentMessage.text}</Text>
                   )}
-                  {props.currentMessage?.image && (
-                    <View>
-                    <Image
-                      source={{ uri: props.currentMessage.image }}
-                      style={{ width: 250, height: 250, borderRadius: 5}}
-                      resizeMode="cover"
-                    />
-                    <Text style={styles.timestampImage}>
-                    {props.currentMessage?.createdAt
-                      ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : ''}
-                    </Text>
-                    </View>
-                  )}
+                  {props.currentMessage?.image && renderMessageImage(props)}
                   {props.currentMessage?.video && (
-                    <View >
+                    <View style={styles.videoContainer}>
                       <Video
                         source={{ uri: props.currentMessage.video }}
-                        style={styles.video}
+                        style={styles.messageVideo}
                         controls={true}
                         resizeMode="cover"
                       />
@@ -363,6 +373,27 @@ const ShowComment = (props: messageProps) => {
               renderInputToolbar={renderInputToolbar}
             />
           </KeyboardAvoidingView>
+          <Modal
+            visible={!!fullScreenImage}
+            animationType="fade"
+            transparent={true}
+            onRequestClose={() => setFullScreenImage(null)}
+          >
+            <View style={styles.fullScreenImageContainer}>
+              <Image
+                source={{ uri: fullScreenImage || '' }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setFullScreenImage(null)}
+              >
+                <Text style={styles.closeButtonText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </Modal>
+
           <Modal
             transparent={true}
             visible={modalVisible}
@@ -518,9 +549,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
-  video: {
+  fullScreenImageContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#000',
+  },
+  messageImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoContainer: {
     width: 250,
     height: 250,
-    borderRadius: 5
+    borderRadius: 5,
+    overflow: 'hidden',
+    margin: -5,
+  },
+  imageContainer: {
+    width: 250,
+    height: 250,
+    borderRadius: 5,
+    overflow: 'hidden',
+    margin: -5,
+  },
+  messageVideo: {
+    width: '100%',
+    height: '100%',
   },
 });
