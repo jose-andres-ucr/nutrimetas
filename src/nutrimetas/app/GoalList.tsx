@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
-
+import { CheckBox} from 'react-native-elements';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -151,7 +151,13 @@ const GoalList = () => {
     const handleAddGoal = () => {
         navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
-
+    
+    const handleDailyGoal = () => {
+        console.log('daily register');
+        router.push({ pathname: '/DailyGoal', params: { patientId: patientId } });
+        console.log({ pathname: '/DailyGoal', params: { sessionDocId: patientId } });
+    };
+    
     const handleFilterPress = () => {
         setShowPopup(true);
         setShowBackdrop(true);
@@ -252,10 +258,10 @@ const GoalList = () => {
                     )}
                     <View style={{ flexDirection: 'row' }}>
                         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                            <Text style={styles.buttonText}>Cancelar</Text>
+                            <Text style={styles.buttonText}>Salir</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-                            <Text style={styles.buttonText}>Confirmar</Text>
+                            <Text style={styles.buttonText}>Aplicar</Text>
                         </TouchableOpacity>
                     </View>
                     <TouchableOpacity style={styles.button} onPress={handleReset}>
@@ -288,11 +294,16 @@ const GoalList = () => {
                         </TouchableOpacity>
                     )}
                     keyExtractor={(item, index) => `${item.title}-${index}`}
-                />
+                />   
             )}
             {role === 'professional' && (
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
                     <Icon name="add" size={24} color="white" />
+                </TouchableOpacity>
+            )}
+            {role === 'patient' && (
+                <TouchableOpacity style={styles.registerDayButton} onPress={handleDailyGoal}>
+                    <Icon name="create" size={24} color="white"/>
                 </TouchableOpacity>
             )}
         </View>
@@ -308,7 +319,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: Colors.backdrop,
         zIndex: 998, 
     },
     popupContainer: {
@@ -432,10 +443,22 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         borderRadius: 30,
-        backgroundColor: 'green',
+        backgroundColor: Colors.green,
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
+    },
+    registerDayButton: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: Colors.green,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+        paddingHorizontal: 20,
     },
     datePickerStyle: {
         flexDirection: 'row',
@@ -445,6 +468,6 @@ const styles = StyleSheet.create({
         marginVertical: 10,
         borderWidth: 1,
         borderRadius: 5,
-        borderColor: 'gray',
+        borderColor: Colors.gray,
     },
 });

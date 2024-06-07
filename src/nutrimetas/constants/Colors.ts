@@ -28,5 +28,6 @@ export default {
   lightGray: '#ccc',
   transparent: '#ffffff00',
   red: '#FF0000',
-  black: '#000000'
+  black: '#000000',
+  backdrop: '#00000080' ,
 };
