@@ -1,6 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { showMessage } from "react-native-flash-message";
+import Colors from "@/constants/Colors";
+import Collections from "@/constants/Collections";
 
 export type CommonType = {
   id: string;
@@ -55,12 +58,12 @@ const fetchReferenceData = async (collection: string, docId: string) => {
 const fetchDescriptionGoal = async (goalData: FirebaseFirestoreTypes.DocumentData) => {
   try {
     const fetchAllReferences = [
-        fetchReferenceData('Type', goalData.Type),
-        fetchReferenceData('Action', goalData.Action),
-        fetchReferenceData('Rubric', goalData.Rubric),
-        fetchReferenceData('Amount', goalData.Amount),
-        fetchReferenceData('Portion', goalData.Portion),
-        fetchReferenceData('Frequency', goalData.Frequency)
+      fetchReferenceData(Collections.Type, goalData.Type),
+      fetchReferenceData(Collections.Action, goalData.Action),
+      fetchReferenceData(Collections.Rubric, goalData.Rubric),
+      fetchReferenceData(Collections.Amount, goalData.Amount),
+      fetchReferenceData(Collections.Portion, goalData.Portion),
+      fetchReferenceData(Collections.Frequency, goalData.Frequency)
     ];
 
     const [
@@ -89,7 +92,7 @@ const fetchDescriptionGoal = async (goalData: FirebaseFirestoreTypes.DocumentDat
 
 const fetchRubricGoal = async (rubricRef: string) => {
   try {
-      const rubricData = await fetchReferenceData('Rubric', rubricRef);
+      const rubricData = await fetchReferenceData(Collections.Rubric, rubricRef);
       if (!rubricData) {
           throw new Error('Rubric data is missing');
       }    
@@ -113,7 +116,7 @@ const processGoalsSnapshot = async (snapshot: FirebaseFirestoreTypes.QuerySnapsh
 };
 
 const fetchGoals = async () => {
-  const snapshot = await firestore().collection('Goal').where('Template', '==', true).get();
+  const snapshot = await firestore().collection(Collections.Goal).where('Template', '==', true).get();
   return processGoalsSnapshot(snapshot);
 };
 
@@ -128,7 +131,7 @@ export const useGoalFirestoreQuery = () => {
 
   useEffect(() => {
     const unsubscribe = firestore()
-      .collection('Goal')
+      .collection(Collections.Goal)
       .where('Template', '==', true)
       .onSnapshot(
           async snapshot => {
@@ -146,6 +149,63 @@ export const useGoalFirestoreQuery = () => {
 
     return () => {
       unsubscribe();
+    };
+  }, []);
+
+  return { data, error, isLoading };
+};
+
+const normalizeString = (str: string) => {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+};
+
+const sortPatients = (patientsList: any[]) => {
+  return patientsList.sort((a, b) => {
+      const lastNameA = normalizeString(a.lastName);
+      const lastNameB = normalizeString(b.lastName);
+      if (lastNameA < lastNameB) return -1;
+      if (lastNameA > lastNameB) return 1;
+      return 0;
+  });
+};
+
+const fetchPatients = async () => {
+  const snapshot = await firestore().collection(Collections.Patient).get();
+  const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sortPatients(patients);
+};
+
+export const useCheckBoxPatientsFirestoreQuery = () => {
+  const queryClient = useQueryClient();
+  const queryKey = ['patients'] as const;
+
+  const { data, error, isLoading } = useQuery({
+      queryKey,
+      queryFn: fetchPatients,
+  });
+
+  useEffect(() => {
+    const unsubscribe = firestore()
+        .collection(Collections.Patient)
+        .onSnapshot(
+            snapshot => {
+                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                queryClient.setQueryData(queryKey, sortPatients(data));
+            },
+            error => {
+                console.error("Error fetching patients: ", error);
+                showMessage({
+                    type: "danger",
+                    message: "Error",
+                    description: "Hubo un problema al obtener los datos de los pacientes.",
+                    backgroundColor: Colors.red,
+                    color: Colors.white,
+                });
+            }
+        );
+
+    return () => {
+        unsubscribe();
     };
   }, []);
 

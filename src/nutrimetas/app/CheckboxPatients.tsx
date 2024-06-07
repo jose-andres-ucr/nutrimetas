@@ -5,66 +5,20 @@ import Colors from '@/constants/Colors';
 import { useRouter, useGlobalSearchParams } from 'expo-router';
 import { showMessage } from 'react-native-flash-message';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useCheckBoxPatientsFirestoreQuery } from '@/components/FetchData';
 type CallbackFunction = () => void;
 
 
 const CheckboxPatients = () => {
     const router = useRouter();
     const { goalDocId } = useGlobalSearchParams();
-    const [patients, setPatients] = useState<any[]>([]);
+    const { data: patients = [], error, isLoading: loading} = useCheckBoxPatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [clicked, setClicked] = useState<boolean>(false);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = () => {
-            setLoading(true);
-            const unsubscribe = firestore()
-                .collection('Patient')
-                .onSnapshot(
-                    (snapshot) => {
-                        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-                        setPatients(sortPatients(data));
-                        setLoading(false);
-                    },
-                    (error) => {
-                        console.error("Error fetching patients: ", error);
-                        setLoading(false);
-                        showMessage({
-                            type: "danger",
-                            message: "Error",
-                            description: "Hubo un problema al obtener los datos de los pacientes.",
-                            backgroundColor: Colors.red,
-                            color: Colors.white,
-                        });
-                    }
-                );
-            return unsubscribe;
-        };
-
-        const unsubscribe = fetchData();
-
-        return () => {
-            if (unsubscribe) {
-                unsubscribe();
-            }
-        };
-    }, []);
-
 
     const normalizeString = (str: string) => {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    };
-
-    const sortPatients = (patientsList: any[]) => {
-        return patientsList.sort((a, b) => {
-            const lastNameA = normalizeString(a.lastName);
-            const lastNameB = normalizeString(b.lastName);
-            if (lastNameA < lastNameB) return -1;
-            if (lastNameA > lastNameB) return 1;
-            return 0;
-        });
     };
 
     const toggleSelection = (patientDocId: string) => {
@@ -202,7 +156,6 @@ const CheckboxPatients = () => {
             </View>
         );
     }
-
 
     return (
         <View style={styles.container}>
