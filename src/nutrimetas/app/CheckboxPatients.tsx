@@ -3,9 +3,8 @@ import { View, Text, TouchableOpacity, FlatList, TextInput, Image, StyleSheet } 
 import firestore from '@react-native-firebase/firestore';
 import Colors from '@/constants/Colors';
 import { useRouter, useGlobalSearchParams } from 'expo-router';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { showMessage } from 'react-native-flash-message';
-
+import Icon from 'react-native-vector-icons/Ionicons';
 type CallbackFunction = () => void;
 
 
@@ -20,7 +19,7 @@ const CheckboxPatients = () => {
 
     useEffect(() => {
         const fetchData = () => {
-            setLoading(true);  
+            setLoading(true);
             const unsubscribe = firestore()
                 .collection('Patient')
                 .onSnapshot(
@@ -43,9 +42,9 @@ const CheckboxPatients = () => {
                 );
             return unsubscribe;
         };
-    
+
         const unsubscribe = fetchData();
-    
+
         return () => {
             if (unsubscribe) {
                 unsubscribe();
@@ -53,7 +52,7 @@ const CheckboxPatients = () => {
         };
     }, []);
 
-    
+
     const normalizeString = (str: string) => {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
@@ -81,7 +80,7 @@ const CheckboxPatients = () => {
     const handleCheckboxPress = (patientDocId: string) => {
         toggleSelection(patientDocId);
     };
-    
+
 
     const showSuccessMessage = (callback: CallbackFunction) => {
         showMessage({
@@ -158,24 +157,39 @@ const CheckboxPatients = () => {
         return false;
     });
 
-
     const renderItem = ({ item }: { item: any }) => {
         const isChecked = selectedIds.includes(item.id);
-
+        const hasGoal = item.Goals && item.Goals.some((goal: any) => goal.id.toString() === goalDocId);
         return (
             <View>
                 <View style={styles.item}>
-                    <TouchableOpacity onPress={() => handleCheckboxPress(item.id)}>
-                        <View style={[styles.checkbox, isChecked && styles.checked]} />
-                    </TouchableOpacity>
-                    <Image
-                        style={styles.itemImage}
-                        source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                    />
-                    <View style={styles.nameAndIdContainer}>
-                        <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
-                        <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
-                    </View>
+                    {loading ? (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <Text>Cargando...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            {hasGoal ? (
+                                <View >
+                                    <Icon name="checkmark-outline" size={24} color="gray" />
+                                </View>
+
+                            ) : (
+                                <TouchableOpacity onPress={() => handleCheckboxPress(item.id)}>
+                                    <View style={[styles.checkbox, isChecked && styles.checked]} />
+                                </TouchableOpacity>
+                            )}
+
+                            <Image
+                                style={styles.itemImage}
+                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                            />
+                            <View style={styles.nameAndIdContainer}>
+                                <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
+                                <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
+                            </View>
+                        </>
+                    )}
                 </View>
             </View>
         );
@@ -188,7 +202,7 @@ const CheckboxPatients = () => {
             </View>
         );
     }
-    
+
 
     return (
         <View style={styles.container}>
@@ -310,6 +324,14 @@ const styles = StyleSheet.create({
     checked: {
         backgroundColor: Colors.lightblue,
     },
+    checkedDisabled: {
+        width: 24,
+        height: 24,
+        borderWidth: 1,
+        borderColor: Colors.gray,
+        marginRight: 10,
+        backgroundColor: Colors.gray,
+    },
     itemImage: {
         width: 60,
         height: 60
@@ -325,7 +347,8 @@ const styles = StyleSheet.create({
     },
     nameAndIdContainer: {
         flexDirection: 'column',
-    }
+    },
+
 });
 
 export default CheckboxPatients;
