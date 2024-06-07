@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
 import firebase from '@react-native-firebase/app';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import storage from '@react-native-firebase/storage';
 import * as ImagePicker from 'react-native-image-picker';
 //import { Video } from 'react-native-video';
@@ -18,6 +18,11 @@ type messageProps = {
   role: string,
   goalId: string
 };
+
+interface UploadMediaParams {
+  uri: string;
+  isImage: boolean;
+}
 
 const getComments = async ({ queryKey }: { queryKey: [typeof GET_COMMENTS_QUERY_KEY, string] }): Promise<IMessage[]> => {
   const [, goalId] = queryKey;
@@ -51,6 +56,8 @@ const ShowComment = (props: messageProps) => {
 
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
+  const [uploadingVisible, setUploadingVisible] = useState(false)
+  const [modalMessage, setModalMessage] = useState('');
   const roleId = props.role == "patient" ? 2 : 1
 
   React.useEffect(() => {
@@ -80,7 +87,7 @@ const ShowComment = (props: messageProps) => {
     return () => unsubscribe();
   }, []);
 
-  const uploadMediaToStorage = async (uri: string, isImage: boolean) => {
+  const uploadMediaToStorage = async ({ uri, isImage }: UploadMediaParams): Promise<string>=> {
     const randomComponent1 = Math.random().toString(36).substring(2, 9);
     const randomComponent2 = Math.random().toString(36).substring(2, 9);
     const uniqueImageId = randomComponent1 + randomComponent2;
@@ -104,6 +111,22 @@ const ShowComment = (props: messageProps) => {
     return downloadUrl;
   };
 
+  const queryUpload = useMutation<string, Error, UploadMediaParams>({
+    mutationFn: uploadMediaToStorage,
+    onMutate: () => {
+      setModalMessage('Guardando y enviando...');
+      setUploadingVisible(true);
+    },
+    onSuccess: () => {
+      setTimeout(() => setUploadingVisible(false), 1000);
+    },
+    onError: (error) => {
+      console.error("Error uploading media: ", error);
+      setModalMessage('Error uploading media');
+      setTimeout(() => setUploadingVisible(false), 2000);
+    },
+  });
+
   const onSend = async (newMessage: IMessage[], imageUri?: string, videoUri?: string) => {
     try {
       const db = firebase.firestore();
@@ -118,16 +141,20 @@ const ShowComment = (props: messageProps) => {
       };
 
       if (imageUri) {
-        console.log("Entre a imageUri");
-        const isImage = true;
-        const imageUrl = await uploadMediaToStorage(imageUri, isImage);
+        const params = {
+          uri: imageUri,
+          isImage: true
+        }
+        const imageUrl =  await queryUpload.mutateAsync(params);
         messageData.image = imageUrl;
       }
 
       if (videoUri) {
-        console.log("Entre a videoUrl");
-        const isImage = false;
-        const videoUrl = await uploadMediaToStorage(videoUri, isImage);
+        const params = {
+          uri: videoUri,
+          isImage: false
+        }
+        const videoUrl = await queryUpload.mutateAsync(params);
         messageData.video = videoUrl;
       }
 
@@ -356,6 +383,18 @@ const ShowComment = (props: messageProps) => {
                 <View style={{...styles.modalButton, width: '50%', alignSelf: 'center', marginTop: 30}}>
                   <Button title="Cancelar" onPress={() => setModalVisible(false)} />
                 </View>
+              </View>
+            </View>
+          </Modal>
+          <Modal
+              transparent={true}
+              visible={uploadingVisible}
+              animationType="fade"
+              onRequestClose={() => setModalVisible(false)}
+            >
+            <View style={{...styles.modalContainer, justifyContent: 'center'}}>
+              <View style={{...styles.modalContent, backgroundColor: Colors.white, width: 'auto'}}>
+                <Text>{modalMessage}</Text>
               </View>
             </View>
           </Modal>
