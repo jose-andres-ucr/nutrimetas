@@ -424,11 +424,11 @@ const styles = StyleSheet.create({
   returnButton: {
     borderWidth: 1,
     borderColor: Colors.black,
-    backgroundColor: "transparent",
+    backgroundColor: Colors.transparent,
   },
   buttonContainer: {
     marginTop: 40,
-    backgroundColor: "transparent",
+    backgroundColor: Colors.transparent,
     flexDirection: "row",
     justifyContent: "space-evenly",
     width: "100%"
@@ -474,6 +474,6 @@ const styles = StyleSheet.create({
   textInfo: {
     justifyContent: 'flex-start',
     width: '70%',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   }
 });
