@@ -1,20 +1,17 @@
 import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image, TextInput } from 'react-native';
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import Colors from '@/constants/Colors';
 import firestore from '@react-native-firebase/firestore';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
 import { CheckBox } from 'react-native-elements';
 
 const DailyGoal = () => {
     const router = useRouter();
     const { patientId } = useGlobalSearchParams();
-    //const { role } = useContext(SessionContext);
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [checkedItems, setCheckedItems] = useState({});
     const [selectedGoal, setSelectedGoal] = useState<{ [key: string]: boolean }>({});
 
     useEffect(() => {
@@ -41,7 +38,6 @@ const DailyGoal = () => {
 
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
-
         for (const goalId of patientGoals) {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
@@ -59,7 +55,6 @@ const DailyGoal = () => {
                 console.error('Invalid goal ID:', goalId);
             }
         }
-
         setGoals(goalsFromFirebase);
         setLoading(false);
     };
@@ -70,16 +65,15 @@ const DailyGoal = () => {
         return data;
     };
 
-    const buildDailyGoal = async (goalData) => {
+    const buildDailyGoal = async (goalData:any) => {
         try {
-            const [rubricData, actionData, amountData, portionData/*, frequencyData*/] = await Promise.all([
+            const [rubricData, actionData, amountData, portionData] = await Promise.all([
                 fetchReferenceData('Rubric', goalData.Rubric),
                 fetchReferenceData('Action', goalData.Action),
                 fetchReferenceData('Amount', goalData.Amount),
                 fetchReferenceData('Portion', goalData.Portion),
-                //fetchReferenceData('Frequency', goalData.Frequency),
             ]);
-            if (!rubricData || !actionData || !amountData || !portionData /* || !frequencyData*/) {
+            if (!rubricData || !actionData || !amountData || !portionData) {
                 console.error('Missing data for building description');
                 return '';
             }
@@ -117,16 +111,8 @@ const DailyGoal = () => {
                 // Actividad fisica
                 description = `${typePrefix} ${article} ${rubricName} ${today}`;
             }
-    
             // Mayúscula solo para la primera letra de la oración
-            const result = description.charAt(0).toUpperCase() + description.slice(1);
-    
-            //console.log('Action', actionData.Name); 
-            //console.log('Rubric', rubricData.Name);
-            //console.log('Amount', amountData.Value);
-            //console.log('Portion', portionData.Name);
-            //console.log('Result', result);
-    
+            const result = description.charAt(0).toUpperCase() + description.slice(1);    
             return result;
         } catch (error) {
             console.error('Error building description:', error);
@@ -139,7 +125,6 @@ const DailyGoal = () => {
     };
 
     const GoalCheckbox = (goalId: string) => {
-        //console.log("click ",goalId);
         setSelectedGoal(prevState => ({
             ...prevState,
             [goalId]: !prevState[goalId] // Cambia el estado del checkbox
@@ -239,7 +224,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     textInput: {
-        backgroundColor: Colors.white, // Fondo gris
+        backgroundColor: Colors.white,
         borderColor: 'gray' ,
         borderWidth: 1,
         borderRadius: 5,
