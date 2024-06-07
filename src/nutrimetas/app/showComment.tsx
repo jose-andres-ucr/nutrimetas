@@ -339,7 +339,7 @@ const ShowComment = (props: messageProps) => {
                         source={{ uri: props.currentMessage.video }}
                         style={styles.video}
                         controls={true}
-                        resizeMode="contain"
+                        resizeMode="cover"
                       />
                       <Text style={styles.timestampImage}>
                       {props.currentMessage?.createdAt
