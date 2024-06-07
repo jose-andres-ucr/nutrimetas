@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, TouchableOpacity, View, Text, ActivityIndicator } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useGlobalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import Colors from '@/constants/Colors';
 
 interface Timestamp {
@@ -56,67 +57,61 @@ interface GoalData {
     PortionData?: PortionData;
 }
 
+const fetchGoalDetails = async (selectedGoal: string) => {
+    const goalSnapshot = await firestore().collection('Goal').doc(selectedGoal).get();
+    const goalDoc = goalSnapshot.data();
+    if (goalDoc) {
+        const typePromise = firestore().collection('Type').doc(goalDoc.Type).get();
+        const actionPromise = firestore().collection('Action').doc(goalDoc.Action).get();
+        const rubricPromise = firestore().collection('Rubric').doc(goalDoc.Rubric).get();
+        const amountPromise = firestore().collection('Amount').doc(goalDoc.Amount).get();
+        const frequencyPromise = firestore().collection('Frequency').doc(goalDoc.Frequency).get();
+        const portionPromise = firestore().collection('Portion').doc(goalDoc.Portion).get();
+
+        const [typeData, actionData, rubricData, amountData, frequencyData, portionData] = await Promise.all([
+            typePromise,
+            actionPromise,
+            rubricPromise,
+            amountPromise,
+            frequencyPromise,
+            portionPromise
+        ]);
+
+        return {
+            ...goalDoc,
+            TypeData: typeData.data(),
+            ActionData: actionData.data(),
+            RubricData: rubricData.data(),
+            AmountData: amountData.data(),
+            FrequencyData: frequencyData.data(),
+            PortionData: portionData.data()
+        } as GoalData;
+    } else {
+        throw new Error('No such document!');
+    }
+};
+
 const GoalDetail = () => {
     const navigation = useNavigation();
     const { selectedGoal } = useGlobalSearchParams();
-    const [goalData, setGoalData] = useState<GoalData | null>(null);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchGoalDetails = async () => {
-            if (selectedGoal) {
-                try {
-                    const goalSnapshot = await firestore().collection('Goal').doc(selectedGoal.toString()).get();
-                    const goalDoc = goalSnapshot.data();
-                    if (goalDoc) {
-                        const typePromise = firestore().collection('Type').doc(goalDoc.Type).get();
-                        const actionPromise = firestore().collection('Action').doc(goalDoc.Action).get();
-                        const rubricPromise = firestore().collection('Rubric').doc(goalDoc.Rubric).get();
-                        const amountPromise = firestore().collection('Amount').doc(goalDoc.Amount).get();
-                        const frequencyPromise = firestore().collection('Frequency').doc(goalDoc.Frequency).get();
-                        const portionPromise = firestore().collection('Portion').doc(goalDoc.Portion).get();
+    const { data: goalData, error, isLoading } = useQuery({
+        queryKey: ['goalDetails', selectedGoal],
+        queryFn: () => fetchGoalDetails(selectedGoal.toString()),
+        enabled: !!selectedGoal, // Only run the query if selectedGoal is defined
+    });
 
-                        const [typeData, actionData, rubricData, amountData, frequencyData, portionData] = await Promise.all([
-                            typePromise,
-                            actionPromise,
-                            rubricPromise,
-                            amountPromise,
-                            frequencyPromise,
-                            portionPromise
-                        ]);
-
-                        setGoalData({
-                            ...goalDoc,
-                            TypeData: typeData.data(),
-                            ActionData: actionData.data(),
-                            RubricData: rubricData.data(),
-                            AmountData: amountData.data(),
-                            FrequencyData: frequencyData.data(),
-                            PortionData: portionData.data()
-                        } as GoalData);
-                    } else {
-                        console.error('No such document!');
-                    }
-                } catch (error) {
-                    console.error('Error fetching goal details:', error);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setLoading(false);
-            }
-        };
-
-        fetchGoalDetails();
-    }, [selectedGoal]);
-
-    if (loading) {
+    if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={Colors.blue} />
                 <Text style={styles.loadingText}>Cargando...</Text>
             </View>
         );
+    }
+
+    if (error) {
+        return <Text>Error cargando detalles de la meta.</Text>;
     }
 
     if (!goalData) {
