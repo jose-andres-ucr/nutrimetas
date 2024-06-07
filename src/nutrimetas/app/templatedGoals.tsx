@@ -4,13 +4,15 @@ import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firest
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
+import { useGoalFirestoreQuery } from '@/components/FetchData';
 
 const TemplatedGoals = () => {
     const router = useRouter();
-    const [templatedGoals, setTemplatedGoals] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    //const [templatedGoals, setTemplatedGoals] = useState<any[]>([]);
 
-    useEffect(() => {
+    const { data: templatedGoals = [], error, isLoading} = useGoalFirestoreQuery();
+
+    /*useEffect(() => {
         const unsubscribe = firestore()
             .collection('Goal')
             .where('Template', '==', true)
@@ -40,14 +42,14 @@ const TemplatedGoals = () => {
             );
     
         return () => unsubscribe();
-    }, []);
+    }, []);*/
 
-    const fetchReferenceData = async (collection: string, docId: string) => {
+    /*const fetchReferenceData = async (collection: string, docId: string) => {
         const doc = await firestore().collection(collection).doc(docId).get();
         return doc.exists ? doc.data() : null;
-    };
+    };*/
 
-    const fetchDescriptionGoal = async (goalData: FirebaseFirestoreTypes.DocumentData) => {
+    /*const fetchDescriptionGoal = async (goalData: FirebaseFirestoreTypes.DocumentData) => {
         try {
             const fetchAllReferences = [
                 fetchReferenceData('Type', goalData.Type),
@@ -93,9 +95,9 @@ const TemplatedGoals = () => {
             console.error('Error fetching rubric:', error);
             return 'Meta';
         }
-    };
+    };*/
 
-    if (loading) {
+    if (isLoading) {
         return <Text>Cargando...</Text>;
     }   
 
