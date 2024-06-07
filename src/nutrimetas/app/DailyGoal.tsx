@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     textInput: {
-        backgroundColor: '#f0f0f0', // Fondo gris
+        backgroundColor: Colors.gray,
         borderColor: 'gray' ,
         borderWidth: 1,
         borderRadius: 5,
