@@ -10,7 +10,6 @@ import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import { useMutation } from "@tanstack/react-query"
-import loadingGif from '@/assets/images/loading.gif'
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -96,7 +95,7 @@ export default function AddPatient() {
         })
         .then(() => {
           console.log('Usuario agregado!')
-          router.replace('/(tabs)/expedientes')
+          router.replace('/(app)/(root)/(tabs)/expedientes')
           successfulAddition()
         })
         .catch((error: Error) => {
@@ -318,7 +317,7 @@ export default function AddPatient() {
         {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
             
         <View style={styles.buttonContainer}>
-          <Link href='/(tabs)/expedientes' style={{
+          <Link href='/(app)/(root)/(tabs)/expedientes' style={{
             ...styles.button, 
             borderWidth: 1,
             borderColor: "black",
@@ -330,7 +329,7 @@ export default function AddPatient() {
           { mutation.isPending ? (
             <>
               <View style={{... styles.button, backgroundColor: Colors.lightGray, alignItems: "center", paddingVertical: 5}}>
-                <Image style={{width: 30, height: 30}} source={loadingGif}/>
+                <Image style={{width: 30, height: 30}} source={require("@/assets/images/loading.gif")}/>
               </View>
             </>
           ) : (
