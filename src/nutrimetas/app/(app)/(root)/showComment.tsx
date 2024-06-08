@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAv
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
-import sendIcon3 from '../assets/images/sendIcon2.png'
+import sendIcon3 from '@/assets/images/sendIcon2.png'
 import firebase from '@react-native-firebase/app';
 import { useGlobalSearchParams } from 'expo-router';
 
