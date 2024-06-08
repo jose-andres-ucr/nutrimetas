@@ -66,7 +66,6 @@ const GoalList = () => {
         for (const goalId of patientGoals) {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
-                //console.log('Datos de la meta:', goalDoc.data());
                 const goalSelectId = goalDoc.id;
                 if (goalDoc.exists) {
                     const goalData = goalDoc.data();
@@ -221,20 +220,15 @@ const GoalList = () => {
                 const adjustedEndDate = new Date(endDate);
                 adjustedEndDate.setHours(23, 59, 59, 999);
                 
-                // Filtrar las metas originales por las fechas ajustadas
+                // Filtrar las metas originales 
                 const filteredGoals = originalGoals.filter(goal => {
                     const goalStartDate = goal.StartDate ? goal.StartDate.toDate() : undefined;
                     const goalEndDate = goal.Deadline ? goal.Deadline.toDate() : undefined;
                     console.log("Fecha de inicio de la meta:", goalStartDate);
                     console.log("Fecha de fin de la meta:", goalEndDate);
-                    // Verificar si hay superposición entre los rangos de fechas
                     const isWithinRange = (goalStartDate && goalEndDate) &&
                                           (goalStartDate <= adjustedEndDate) &&
                                           (goalEndDate >= adjustedStartDate);
-                        if (isWithinRange) {
-                        // Imprimir solo las metas que se filtraron
-                        console.log("Meta filtrada:",goalStartDate, "y fin", goalEndDate);
-                    }
                     return isWithinRange;
                 });
                 setGoals(filteredGoals);
@@ -254,14 +248,6 @@ const GoalList = () => {
             </View>
         );
     }
-/*
-    if (goals.length === 0) {
-        return (
-            <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
-            </View>
-        );
-    } */
 
     return (
         <View style={styles.container}>
