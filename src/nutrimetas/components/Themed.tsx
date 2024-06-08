@@ -3,11 +3,10 @@
  * https://docs.expo.io/guides/color-schemes/
  */
 
-import { Text as DefaultText, TextInput as DefaultTextInput, View as DefaultView } from 'react-native';
+import { Text as DefaultText, View as DefaultView } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from './useColorScheme';
-import { forwardRef } from 'react';
 
 type ThemeProps = {
   lightColor?: string;
@@ -15,7 +14,6 @@ type ThemeProps = {
 };
 
 export type TextProps = ThemeProps & DefaultText['props'];
-export type TextInputProps = ThemeProps & DefaultTextInput['props'];
 export type ViewProps = ThemeProps & DefaultView['props'];
 
 export function useThemeColor(
@@ -38,17 +36,6 @@ export function Text(props: TextProps) {
 
   return <DefaultText style={[{ color }, style]} {...otherProps} />;
 }
-
-export const TextInput = forwardRef<DefaultTextInput, TextInputProps>(
-  (props, forwardedRef) => {
-    const { style, lightColor, darkColor, placeholderTextColor, ...otherProps } = props;
-    const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
-    const placeholderColor = useThemeColor({ light: lightColor, dark: darkColor }, 'placeholderText');
-
-    return <DefaultTextInput style={[{ color }, style]} placeholderTextColor={placeholderColor} ref={forwardedRef} {...otherProps} />;
-  }
-);
-
 
 export function View(props: ViewProps) {
   const { style, lightColor, darkColor, ...otherProps } = props;
