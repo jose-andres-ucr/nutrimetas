@@ -1,9 +1,10 @@
-import { StyleSheet, TouchableOpacity, View, Text, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Text, SafeAreaView } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useGlobalSearchParams } from 'expo-router';
+import ShowComment from './showComment';
 
 // Define the Timestamp interface
 interface Timestamp {
@@ -28,7 +29,7 @@ interface GoalData {
 
 const GoalDetail = () => {
     const navigation = useNavigation();
-    const { selectedGoal } = useGlobalSearchParams();
+    const { selectedGoal, role } = useGlobalSearchParams();
     const [goalData, setGoalData] = useState<GoalData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -65,7 +66,7 @@ const GoalDetail = () => {
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Icon name="arrow-back" size={24} color="black" />
@@ -76,7 +77,10 @@ const GoalDetail = () => {
                 <Text style={styles.detailText}>Tipo: {goalData.title}</Text>
                 <Text style={styles.detailText}>Cantidad: {goalData.description}</Text>
             </View>
-        </View>
+            <View style={styles.commentsContainer}>
+                <ShowComment role={role as string} goalId= {selectedGoal as string}/>
+            </View>
+        </SafeAreaView>
     );
 }
 
@@ -120,5 +124,9 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: 'bold',
         marginVertical: 25,
+    },
+    commentsContainer: {
+        flex: 2,
+        alignContent: 'flex-end',
     },
 });
