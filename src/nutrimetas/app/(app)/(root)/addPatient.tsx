@@ -10,7 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import { useMutation } from "@tanstack/react-query"
-import loadingGif from '../assets/images/loading.gif'
+import loadingGif from '@/assets/images/loading.gif'
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
