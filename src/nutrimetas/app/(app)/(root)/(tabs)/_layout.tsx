@@ -57,6 +57,5 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: 'bold',
     color: Colors.green,
-    top: -20,
   },
 });

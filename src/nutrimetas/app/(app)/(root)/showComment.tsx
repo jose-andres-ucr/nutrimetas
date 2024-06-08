@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView, Button, Modal } from 'react-native';
+import { StyleSheet, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView, Button, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
+import { View, Text } from "@/components/Themed";
 import firebase from '@react-native-firebase/app';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import storage from '@react-native-firebase/storage';
 import * as ImagePicker from 'react-native-image-picker';
-//import { Video } from 'react-native-video';
 import Video from "react-native-video"
 
 import attachment from '@/assets/images/attachment.png';
@@ -167,13 +167,70 @@ const ShowComment = (props: messageProps) => {
     }
   };
   
-
-  const renderInputToolbar = (props: any) => {
+  const renderAvatar = (props: any) => {
     return (
-      <InputToolbar
-        {...props}
-        containerStyle={styles.containerchatBar}
+      <Image
+        source={{ uri: props.currentMessage?.user.avatar as string }}
+        style={styles.avatar}
       />
+    );
+  };
+
+  const renderBubble = (props: any) => {
+    return (
+      <View style={[ styles.bubble,
+        props.currentMessage?.user._id === roleId ? styles.userBubble : styles.otherBubble
+      ]} >
+        {props.currentMessage?.text && (
+          <Text style={styles.text}>{props.currentMessage.text}</Text>
+        )}
+        {props.currentMessage?.image && renderMessageImage(props)}
+        {props.currentMessage?.video && renderMessageVideo(props)}
+
+        {!props.currentMessage?.image && !props.currentMessage?.video && (
+          <Text style={styles.timestamp}>
+            {props.currentMessage?.createdAt
+              ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : ''}
+          </Text>
+        )}
+      </View>
+    );
+  };
+
+  const renderMessageImage = (props: any) => {
+    return (
+      <TouchableOpacity onPress={() => setFullScreenImage(props.currentMessage.image)}>
+        <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: props.currentMessage.image }}
+          style={styles.messageImage}
+        />
+        <Text style={styles.timestampImage}>
+        {props.currentMessage?.createdAt
+          ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : ''}
+        </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+  
+  const renderMessageVideo = (props: any) => {
+    return (
+      <View style={styles.videoContainer}>
+        <Video
+          source={{ uri: props.currentMessage.video }}
+          style={styles.messageVideo}
+          controls={true}
+          resizeMode="cover"
+        />
+        <Text style={styles.timestampImage}>
+        {props.currentMessage?.createdAt
+          ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : ''}
+        </Text>
+      </View>
     );
   };
 
@@ -205,39 +262,34 @@ const ShowComment = (props: messageProps) => {
     );
   };
 
-  const renderMessageImage = (props: any) => {
-    const { currentMessage } = props;
+  const renderInputToolbar = (props: any) => {
     return (
-      <TouchableOpacity onPress={() => setFullScreenImage(currentMessage.image)}>
-        <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: currentMessage.image }}
-          style={styles.messageImage}
-        />
-        <Text style={styles.timestampImage}>
-        {props.currentMessage?.createdAt
-          ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : ''}
-        </Text>
-        </View>
-      </TouchableOpacity>
+      <InputToolbar
+        {...props}
+        containerStyle={styles.containerchatBar}
+      />
     );
   };
-  
 
   const handleOptionSelect = (option: string) => {
     setModalVisible(false);
+   
     switch (option) {
+
       case 'photo':
         ImagePicker.launchCamera({ mediaType: 'photo' }, (response) => {
+
           if (response.didCancel) {
             console.log('User cancelled image picker');
+            
           } else if (response.errorMessage) {
             console.log('ImagePicker Error: ', response.errorMessage);
+
           } else if (response.assets && response.assets.length > 0) {
+            
             const image = response.assets[0];
-            // Handle selected image here
             console.log('Image selected: ', image);
+
             const newMessage: IMessage = {
               _id: Math.random().toString(36).substring(7),
               text: '', 
@@ -256,8 +308,8 @@ const ShowComment = (props: messageProps) => {
       case 'video': 
         ImagePicker.launchCamera({ mediaType: 'video' }, (response) => {
           if (response.assets && response.assets.length > 0) {
+            
             const video = response.assets[0];
-
             console.log('Video selected: ', video);
             const newMessage: IMessage = {
               _id: Math.random().toString(36).substring(7),
@@ -317,62 +369,19 @@ const ShowComment = (props: messageProps) => {
           <View style={styles.header}>
             <Text style={styles.title}>Comentarios</Text>
           </View>
-          <KeyboardAvoidingView
-            style={styles.chatContainer}
-            behavior="height" // Esto es para que la barra de comentarios salga por arriba del teclado cuando se despliega el teclado
-          >
+          <KeyboardAvoidingView style={styles.chatContainer} behavior="height">
             <GiftedChat
               messages={queryComments.data}
               onSend={newMessage => onSend(newMessage)}
-              user={{ _id: roleId }} // ID del usuario actual
-              renderAvatar={(props) => (
-                <Image
-                  source={{ uri: props.currentMessage?.user.avatar as string }}
-                  style={styles.avatar}
-                />
-              )}
-              
-              renderBubble={(props) => (
-                <View
-                  style={[
-                    styles.bubble,
-                    props.currentMessage?.user._id === roleId ? styles.userBubble : styles.otherBubble
-                  ]}
-                >
-                  {props.currentMessage?.text && (
-                    <Text style={styles.text}>{props.currentMessage.text}</Text>
-                  )}
-                  {props.currentMessage?.image && renderMessageImage(props)}
-                  {props.currentMessage?.video && (
-                    <View style={styles.videoContainer}>
-                      <Video
-                        source={{ uri: props.currentMessage.video }}
-                        style={styles.messageVideo}
-                        controls={true}
-                        resizeMode="cover"
-                      />
-                      <Text style={styles.timestampImage}>
-                      {props.currentMessage?.createdAt
-                        ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : ''}
-                      </Text>
-                    </View>
-
-                  )}
-                  {!props.currentMessage?.image && !props.currentMessage?.video && (
-                    <Text style={styles.timestamp}>
-                      {props.currentMessage?.createdAt
-                        ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : ''}
-                    </Text>
-                  )}
-                </View>
-              )}
+              user={{ _id: roleId }} 
+              renderAvatar={renderAvatar}
+              renderBubble={renderBubble}
               renderSend={renderSend}
               placeholder="Haz un comentario"
               renderInputToolbar={renderInputToolbar}
             />
           </KeyboardAvoidingView>
+
           <Modal
             visible={!!fullScreenImage}
             animationType="fade"
@@ -482,7 +491,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   timestampImage: {
-    marginTop: 5,
+    //marginTop: 5,
     fontSize: 10,
     textAlign: 'right',
     color: Colors.white,
@@ -503,10 +512,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 5,
   },
-  sendButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-  },
   sendIcon: {
     width: 30,
     height: 30,
@@ -524,10 +529,6 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 20,
     marginLeft: 10,
-  },
-  optionButtonText: {
-    color: Colors.white,
-    fontSize: 20,
   },
   modalContainer: {
     flex: 1,
