@@ -1,15 +1,13 @@
-import { StyleSheet, TouchableOpacity, FlatList, View, Text, TextInput, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, FlatList, TextInput, Image } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
-import { router } from 'expo-router';
+import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PatientList = () => {
     const router = useRouter();
-    // const navigation = useNavigation();
     const [patients, setPatients] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -39,10 +37,7 @@ const PatientList = () => {
     };
 
     const onPressHandle = async (patientDocId: string) => {
-        // router.push(`/GoalList?patientId=${patientDocId}`);
         router.push({ pathname: '/GoalList', params: { patientId: patientDocId } });
-        // navigation.navigate('GoalList', { sessionDocId: patientDocId });
-        // router.push(`/showComment?patientId=${patientDocId}`);
     };
 
     const filteredPatients = patients.filter(patient => {
@@ -144,7 +139,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         margin: '1%',
         marginTop: '3%',
-        borderBottomWidth: 1
+        borderBottomWidth: 1,
     },
     itemImage: {
         width: 60,
