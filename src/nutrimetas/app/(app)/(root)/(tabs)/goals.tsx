@@ -1,12 +1,15 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
-import FlashMessage from "react-native-flash-message";
+import TemplatedGoals from '../templatedGoals';
 
 export default function Goals() {
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.templateGoalList}>
+        <TemplatedGoals />
+      </View>
       <Link push href="/assingGoal" style={styles.button}>
             Crear Meta
       </Link>
@@ -19,6 +22,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.white,
   },
   button: {
     backgroundColor: Colors.lightblue,
@@ -32,5 +36,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     lineHeight: 50
+  },
+  templateGoalList: {
+    top: -50,
   }
 });
