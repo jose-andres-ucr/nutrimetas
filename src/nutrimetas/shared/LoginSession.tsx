@@ -1,5 +1,3 @@
-"use-strict"
-
 // Dependencies
 // Core React hooks & misc. stuff
 import { ReactNode, Dispatch, createContext, useReducer } from "react";
@@ -12,9 +10,24 @@ export const SessionContext =
 export const SessionDispatchContext = 
     createContext<Dispatch<LoginAction>>(() => {console.log("AAA")});
 
-// Understand the session data and constraints...
+// User roles on the app
 export type UserRole = "professional" | "patient";
-export type LoginSession = {[key: string]: any, role? : UserRole} | undefined;
+
+// User data on the DB
+export type UserData = {
+    role: UserRole,
+    docId: string,
+    docContents: any,
+}
+
+// User session on the app
+export type LoginSession = {
+    // TODO: Opt for DB schema instead of wildcard key-value type annotations
+    [key: string]: any, 
+    uid: string, // Account's Auth UID
+    docId : string, // Datasheet's DB ID
+    role: UserRole, // Role on the app
+} | undefined;
 
 // ... the actions that can be taken on a given session...
 export type LoginAction = {
@@ -29,19 +42,12 @@ function sessionReducer(
     switch (action.type) {
         // Set or replace session if none are active already   
         case 'set': {
-        if (currentSession != undefined && currentSession != null)
-        {
-            throw Error(
-                "Can't set session: Active session already in progress (Try resetting first)"
-            );
-        }
-
-        if (action.newSession == undefined && currentSession != null)
-        {
-            throw Error(
-                "Can't set session: New session is nil (Try resetting instead)"
-            );
-        }
+            if (action.newSession === undefined || action.newSession === null)
+            {
+                throw Error(
+                    "Can't set session: New session is nil (Try resetting instead)"
+                );
+            }
 
             console.log("Setting new session data as", action.newSession);
             return action.newSession;
