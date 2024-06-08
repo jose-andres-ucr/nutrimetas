@@ -26,8 +26,8 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 20,
-    top: "-18%",
-    height: '108.5%',
+    top: "-16.5%",
+    height: '105.5%',
   },
   addButton: {
     backgroundColor: Colors.lightblue,
