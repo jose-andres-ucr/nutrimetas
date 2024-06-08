@@ -12,7 +12,6 @@ import Video from "react-native-video"
 
 import attachment from '@/assets/images/attachment.png';
 import sendIcon3 from '@/assets/images/sendIcon2.png';
-import loadingGif from '@/assets/images/loading.gif';
 
 type messageProps = {
   role: string,
@@ -357,7 +356,7 @@ const ShowComment = (props: messageProps) => {
         <View style={styles.loadingContainer}>
           <Text>Cargando</Text>
           <Image
-            source={loadingGif}
+            source={require("@/assets/images/loading.gif")}
           />
         </View>
       </SafeAreaView>
