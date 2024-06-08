@@ -10,9 +10,9 @@ import storage from '@react-native-firebase/storage';
 import * as ImagePicker from 'react-native-image-picker';
 import Video from "react-native-video"
 
-import attachment from '../assets/images/attachment.png';
-import sendIcon3 from '../assets/images/sendIcon2.png';
-import loadingGif from '../assets/images/loading.gif';
+import attachment from '@/assets/images/attachment.png';
+import sendIcon3 from '@/assets/images/sendIcon2.png';
+import loadingGif from '@/assets/images/loading.gif';
 
 type messageProps = {
   role: string,

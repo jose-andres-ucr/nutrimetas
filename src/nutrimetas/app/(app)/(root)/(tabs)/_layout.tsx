@@ -43,7 +43,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="goals"
         options={{
-          title: 'Metas',
+          title: 'Mis Plantillas',
           tabBarIcon: ({ color }) => <TabBarIcon name="flag" color={color} />,
         }}
       />
