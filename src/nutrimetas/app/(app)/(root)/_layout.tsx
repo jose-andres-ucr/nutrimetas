@@ -54,6 +54,7 @@ function RootLayoutNav() {
           <Stack.Screen name="CheckboxPatients" options={{ headerShown: false }} />
           <Stack.Screen name="GoalDetail" options={{ headerShown: false }} />
           <Stack.Screen name="showComment" options={{ headerShown: false }} />
+          <Stack.Screen name="DailyGoal" options={{ headerShown: false }} />
         </Stack>
     </ThemeProvider>
   );
