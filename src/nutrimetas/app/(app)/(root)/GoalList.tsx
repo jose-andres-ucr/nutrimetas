@@ -1,8 +1,10 @@
-import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
+import { View, Text, useThemeColor } from '@/components/Themed'
 import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import Colors from '@/constants/Colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SessionContext } from '@/shared/LoginSession';  // Importa el contexto de la sesión
 import { useGlobalSearchParams } from 'expo-router';
@@ -14,6 +16,7 @@ const GoalList = () => {
     const { role } = useContext(SessionContext);
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const arrowColor = useThemeColor({ light: Colors.black, dark: Colors.white }, 'text');
 
     useEffect(() => {
         if (patientId) {
@@ -125,43 +128,53 @@ const GoalList = () => {
     };
 
     const handleAddGoal = () => {
-        navigation.navigate('assingGoal', { sessionDocId: patientId });
+        router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
+        // navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.blue} />
+                <Text style={styles.loadingText}>Cargando...</Text>
+            </View>
+        );
+    }
+
+    if (goals.length === 0) {
+        return (
+            <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color="black" />
+                    <Icon name="arrow-back" size={24} color={arrowColor} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Metas</Text>
             </View>
-            {loading ? (
-                <Text>Cargando...</Text>
-            ) : goals.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
-                </View>
-            ) : (
-                <FlatList
-                    data={goals}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
-                            <View style={styles.item}>
-                                <Image
-                                    style={styles.itemImage}
-                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                                />
-                                <View style={styles.goalDetails}>
-                                    <Text style={styles.itemTitle}>{item.title}</Text>
-                                    <Text style={styles.itemDescription}>{item.description}</Text>
-                                </View>
+            <FlatList
+                data={goals}
+                renderItem={({ item }) => (
+                    <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
+                        <View style={styles.item}>
+                            <Image
+                                style={styles.itemImage}
+                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                            />
+                            <View style={styles.goalDetails}>
+                                <Text style={styles.itemTitle}>{item.title}</Text>
+                                <Text style={styles.itemDescription}>{item.description}</Text>
                             </View>
-                        </TouchableOpacity>
-                    )}
-                    keyExtractor={(item, index) => `${item.title}-${index}`} // Aseguramos un key único
-                />
-            )}
+                        </View>
+                    </TouchableOpacity>
+                )}
+                keyExtractor={(item, index) => `${item.title}-${index}`} // Aseguramos un key único
+            />
             {role === 'professional' && (
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
                     <Icon name="add" size={24} color="white" />
@@ -220,6 +233,15 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         textAlign: 'center'
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 18
     },
     floatingButton: {
         position: 'absolute',
