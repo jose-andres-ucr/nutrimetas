@@ -1,18 +1,44 @@
-import { StyleSheet, TouchableOpacity, View, Text, SafeAreaView } from 'react-native';
 import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, TextProps, useThemeColor } from '@/components/Themed'
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useGlobalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import Colors from '@/constants/Colors';
 import ShowComment from './showComment';
 
-// Define the Timestamp interface
 interface Timestamp {
     seconds: number;
     nanoseconds: number;
 }
 
-// Define the GoalData interface
+interface TypeData {
+    Name: string;
+}
+
+interface ActionData {
+    Name: string;
+}
+
+interface RubricData {
+    Name: string;
+}
+
+interface AmountData {
+    Value: string;
+}
+
+interface FrequencyData {
+    Name: string;
+}
+
+interface PortionData {
+    Name: string;
+    Plural: string;
+}
+
 interface GoalData {
     Action: string;
     Amount: string;
@@ -25,75 +51,103 @@ interface GoalData {
     Type: string;
     title?: string;
     description?: string;
+    TypeData?: TypeData;
+    ActionData?: ActionData;
+    RubricData?: RubricData;
+    AmountData?: AmountData;
+    FrequencyData?: FrequencyData;
+    PortionData?: PortionData;
 }
+
+const fetchGoalDetails = async (selectedGoal: string) => {
+    const goalSnapshot = await firestore().collection('Goal').doc(selectedGoal).get();
+    const goalDoc = goalSnapshot.data();
+    if (goalDoc) {
+        const typePromise = firestore().collection('Type').doc(goalDoc.Type).get();
+        const actionPromise = firestore().collection('Action').doc(goalDoc.Action).get();
+        const rubricPromise = firestore().collection('Rubric').doc(goalDoc.Rubric).get();
+        const amountPromise = firestore().collection('Amount').doc(goalDoc.Amount).get();
+        const frequencyPromise = firestore().collection('Frequency').doc(goalDoc.Frequency).get();
+        const portionPromise = firestore().collection('Portion').doc(goalDoc.Portion).get();
+
+        const [typeData, actionData, rubricData, amountData, frequencyData, portionData] = await Promise.all([
+            typePromise,
+            actionPromise,
+            rubricPromise,
+            amountPromise,
+            frequencyPromise,
+            portionPromise
+        ]);
+
+        return {
+            ...goalDoc,
+            TypeData: typeData.data(),
+            ActionData: actionData.data(),
+            RubricData: rubricData.data(),
+            AmountData: amountData.data(),
+            FrequencyData: frequencyData.data(),
+            PortionData: portionData.data()
+        } as GoalData;
+    } else {
+        throw new Error('No such document!');
+    }
+};
 
 const GoalDetail = () => {
     const navigation = useNavigation();
     const { selectedGoal, role } = useGlobalSearchParams();
-    const [goalData, setGoalData] = useState<GoalData | null>(null);
-    const [loading, setLoading] = useState(true);
+    const arrowColor = useThemeColor({ light: Colors.black, dark: Colors.white }, 'text');
 
-    useEffect(() => {
-        if (selectedGoal) {
-            const unsubscribe = firestore()
-                .collection('Goal')
-                .doc(selectedGoal.toString())
-                .onSnapshot((snapshot) => {
-                    const goalDoc = snapshot.data();
-                    if (goalDoc) {
-                        console.log(goalDoc);
-                        setGoalData(goalDoc as GoalData);
-                        setLoading(false);
-                    } else {
-                        console.error('No such document!');
-                    }
+    const { data: goalData, error, isLoading } = useQuery({
+        queryKey: ['goalDetails', selectedGoal],
+        queryFn: () => fetchGoalDetails(selectedGoal.toString()),
+        enabled: !!selectedGoal, // Only run the query if selectedGoal is defined
+    });
 
-                });
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.blue} />
+                <Text style={styles.loadingText}>Cargando...</Text>
+            </View>
+        );
+    }
 
-            return () => unsubscribe();
-        } else {
-            // console.error('patientId is undefined');
-            setLoading(false);
-        }
-    }, []);
-
-    if (loading) {
-        return <Text>Cargando...</Text>;
+    if (error) {
+        return <Text>Error cargando detalles de la meta.</Text>;
     }
 
     if (!goalData) {
         return <Text>No se encontraron detalles para esta meta.</Text>;
     }
 
+    const { TypeData, ActionData, RubricData, AmountData, FrequencyData, PortionData } = goalData;
+    const portionText = AmountData?.Value === '1' ? PortionData?.Name : PortionData?.Plural;
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color="black" />
+                    <Icon name="arrow-back" size={24} color={arrowColor} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Detalles</Text>
             </View>
             <View style={styles.detailContainer}>
-                <Text style={styles.detailText}>Tipo: {goalData.title}</Text>
-                <Text style={styles.detailText}>Cantidad: {goalData.description}</Text>
+                <Text style={styles.detailText}>
+                    <Text style={styles.boldText}>Tipo: </Text>
+                    {TypeData?.Name} {ActionData?.Name} {RubricData?.Name}
+                </Text>
+                <Text style={styles.detailText}>
+                    <Text style={styles.boldText}>Cantidad: </Text>
+                    {AmountData?.Value} {portionText} {FrequencyData?.Name}
+                </Text>
             </View>
             <View style={styles.commentsContainer}>
-                <ShowComment role={role as string} goalId= {selectedGoal as string}/>
+                <ShowComment role={role as string} goalId={selectedGoal as string} />
             </View>
         </SafeAreaView>
     );
-}
-
-/*              <Text style={styles.detailText}>Acción: {goalData.Action}</Text>
-                <Text style={styles.detailText}>Cantidad: {goalData.Amount}</Text>
-                <Text style={styles.detailText}>Fecha Límite: {new Date(goalData.Deadline.seconds * 1000).toLocaleDateString()}</Text>
-                <Text style={styles.detailText}>Frecuencia: {goalData.Frequency}</Text>
-                <Text style={styles.detailText}>Hora de Notificación: {new Date(goalData.NotificationTime.seconds * 1000).toLocaleTimeString()}</Text>
-                <Text style={styles.detailText}>Porción: {goalData.Portion}</Text>
-                <Text style={styles.detailText}>Rúbrica: {goalData.Rubric}</Text>
-                <Text style={styles.detailText}>Fecha de Inicio: {new Date(goalData.StartDate.seconds * 1000).toLocaleDateString()}</Text>
-                <Text style={styles.detailText}>Tipo: {goalData.Type}</Text>
-*/
+};
 
 export default GoalDetail;
 
@@ -122,8 +176,19 @@ const styles = StyleSheet.create({
     },
     detailText: {
         fontSize: 17,
-        fontWeight: 'bold',
         marginVertical: 25,
+    },
+    boldText: {
+        fontWeight: 'bold',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 18,
     },
     commentsContainer: {
         flex: 2,
