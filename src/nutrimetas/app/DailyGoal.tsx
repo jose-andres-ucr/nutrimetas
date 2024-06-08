@@ -13,7 +13,8 @@ const DailyGoal = () => {
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedGoal, setSelectedGoal] = useState<{ [key: string]: boolean }>({});
-
+    const [textInputValues, setTextInputValues] = useState<{ [key: string]: string }>({});
+    
     useEffect(() => {
         if (patientId) {
             const unsubscribe = firestore()
@@ -131,6 +132,17 @@ const DailyGoal = () => {
         }));
     };
 
+    // El numero solo se admite de 0-9
+    const handleTextInputChange = (goalId: string, text: string) => {
+        const newText = text.replace(/[^0-9]/g, '');
+        if (newText.length <= 1) {
+            setTextInputValues(prevState => ({
+                ...prevState,
+                [goalId]: newText,
+            }));
+        }
+    };
+    
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -158,7 +170,13 @@ const DailyGoal = () => {
                                     <Text style={styles.itemDescription}>{item.description}</Text>
                                 </View>
                                 {item.description.includes('Cuán') ? ( 
-                                    <TextInput style={styles.textInput}> </TextInput>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        keyboardType="numeric"
+                                        maxLength={1}
+                                        value={textInputValues[item.goalSelectId] || ''}
+                                        onChangeText={(text) => handleTextInputChange(item.goalSelectId, text)}
+                                    />
                                 ) : (
                                     <CheckBox 
                                         checked={selectedGoal[item.goalSelectId] || false}
