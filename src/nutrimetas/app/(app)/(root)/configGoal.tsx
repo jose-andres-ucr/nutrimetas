@@ -69,14 +69,14 @@ export default function InfoGoals() {
   const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
   const route = useRoute<ConfigGoalScreenRouteProp>();
-  const router = useRouter(); 
+  const router = useRouter();
   const { formData, patientId } = route.params;
-  const [firstGoalData, setParsedFormData] = useState(null);
+  const [firstGoalData, setParsedFormData] = useState<any>(null);
   const today = new Date();
-  
+
   useEffect(() => {
     if (formData) {
-      
+
       setParsedFormData(JSON.parse(decodeURIComponent(formData)));
     }
   }, [formData]);
@@ -158,6 +158,7 @@ export default function InfoGoals() {
               showSuccessMessage(() => {
               });
               console.log('Patient Goal added!');
+              router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
             })
             .catch((error) => {
               setLoading(false);
@@ -166,7 +167,7 @@ export default function InfoGoals() {
         } else {
           setLoading(false);
           showSuccessMessage(() => {
-            router.navigate('/(tabs)/goals');
+            router.push({ pathname: '/goals' }); //'/(tabs)/goals'
           });
         }
       })
@@ -179,7 +180,7 @@ export default function InfoGoals() {
 
   const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
 
-  const { data: frequencyData, error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');  
+  const { data: frequencyData, error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
 
   return (
     <ScrollView>
@@ -194,7 +195,7 @@ export default function InfoGoals() {
         <Controller
           control={control}
           render={({ field: { onChange, onBlur, name } }) => (
-            portionData ? ( 
+            portionData ? (
               <Dropdown
                 ref={refs.portionRef}
                 style={styles.dropdown}
@@ -214,7 +215,7 @@ export default function InfoGoals() {
                 onBlur={onBlur}
               />
             ) : (
-              <ActivityIndicator /> 
+              <ActivityIndicator />
             )
           )}
           name="portion"
@@ -229,28 +230,28 @@ export default function InfoGoals() {
         <Controller
           control={control}
           render={({ field: { onChange, onBlur, name } }) => (
-            frequencyData ? ( 
-            <Dropdown
-              ref={refs.frequencyRef}
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={frequencyData}
-              search
-              maxHeight={220}
-              labelField="name"
-              valueField="id"
-              placeholder="Seleccione una frecuencia"
-              searchPlaceholder="Buscar..."
-              value={name}
-              onChange={(item) => onChange(item?.id || '')}
-              onBlur={onBlur}
-            />
-          ) : (
-            <ActivityIndicator /> 
-          )
+            frequencyData ? (
+              <Dropdown
+                ref={refs.frequencyRef}
+                style={styles.dropdown}
+                placeholderStyle={styles.placeholderStyle}
+                selectedTextStyle={styles.selectedTextStyle}
+                inputSearchStyle={styles.inputSearchStyle}
+                iconStyle={styles.iconStyle}
+                data={frequencyData}
+                search
+                maxHeight={220}
+                labelField="name"
+                valueField="id"
+                placeholder="Seleccione una frecuencia"
+                searchPlaceholder="Buscar..."
+                value={name}
+                onChange={(item) => onChange(item?.id || '')}
+                onBlur={onBlur}
+              />
+            ) : (
+              <ActivityIndicator />
+            )
           )}
           name="frequency"
         />
@@ -360,9 +361,9 @@ export default function InfoGoals() {
             style={{ ...styles.button, ...styles.returnButton }}
             mode="contained"
             disabled={loading}
-            onPress={() =>router.back()}
+            onPress={() => router.back()}
           >
-            <Text style={{fontSize: 16, fontWeight: 'bold'}}>Retroceder</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Retroceder</Text>
           </Button>
 
           <Button
