@@ -1,4 +1,5 @@
-import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
+import { View, Text, useThemeColor } from '@/components/Themed'
 import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +16,7 @@ const GoalList = () => {
     const { role } = useContext(SessionContext);
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const arrowColor = useThemeColor({ light: Colors.black, dark: Colors.white }, 'text');
 
     useEffect(() => {
         if (patientId) {
@@ -150,7 +152,7 @@ const GoalList = () => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color="black" />
+                    <Icon name="arrow-back" size={24} color={arrowColor} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Metas</Text>
             </View>

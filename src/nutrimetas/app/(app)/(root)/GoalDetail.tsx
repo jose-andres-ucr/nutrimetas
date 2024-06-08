@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View, Text, ActivityIndicator } from 'react-native';
+import { StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextProps, useThemeColor } from '@/components/Themed'
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -94,6 +95,7 @@ const fetchGoalDetails = async (selectedGoal: string) => {
 const GoalDetail = () => {
     const navigation = useNavigation();
     const { selectedGoal } = useGlobalSearchParams();
+    const arrowColor = useThemeColor({ light: Colors.black, dark: Colors.white }, 'text');
 
     const { data: goalData, error, isLoading } = useQuery({
         queryKey: ['goalDetails', selectedGoal],
@@ -125,7 +127,7 @@ const GoalDetail = () => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color="black" />
+                    <Icon name="arrow-back" size={24} color={arrowColor} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Detalles</Text>
             </View>
