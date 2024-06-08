@@ -1,9 +1,17 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { useEffect, useState } from "react";
 import { showMessage } from "react-native-flash-message";
 import Colors from "@/constants/Colors";
 import Collections from "@/constants/Collections";
+
+// User session
+import { UserData, UserRole } from "@/shared/LoginSession";
+
+// Firebase Authentication
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+
+// Firebase Firestore DB 
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 export type CommonType = {
   id: string;
@@ -127,7 +135,7 @@ export const useGoalFirestoreQuery = () => {
   const { data, error, isLoading } = useQuery({
     queryKey,
     queryFn: fetchGoals,
-});
+ });
 
   useEffect(() => {
     const unsubscribe = firestore()
@@ -211,3 +219,107 @@ export const useCheckBoxPatientsFirestoreQuery = () => {
 
   return { data, error, isLoading };
 };
+
+/**
+ * Fetch the data of a given user with their associated email
+ * @param email The users email address
+ * @return A Promise associated with the data retrieval
+*/
+export const fetchUserData = function (email : string) : Promise<UserData> {
+	// Both DB errors arising from the access promise and unexpected
+	//  ones arising from asignment are dealt with the same
+	const handleDbError = (dbError : Error) => { return Promise.reject(dbError) };
+
+	// DB errors arising from missing user data are dealt with slightly
+	// differently
+	const fetchUserInCollection = function (queryResult : any, collectionRole : UserRole) {
+		if (queryResult.docs.length === 1) {
+			return {doc : queryResult.docs[0], role : collectionRole};
+		}
+
+		return Promise.reject(
+			Error("No se encontraron los datos del usuario para el rol de" 
+			+ collectionRole
+		));
+	};
+
+	// Find the data as a patient...
+	const patientDataFound = firestore()
+		.collection("Patient")
+		.where("email", "==", email)
+		.limit(1)
+		.get()
+		.then((res) => fetchUserInCollection(res, "patient"), handleDbError);
+
+	// Or a professional
+	const professionalDataFound = firestore()
+		.collection("Professionals")
+		.where("email", "==", email)
+		.limit(1)
+		.get()
+		.then((res) => fetchUserInCollection(res, "professional"), handleDbError);
+
+	// Pick the data that fits, or report that none was found is that was
+	// the case
+	return Promise.any([patientDataFound, professionalDataFound])
+	.then(
+		(queryResults) => {    
+		// Construct the user data according to which collection
+		// the user's data sheet belongs to
+		const {doc, role} = queryResults;
+		return {
+			docId : doc.id, 
+			role: role,
+			docContents: doc.data,
+		}
+		},
+		handleDbError
+	)
+	.catch(handleDbError);
+}
+
+/**
+ * Authenticate a given user with their associated email and password
+ * @param email The users account email address
+ * @param password The users account password
+ * @return A Promise associated with the authentication attempt
+*/
+export const authUser = function (email: string, password : string) 
+: Promise<string> {
+    return auth()
+		.signInWithEmailAndPassword(email, password)
+        .then(
+            (Credentials : FirebaseAuthTypes.UserCredential) => {
+                return Credentials.user.uid;
+            }, 
+            (authError) => {
+                return Promise.reject(authError);
+            }
+        );
+}
+
+/**
+ * Keep track of the currently-authenticated user
+ * @return Credentials of currently-authenticated user
+*/
+export const useAuthUser = function () {
+	// Keep track of the currently authenticated user
+	const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+	
+	// Make sure to detect changes on the user via stored credentials
+	// TODO: Track changes in things other than UID
+	useEffect(() => {
+		const authUnsuscriber = auth()
+		  .onAuthStateChanged(
+			  (User) => {
+				  if (User?.uid !== user?.uid) {
+					setUser(User)
+				  }
+			  }
+		  );
+  
+		return authUnsuscriber;
+	}, []);
+
+	return user;
+}

@@ -25,17 +25,13 @@ import LoginForm from "@/components/LoginForm";
 // Icon pop-up
 import IconPopup from "@/components/IconPopup";
 
-// Firestore DB
-import firestore from '@react-native-firebase/firestore';
-
-// Firestore Authentication
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// User authentication and data retrieval
+import { authUser, fetchUserData, useAuthUser } from "@/components/FetchData";
 
 // Session Context, User Data
 import {
     LoginSession, SessionContext, SessionDispatchContext,
-    UserData,
-    UserRole
+    UserData
 } from "@/shared/LoginSession";
 
 // Possible login states 
@@ -60,7 +56,7 @@ export default function LoginPage(
     const sessionDispatch = useContext(SessionDispatchContext);
 
     // ... And the cached user credentials
-    const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+    const user = useAuthUser();
 
     // Trigger...
 
@@ -96,134 +92,6 @@ export default function LoginPage(
 
     // Handle...
 
-    // ... Loss or gain of cached Firebase Auth credentials
-    useEffect(() => {
-        const authUnsuscriber = auth()
-            .onAuthStateChanged(
-                (obtainedUser : FirebaseAuthTypes.User | null) => {
-                    if (obtainedUser === null || 
-                        obtainedUser.uid !== user?.uid) {
-                        setUser(obtainedUser);
-                    }
-                }
-            );
-        return authUnsuscriber;
-    }, []);
-
-    // ... Retrieval of user data via Firebase Firestore
-    const handleRetrievalAttempt = function (email: string) : Promise<UserData> {
-        // Both DB errors arising from the access promise and unexpected
-        //  ones arising from asignment are dealt with the same
-        const handleDbError = (dbError : Error) => { throw(dbError) };
-
-        // DB errors arising from missing user data are dealt with slightly
-        // differently
-        const handleDocQuery = (queryResult : any, collectionRole : UserRole) => {
-            if (queryResult.docs.length === 1) {
-                return {doc : queryResult.docs[0], role : collectionRole} ;
-            }
-
-            throw (
-                Error("No se encontraron los datos para el rol de" 
-                + collectionRole
-            ))
-        };
-
-        // Find the data as a patient...
-        const patientDataFound = firestore()
-            .collection("Patient")
-            .where("email", "==", email)
-            .limit(1)
-            .get()
-            .then((res) => handleDocQuery(res, "patient"), handleDbError);
-        
-        // Or a professional
-        const professionalDataFound = firestore()
-            .collection("Professionals")
-            .where("email", "==", email)
-            .limit(1)
-            .get()
-            .then((res) => handleDocQuery(res, "professional"), handleDbError);
-
-        // Pick the data that fits, or report that none was found is that was
-        // the case
-        return Promise.any([patientDataFound, professionalDataFound])
-            .then(
-                (queryResults) => {    
-                    // Construct the user data according to which collection
-                    // the user's data sheet belongs to
-                    const {doc, role} = queryResults;
-                    return {
-                        docId : doc.id, 
-                        role: role,
-                        docContents: doc.data,
-                    }
-                },
-                handleDbError
-            )
-            .catch(handleDbError);
-    }
-    
-    // ... User authentication via Firebase Auth
-    const handleAuthAttempt = function (email: string, password : string) 
-    : Promise<string>{
-        return auth()
-            .signInWithEmailAndPassword(email, password)
-            .then(
-                (Credentials : FirebaseAuthTypes.UserCredential) => {
-                    console.log('Authentication SUCCESFUL');          
-                    
-                    const userId : string = Credentials.user.uid;
-                    console.log('UID', userId);
-
-                    return userId;
-                }, 
-                (authError) => {
-                    console.log('Authentication FAILED');
-
-                    // Check for invalid credentials
-                    if (authError.code === 'auth/invalid-credential') {
-                        console.log('Credentials are invalid!');
-
-                        triggerFailedSignIn({
-                            message: "Credenciales incorrectas.",
-                            isExpected: true,
-                        });
-                    }
-                    else if (authError.code === 'auth/invalid-email') {
-                        console.log('Email address is invalid!');
-
-                        triggerFailedSignIn({
-                            message: "Dirección de correo incorrecta.",
-                            isExpected: true,
-                        });
-                    }
-                    else if (authError.code === 'auth/invalid-password') {
-                        console.log('Password is invalid!');
-
-                        triggerFailedSignIn({
-                            message: "Contraseña incorrecta.",
-                            isExpected: true,
-                        });
-                    }
-
-                    // Or other unexpected errors
-                    else {
-                        console.log("Unexpected error while authenticating "
-                        + "sign-in via Firebase", authError);
-
-                        triggerFailedSignIn({
-                            message: `No se logró autenticar al usuario: ${authError.code}.`,
-                            isExpected: false,
-                        });
-                    }
-
-                    // Error has been handled
-                    return Promise.reject(null);
-                }
-            );
-    }
-
     // ... Sign-in attempts by the user
     const handleLoginAttempt = function (
         data: { email: string, password: string }
@@ -233,36 +101,86 @@ export default function LoginPage(
         setLoginAttempt({ state: "pending" });
 
         // Authenticate the user
-        const authenticated = handleAuthAttempt(data.email, data.password);
+        const authenticated = authUser(data.email, data.password);
 
         // Pull their data sheet
-        const dataRetrieved = handleRetrievalAttempt(data.email);
+        const dataRetrieved = fetchUserData(data.email);
 
         // Build user session
-         Promise.all([authenticated, dataRetrieved])
+        Promise.allSettled([authenticated, dataRetrieved])
             .then(
                 (res) => {
-                    const [userData, userId] = [res[1], res[0]];
-                    triggerSuccesfulSignIn(userData, userId);
-                },
-                // Handle errors not handled already
-                (dbError) => {
-                    if (dbError !== null) {
+                    const [dataCollected, userAuthentication] = [res[1], res[0]];
+
+                    // Handle user retrieval errors
+                    if (dataCollected.status === "rejected") {
+                        console.log('User data retrieval FAILED');
+                        const dbError = dataCollected.reason;
+
+                        // All DB errors are handled the same
                         triggerFailedSignIn({
                             message: dbError.message,
                             isExpected: false,
                         });
                     }
+                    // Handle authentication errors 
+                    else if (userAuthentication.status === "rejected") {
+                        console.log('User authentication FAILED');
+                        const authError = userAuthentication.reason;
 
-                    // Error has been handled
-                    return Promise.reject(null);
-                } 
+                        // Whether the user provided invalid credentials
+                        if (authError.code === 'auth/invalid-credential') {
+                            console.log('Credentials are invalid!');
+
+                            triggerFailedSignIn({
+                                message: "Credenciales incorrectas.",
+                                isExpected: true,
+                            });
+                        }
+                        else if (authError.code === 'auth/invalid-email') {
+                            console.log('Email address is invalid!');
+
+                            triggerFailedSignIn({
+                                message: "Dirección de correo incorrecta.",
+                                isExpected: true,
+                            });
+                        }
+                        else if (authError.code === 'auth/invalid-password') {
+                            console.log('Password is invalid!');
+
+                            triggerFailedSignIn({
+                                message: "Contraseña incorrecta.",
+                                isExpected: true,
+                            });
+                        }
+
+                        // Or any other unexpected errors ocurred
+                        else {
+                            console.log("Unexpected error while authenticating "
+                            + "sign-in via Firebase", authError);
+
+                            triggerFailedSignIn({
+                                message: `No se logró autenticar al usuario: ${authError.code}.`,
+                                isExpected: false,
+                            });
+                        }
+                    }
+                    else {
+                        console.log("User data retrieval and authentication SUCCESSFUL")
+                        const [data, uid] = [dataCollected.value, userAuthentication.value];
+
+                        console.log('UID', uid);
+                        console.log('Data retrieved', data);
+
+                        triggerSuccesfulSignIn(data, uid);
+                    }
+                }
             )
         // Ignore any other unhandled error
             .catch(() => {});
     }
 
-    // ... Pre-existing firebase credentials
+    // ... Pre-existing cached user credentials
     useEffect(() => {
         // If user is null, sign-out
         if (user === null) {
@@ -272,7 +190,7 @@ export default function LoginPage(
 
         // If the user isn't null, sign-in after attempting to retrieve their
         // data sheet
-        else {
+        else if (loginAttempt.state !== "signed-in") {
             console.log("Detected previous firebase credentials for", user.uid);
 
             // Check that the user has an email associated to their account
@@ -291,7 +209,7 @@ export default function LoginPage(
                 .then(
                     (Email) => {
                         console.log("User has associated email set as", Email);
-                        return handleRetrievalAttempt(Email);
+                        return fetchUserData(Email);
                     }
                 )
                 .then(
@@ -315,61 +233,61 @@ export default function LoginPage(
     // ... Succesful authentication
     useEffect(
         () => {
-        // If a new user is logged in then...
-        if (loginAttempt.state === "signed-in") {
-            // ... Extract their session data
-            const obtainedSession : LoginSession = loginAttempt.session!;
+            // If a new user is logged in then...
+            if (loginAttempt.state === "signed-in") {
+                // ... Extract their session data
+                const obtainedSession : LoginSession = loginAttempt.session!;
 
-            console.log(
-                `Handling succesful login as ${obtainedSession.uid}`,
-                `with role as ${obtainedSession.role}.`
-            );
+                console.log(
+                    `Handling succesful login as ${obtainedSession.uid}`,
+                    `with role as ${obtainedSession.role}.`
+                );
+                    
+                // ... And trigger a session update only if the session
+                // doesn't already match the one assigned
+                if (obtainedSession.uid !== session?.uid) {
+                    console.log("Updating session")
+                    sessionDispatch({
+                        type: "set",
+                        newSession: obtainedSession,
+                    });
+                }
                 
-            // ... And trigger a session update only if the session
-            // doesn't already match the one assigned
-            if (obtainedSession.uid !== session?.uid) {
-                console.log("Updating session")
-                sessionDispatch({
-                    type: "set",
-                    newSession: obtainedSession,
-                });
-            }
-            
 
-            // ... and redirect it to the proper screen of interest
-            switch (obtainedSession.role) {
-                case "patient": {
-                    // TODO: Change to proper patient route
-                    router.push({
-                        pathname: '/(app)/(root)/GoalList', 
-                        params: {
-                            patientId: obtainedSession.docId
-                        }
-                    });
-                    break;
-                }
+                // ... and redirect it to the proper screen of interest
+                switch (obtainedSession.role) {
+                    case "patient": {
+                        // TODO: Change to proper patient route
+                        router.push({
+                            pathname: '/(app)/(root)/GoalList', 
+                            params: {
+                                patientId: obtainedSession.docId
+                            }
+                        });
+                        break;
+                    }
 
-                case "professional": {
-                    // TODO: Change to proper professional route
-                    router.push("/(app)/(root)/(tabs)/expedientes")
-                    break;
-                }
+                    case "professional": {
+                        // TODO: Change to proper professional route
+                        router.push("/(app)/(root)/(tabs)/expedientes")
+                        break;
+                    }
 
-                // If role is unknown, report an error
-                default: {
-                    console.error("Unknown page for role. Can't redirect. " 
-                    + "Signing-out");
+                    // If role is unknown, report an error
+                    default: {
+                        console.error("Unknown page for role. Can't redirect. " 
+                        + "Signing-out");
 
-                    setLoginAttempt({
-                        state: "invalid",
-                        errorMessage: "Error inesperado: Rol desconocido. "
-                        + "Inténtelo más tarde."
-                    });
+                        setLoginAttempt({
+                            state: "invalid",
+                            errorMessage: "Error inesperado: Rol desconocido. "
+                            + "Inténtelo más tarde."
+                        });
 
-                    break;
+                        break;
+                    }
                 }
             }
-        }
     }, [loginAttempt]);
 
     // Render login form
