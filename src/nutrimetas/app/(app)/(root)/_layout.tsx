@@ -37,23 +37,24 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <FlashMessage position="top" />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="addPatient" options={{ headerShown: false }} />
-        <Stack.Screen name="assingGoal" options={{ headerShown: false }} />
-        <Stack.Screen name="configGoal" options={{ headerShown: false }} />
-        <Stack.Screen name="PatientList" options={{ headerShown: false }} />
-        <Stack.Screen name="GoalList" options={{ headerShown: false }} />
-        <Stack.Screen name="CheckboxPatients" options={{ headerShown: false }} />
-        <Stack.Screen name="GoalDetail" options={{ headerShown: false }} />
-        <Stack.Screen name="showComment" options={{ headerShown: false }} />
-      </Stack>
+      <FlashMessage position="top" />      
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="addPatient" options={{ headerShown: false }} />
+          <Stack.Screen name="assingGoal" options={{ headerShown: false }} />
+          <Stack.Screen name="configGoal" options={{ headerShown: false }} />
+          <Stack.Screen name="PatientList" options={{ headerShown: false }} />
+          <Stack.Screen name="GoalList" options={{ headerShown: false }} />
+          <Stack.Screen name="CheckboxPatients" options={{ headerShown: false }} />
+          <Stack.Screen name="GoalDetail" options={{ headerShown: false }} />
+          <Stack.Screen name="showComment" options={{ headerShown: false }} />
+        </Stack>
     </ThemeProvider>
   );
 }

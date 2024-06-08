@@ -3,69 +3,22 @@ import { View, Text, TouchableOpacity, FlatList, TextInput, Image, StyleSheet } 
 import firestore from '@react-native-firebase/firestore';
 import Colors from '@/constants/Colors';
 import { useRouter, useGlobalSearchParams } from 'expo-router';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { showMessage } from 'react-native-flash-message';
-
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useCheckBoxPatientsFirestoreQuery } from '@/components/FetchData';
 type CallbackFunction = () => void;
 
 
 const CheckboxPatients = () => {
     const router = useRouter();
     const { goalDocId } = useGlobalSearchParams();
-    const [patients, setPatients] = useState<any[]>([]);
+    const { data: patients = [], error, isLoading: loading} = useCheckBoxPatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [clicked, setClicked] = useState<boolean>(false);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = () => {
-            setLoading(true);  
-            const unsubscribe = firestore()
-                .collection('Patient')
-                .onSnapshot(
-                    (snapshot) => {
-                        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-                        setPatients(sortPatients(data));
-                        setLoading(false);
-                    },
-                    (error) => {
-                        console.error("Error fetching patients: ", error);
-                        setLoading(false);
-                        showMessage({
-                            type: "danger",
-                            message: "Error",
-                            description: "Hubo un problema al obtener los datos de los pacientes.",
-                            backgroundColor: Colors.red,
-                            color: Colors.white,
-                        });
-                    }
-                );
-            return unsubscribe;
-        };
-    
-        const unsubscribe = fetchData();
-    
-        return () => {
-            if (unsubscribe) {
-                unsubscribe();
-            }
-        };
-    }, []);
-
-    
     const normalizeString = (str: string) => {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    };
-
-    const sortPatients = (patientsList: any[]) => {
-        return patientsList.sort((a, b) => {
-            const lastNameA = normalizeString(a.lastName);
-            const lastNameB = normalizeString(b.lastName);
-            if (lastNameA < lastNameB) return -1;
-            if (lastNameA > lastNameB) return 1;
-            return 0;
-        });
     };
 
     const toggleSelection = (patientDocId: string) => {
@@ -81,7 +34,7 @@ const CheckboxPatients = () => {
     const handleCheckboxPress = (patientDocId: string) => {
         toggleSelection(patientDocId);
     };
-    
+
 
     const showSuccessMessage = (callback: CallbackFunction) => {
         showMessage({
@@ -158,24 +111,39 @@ const CheckboxPatients = () => {
         return false;
     });
 
-
     const renderItem = ({ item }: { item: any }) => {
         const isChecked = selectedIds.includes(item.id);
-
+        const hasGoal = item.Goals && item.Goals.some((goal: any) => goal.id.toString() === goalDocId);
         return (
             <View>
                 <View style={styles.item}>
-                    <TouchableOpacity onPress={() => handleCheckboxPress(item.id)}>
-                        <View style={[styles.checkbox, isChecked && styles.checked]} />
-                    </TouchableOpacity>
-                    <Image
-                        style={styles.itemImage}
-                        source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                    />
-                    <View style={styles.nameAndIdContainer}>
-                        <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
-                        <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
-                    </View>
+                    {loading ? (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <Text>Cargando...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            {hasGoal ? (
+                                <View >
+                                    <Icon name="checkmark-outline" size={24} color="gray" />
+                                </View>
+
+                            ) : (
+                                <TouchableOpacity onPress={() => handleCheckboxPress(item.id)}>
+                                    <View style={[styles.checkbox, isChecked && styles.checked]} />
+                                </TouchableOpacity>
+                            )}
+
+                            <Image
+                                style={styles.itemImage}
+                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                            />
+                            <View style={styles.nameAndIdContainer}>
+                                <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
+                                <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
+                            </View>
+                        </>
+                    )}
                 </View>
             </View>
         );
@@ -188,7 +156,6 @@ const CheckboxPatients = () => {
             </View>
         );
     }
-    
 
     return (
         <View style={styles.container}>
@@ -310,6 +277,14 @@ const styles = StyleSheet.create({
     checked: {
         backgroundColor: Colors.lightblue,
     },
+    checkedDisabled: {
+        width: 24,
+        height: 24,
+        borderWidth: 1,
+        borderColor: Colors.gray,
+        marginRight: 10,
+        backgroundColor: Colors.gray,
+    },
     itemImage: {
         width: 60,
         height: 60
@@ -325,7 +300,8 @@ const styles = StyleSheet.create({
     },
     nameAndIdContainer: {
         flexDirection: 'column',
-    }
+    },
+
 });
 
 export default CheckboxPatients;

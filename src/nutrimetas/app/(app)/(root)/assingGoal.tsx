@@ -1,18 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Control, Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import firestore from '@react-native-firebase/firestore';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
+import { useRouter } from 'expo-router';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
+import { CommonType, useDropDownDataFirestoreQuery } from "@/components/FetchData";
 
 export const partialGoalForm = z.object({
   type: z
@@ -30,34 +31,6 @@ export const partialGoalForm = z.object({
 });
 
 type GoalFormType = z.infer<typeof partialGoalForm>
-
-export type CommonType = {
-  id: string;
-  name: string;
-};
-
-export const fetchCollectionData = (
-  collectionName: string,
-  setData: React.Dispatch<React.SetStateAction<CommonType[]>>,
-  errorMessage: string
-) => {
-  return firestore().collection(collectionName).onSnapshot(
-    (snapshot) => {
-      try {
-        const data = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().Name
-        }));
-        setData(data);
-      } catch (error) {
-        console.error(errorMessage, error);
-      }
-    },
-    (error) => {
-      console.error(`Error listening to ${collectionName} collection:`, error);
-    }
-  );
-};
 
 const renderDropdown = (
   name: keyof GoalFormType,
@@ -93,13 +66,9 @@ const renderDropdown = (
 );
 
 export default function AssignGoal() {
-  const navigation = useNavigation();
+  const router = useRouter();
   const route = useRoute();
   const patientId = route.params?.sessionDocId;
-  const [actionData, setActionData] = useState<CommonType[]>([]);
-  const [typeData, setTypeData] = useState<CommonType[]>([]);
-  const [rubricData, setRubricData] = useState<CommonType[]>([]);
-  const [amountData, setAmountData] = useState<CommonType[]>([]);
   
   const {
     control,
@@ -120,45 +89,24 @@ export default function AssignGoal() {
     actionRef: React.useRef<IDropdownRef>(null),
     rubricRef: React.useRef<IDropdownRef>(null),
     amountRef: React.useRef<IDropdownRef>(null),
-  } as const;
-
-  const onSubmit = (data: GoalFormType) => {
-    console.log("Patient sent: ", patientId);
-    navigation.navigate('configGoal', { formData: data, sessionDocId: patientId });
-  };
-
-  useEffect(() => {
-    const unsubscribeType = fetchCollectionData(
-      'Type',
-      setTypeData,
-      "Error fetching types:"
-    );
-
-    const unsubscribeAction = fetchCollectionData(
-      'Action',
-      setActionData,
-      "Error fetching actions:"
-    );
-
-    const unsubscribeRubric = fetchCollectionData(
-      'Rubric',
-      setRubricData,
-      "Error fetching rubrics:"
-    );
-
-    const unsubscribeAmount = fetchCollectionData(
-      'Amount',
-      setAmountData,
-      "Error fetching amounts:"
-    );
+    } as const;
     
-    return () => {
-      unsubscribeType();
-      unsubscribeAction();
-      unsubscribeRubric();
-      unsubscribeAmount();      
+    const onSubmit = (data: GoalFormType) => {
+      console.log("Patient sent: ", patientId);
+      const serializedFormData = encodeURIComponent(JSON.stringify(data));
+      router.push({
+        pathname: '/configGoal',
+        params: {
+          formData: serializedFormData,
+          patientId: patientId
+        }
+      });
     };
-  }, []);
+
+    const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
+    const { data: typeData = [], error: typeError, isLoading: typeLoading } = useDropDownDataFirestoreQuery('Type');
+    const { data: rubricData = [], error: rubricError, isLoading: rubricLoading } = useDropDownDataFirestoreQuery('Rubric');
+    const { data: amountData = [], error: amountError, isLoading: amountLoading } = useDropDownDataFirestoreQuery('Amount');
 
   return (
     <ScrollView>    
@@ -200,14 +148,13 @@ export default function AssignGoal() {
         ) : null}        
 
         <View style={styles.buttonContainer}>
-          <Link href='/(tabs)/goals' style={{
-            ...styles.button,
-            borderWidth: 1,
-            borderColor: "black",
-            lineHeight: 35
-          }}>
-            Cancelar
-          </Link>
+        <Button
+            style={{ ...styles.button, ...styles.returnButton }}
+            mode="contained"
+            onPress={() =>router.back()}
+          >
+            <Text style={{fontSize: 16, fontWeight: 'bold'}}>Cancelar</Text>
+          </Button>
 
           <Button
             style={{ ...styles.button, backgroundColor: Colors.lightblue }}
@@ -263,9 +210,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold"
   },
+  returnButton: {
+    borderWidth: 1,
+    borderColor: Colors.black,
+    backgroundColor: Colors.transparent,
+  },
   buttonContainer: {
     marginTop: 40,
-    backgroundColor: "transparent",
+    backgroundColor: Colors.transparent,
     flexDirection: "row",
     justifyContent: "space-evenly",
     width: "100%"
@@ -301,6 +253,6 @@ const styles = StyleSheet.create({
   textInfo: {
     justifyContent: 'flex-start',
     width: '70%',
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
   }
 });
