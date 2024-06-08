@@ -1,7 +1,5 @@
-import { StyleSheet, TouchableOpacity, View, Text, SafeAreaView } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { View, Text, TextProps, useThemeColor } from '@/components/Themed'
 import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
