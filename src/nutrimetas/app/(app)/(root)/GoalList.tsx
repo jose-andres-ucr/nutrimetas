@@ -176,12 +176,12 @@ const GoalList = () => {
     const handleConfirm = () => {
         if (endDate < startDate) {
             setError(true);
-            setErrorMessage("La fecha de inicio debe ser anterior a la fecha de fin");
+            setErrorMessage("La fecha inicial debe ser anterior a la fecha final");
             return;
         }else{
             setError(false);
         }
-        filterGoalsByDateRange(startDate, endDate); // Pasa la fecha final al filtro
+        filterGoalsByDateRange(startDate, endDate);
         setShowPopup(false);
         setShowBackdrop(false);
     };
@@ -190,7 +190,6 @@ const GoalList = () => {
         setShowStartDatePicker(false);
         if (selectedDate) {
             setStartDate(selectedDate);
-            console.log('Fecha de inicio seleccionada:', selectedDate);
         }
     };
 
@@ -198,19 +197,17 @@ const GoalList = () => {
         setShowEndDatePicker(false);
         if (selectedDate) {
             setEndDate(selectedDate);
-            console.log('Fecha de fin seleccionada:', selectedDate);
         }
     };
 
     const handleReset = () => {
         setShowPopup(false);
-        setGoals(originalGoals); // Restablece las metas a los valores originales
+        setGoals(originalGoals);
         setShowBackdrop(false);
         setError(false);
     }
 
     const filterGoalsByDateRange = async (startDate: Date, endDate: Date) => {
-        console.log('Fechas seleccionadas para filtrar:', startDate, endDate);
         if (patientId) {
             setLoading(true);
             try {
@@ -224,8 +221,6 @@ const GoalList = () => {
                 const filteredGoals = originalGoals.filter(goal => {
                     const goalStartDate = goal.StartDate ? goal.StartDate.toDate() : undefined;
                     const goalEndDate = goal.Deadline ? goal.Deadline.toDate() : undefined;
-                    console.log("Fecha de inicio de la meta:", goalStartDate);
-                    console.log("Fecha de fin de la meta:", goalEndDate);
                     const isWithinRange = (goalStartDate && goalEndDate) &&
                                           (goalStartDate <= adjustedEndDate) &&
                                           (goalEndDate >= adjustedStartDate);
@@ -270,7 +265,7 @@ const GoalList = () => {
                     <View style={styles.filtersHeader}>
                         <Text style={styles.filterTitle}>Filtros</Text>
                     </View>
-                    <Text style={styles.dateTitle} >Fecha de Inicio</Text>
+                    <Text style={styles.dateTitle} >Fecha inicial</Text>
                     <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
                         <Text>{startDate.toDateString()}</Text>
                         <FontAwesome name="calendar" size={24} color="gray" />
@@ -283,7 +278,7 @@ const GoalList = () => {
                             onChange={handleStartDateChange}
                         />
                     )}
-                    <Text style={styles.dateTitle} >Fecha de fin</Text>
+                    <Text style={styles.dateTitle} >Fecha final</Text>
                     <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
                         <Text>{endDate.toDateString()}</Text>
                         <FontAwesome name="calendar" size={24} color="gray" />
@@ -531,7 +526,7 @@ const styles = StyleSheet.create({
         padding: 5,
         borderRadius: 5,
         marginTop: 10,
-        maxWidth: 160,
+        maxWidth: 120,
     },
     errorText: {
         color: Colors.white,
