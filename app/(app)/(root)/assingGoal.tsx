@@ -152,7 +152,7 @@ export default function AssignGoal() {
           <Button
             style={{ ...styles.button, ...styles.returnButton }}
             mode="contained"
-            onPress={() => router.back()}
+            onPress={() => router.replace({ pathname: '/GoalList', params: { patientId: patientId } })}
           >
             <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text>
           </Button>
