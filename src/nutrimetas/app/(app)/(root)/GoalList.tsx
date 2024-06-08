@@ -128,7 +128,8 @@ const GoalList = () => {
     };
 
     const handleAddGoal = () => {
-        navigation.navigate('assingGoal', { sessionDocId: patientId });
+        router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
+        // navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
 
     if (loading) {

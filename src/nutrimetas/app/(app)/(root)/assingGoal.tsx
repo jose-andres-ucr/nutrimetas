@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRoute } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
-import { useRouter } from 'expo-router';
+import { useRouter, useGlobalSearchParams } from 'expo-router';
 import { View } from "@/components/Themed";
 import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
@@ -68,8 +68,9 @@ const renderDropdown = (
 export default function AssignGoal() {
   const router = useRouter();
   const route = useRoute();
-  const patientId = route.params?.sessionDocId;
-  
+  const { patientId } = useGlobalSearchParams();
+  //const patientId = route.params?.sessionDocId;
+
   const {
     control,
     handleSubmit,
@@ -89,27 +90,27 @@ export default function AssignGoal() {
     actionRef: React.useRef<IDropdownRef>(null),
     rubricRef: React.useRef<IDropdownRef>(null),
     amountRef: React.useRef<IDropdownRef>(null),
-    } as const;
-    
-    const onSubmit = (data: GoalFormType) => {
-      console.log("Patient sent: ", patientId);
-      const serializedFormData = encodeURIComponent(JSON.stringify(data));
-      router.push({
-        pathname: '/configGoal',
-        params: {
-          formData: serializedFormData,
-          patientId: patientId
-        }
-      });
-    };
+  } as const;
 
-    const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
-    const { data: typeData = [], error: typeError, isLoading: typeLoading } = useDropDownDataFirestoreQuery('Type');
-    const { data: rubricData = [], error: rubricError, isLoading: rubricLoading } = useDropDownDataFirestoreQuery('Rubric');
-    const { data: amountData = [], error: amountError, isLoading: amountLoading } = useDropDownDataFirestoreQuery('Amount');
+  const onSubmit = (data: GoalFormType) => {
+    console.log("Patient sent: ", patientId);
+    const serializedFormData = encodeURIComponent(JSON.stringify(data));
+    router.replace({
+      pathname: '/configGoal',
+      params: {
+        formData: serializedFormData,
+        patientId: patientId
+      }
+    });
+  };
+
+  const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
+  const { data: typeData = [], error: typeError, isLoading: typeLoading } = useDropDownDataFirestoreQuery('Type');
+  const { data: rubricData = [], error: rubricError, isLoading: rubricLoading } = useDropDownDataFirestoreQuery('Rubric');
+  const { data: amountData = [], error: amountError, isLoading: amountLoading } = useDropDownDataFirestoreQuery('Amount');
 
   return (
-    <ScrollView>    
+    <ScrollView>
       <SafeAreaView style={styles.container}>
         <Text style={styles.title}>Asignar Meta</Text>
         <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
@@ -145,15 +146,15 @@ export default function AssignGoal() {
         {renderDropdown('amount', amountData, control, refs, "Seleccione una cantidad")}
         {errors.amount ? (
           <Text style={styles.error}>{errors.amount.message}</Text>
-        ) : null}        
+        ) : null}
 
         <View style={styles.buttonContainer}>
-        <Button
+          <Button
             style={{ ...styles.button, ...styles.returnButton }}
             mode="contained"
-            onPress={() =>router.back()}
+            onPress={() => router.back()}
           >
-            <Text style={{fontSize: 16, fontWeight: 'bold'}}>Cancelar</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text>
           </Button>
 
           <Button
