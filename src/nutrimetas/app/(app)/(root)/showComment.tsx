@@ -1,69 +1,172 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView, Button, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
 import Colors from '@/constants/Colors';
-import sendIcon3 from '@/assets/images/sendIcon2.png'
 import firebase from '@react-native-firebase/app';
-import { useGlobalSearchParams } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import storage from '@react-native-firebase/storage';
+import * as ImagePicker from 'react-native-image-picker';
+//import { Video } from 'react-native-video';
+import Video from "react-native-video"
 
-const ShowComment = (props: {rol: string}) => {
-  const initialMessages: IMessage[] = [
-    {
-      _id: 1,
-      text: 'Hola como estas.',
-      createdAt: new Date(),
-      user: {
-        _id: 1,
-        name: 'Usuario',
-        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
-      },
+import attachment from '@/assets/images/attachment.png';
+import sendIcon3 from '@/assets/images/sendIcon2.png';
+import loadingGif from '@/assets/images/loading.gif';
+
+type messageProps = {
+  role: string,
+  goalId: string
+};
+
+interface UploadMediaParams {
+  uri: string;
+  isImage: boolean;
+}
+
+const getComments = async ({ queryKey }: { queryKey: [typeof GET_COMMENTS_QUERY_KEY, string] }): Promise<IMessage[]> => {
+  const [, goalId] = queryKey;
+  const comments = await firebase.firestore()
+    .collection('Goal')
+    .doc(goalId)
+    .collection('comments')
+    .orderBy('createdAt', 'desc')
+    .get();
+  return comments.docs.map(doc => {
+    const data = doc.data();
+    return {
+      _id: doc.id,
+      text: data.text,
+      createdAt: data.createdAt?.toDate() ?? new Date(),
+      user: data.user,
+      image: data.image || null, // Si no hay imagen, se establece como null
+      video: data.video || null, // Si no hay video, se establece como null
+    };
+  });
+};
+
+const GET_COMMENTS_QUERY_KEY = ["get-comments"] as const;
+
+const ShowComment = (props: messageProps) => {
+  
+  var queryComments = useQuery({ 
+    queryKey: [GET_COMMENTS_QUERY_KEY, props.goalId], 
+    queryFn: getComments
+  })
+
+  const queryClient = useQueryClient();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [uploadingVisible, setUploadingVisible] = useState(false)
+  const [modalMessage, setModalMessage] = useState('');
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+
+  const roleId = props.role == "patient" ? 2 : 1
+
+  React.useEffect(() => {
+    console.log("Fetching", queryComments.isFetching)
+    const unsubscribe = firebase
+      .firestore()
+      .collection('Goal')
+      .doc(props.goalId)
+      .collection('comments')
+      .orderBy('createdAt', 'desc')
+      .onSnapshot((querySnapshot) => {
+        queryClient.setQueryData(
+          [GET_COMMENTS_QUERY_KEY, props.goalId],
+          querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              _id: doc.id,
+              text: data.text,
+              createdAt: data.createdAt?.toDate() ?? new Date(),
+              user: data.user,
+              image: data.image || null, // Si no hay imagen, se establece como null
+              video: data.video || null, // Si no hay video, se establece como null
+            };
+          })
+        );
+      });
+    return () => unsubscribe();
+  }, []);
+
+  const uploadMediaToStorage = async ({ uri, isImage }: UploadMediaParams): Promise<string>=> {
+    const randomComponent1 = Math.random().toString(36).substring(2, 9);
+    const randomComponent2 = Math.random().toString(36).substring(2, 9);
+    const uniqueImageId = randomComponent1 + randomComponent2;
+
+    let storageRef 
+
+    if (isImage){
+      storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.jpg`);
+      console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.jpg`);
+
+    }else{
+      storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.mp4`);
+      console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.mp4`);
+    }
+
+    await storageRef.putFile(uri);
+
+    const downloadUrl = await storageRef.getDownloadURL();
+    console.log("downloadUrl", downloadUrl);
+
+    return downloadUrl;
+  };
+
+  const queryUpload = useMutation<string, Error, UploadMediaParams>({
+    mutationFn: uploadMediaToStorage,
+    onMutate: () => {
+      setModalMessage('Guardando y enviando...');
+      setUploadingVisible(true);
     },
-    {
-      _id: 2,
-      text: 'Muy bien y tu?',
-      createdAt: new Date(),
-      user: {
-        _id: 2,
-        name: 'Profesional',
-        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
-      },
+    onSuccess: () => {
+      setTimeout(() => setUploadingVisible(false), 1000);
     },
-    {
-      _id: 3,
-      text: 'Me alegro mucho por Ti. Te puedo hacer una pregunta?',
-      createdAt: new Date(),
-      user: {
-        _id: 1,
-        name: 'Usuario',
-        avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png',
-      },
+    onError: (error) => {
+      console.error("Error uploading media: ", error);
+      setModalMessage('Error uploading media');
+      setTimeout(() => setUploadingVisible(false), 2000);
     },
-  ];
+  });
 
-  const [messages, setMessages] = useState(initialMessages);
-  const { patientId } = useGlobalSearchParams();
-
-  const onSend = async (newMessage: IMessage[]) => {
-    setMessages(GiftedChat.append(messages, newMessage));
-    console.log("Guardando el mensaje:", newMessage)
-
+  const onSend = async (newMessage: IMessage[], imageUri?: string, videoUri?: string) => {
     try {
       const db = firebase.firestore();
-      await db.collection('Patient').doc(patientId as string).collection('comments').add({
+      const messageData: any = {
         text: newMessage[0].text,
         createdAt: newMessage[0].createdAt,
         user: {
-          _id: props.rol == "patient"? 2 : 1,
-          name: props.rol,
+          _id: roleId,
+          name: props.role,
           avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
-      });
-      console.log("Guardado!")
+      };
+
+      if (imageUri) {
+        const params = {
+          uri: imageUri,
+          isImage: true
+        }
+        const imageUrl =  await queryUpload.mutateAsync(params);
+        messageData.image = imageUrl;
+      }
+
+      if (videoUri) {
+        const params = {
+          uri: videoUri,
+          isImage: false
+        }
+        const videoUrl = await queryUpload.mutateAsync(params);
+        messageData.video = videoUrl;
+      }
+
+      await db.collection('Goal').doc(props.goalId).collection('comments').add(messageData);
+      console.log("Guardado!");
     } catch (error) {
       console.error("Error saving message to Firestore: ", error);
     }
   };
+  
 
   const renderInputToolbar = (props: any) => {
     return (
@@ -76,76 +179,259 @@ const ShowComment = (props: {rol: string}) => {
 
   const renderSend = (props: any) => {
     return (
-      <TouchableOpacity
-        style={styles.sendButton}
-        onPress={() => {
-          if (props.text && props.onSend) {
-            props.onSend({ text: props.text.trim() }, true);
-          }
-        }}
-      >
-        <Image
-          source={sendIcon3}
-          style={styles.sendIcon}
-        />
-      </TouchableOpacity>
+      <View style={styles.sendContainer}>
+        <TouchableOpacity
+          style={styles.optionButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Image
+            source={attachment}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.sendButton}
+          onPress={() => {
+            if (props.text && props.onSend) {
+              props.onSend({ text: props.text.trim() }, true);
+            }
+          }}
+        >
+          <Image
+            source={sendIcon3}
+            style={styles.sendIcon}
+          />
+        </TouchableOpacity>
+      </View>
     );
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Comentarios</Text>
-      </View>
-      <KeyboardAvoidingView
-        style={styles.chatContainer}
-        behavior="height" // Esto es para que la barra de comentarios salga por arriba del teclado cuando se despliega el teclado
-      >
-        <GiftedChat
-          messages={messages}
-          onSend={newMessage => onSend(newMessage)}
-          user={{ _id: 1 }} // ID del usuario actual
-          renderAvatar={(props) => (
-            <Image
-              source={{ uri: props.currentMessage?.user.avatar as string }}
-              style={styles.avatar}
-            />
-          )}
-          renderBubble={(props) => (
-            <View
-              style={[
-                styles.bubble,
-                props.currentMessage?.user._id === 1
-                  ? styles.userBubble // Estilo para las burbujas del usuario actual
-                  : styles.otherBubble // Estilo para las burbujas de otros usuarios
-              ]}
-            >
-              <Text style={[
-                styles.text,
-                props.currentMessage?.user._id === 1
-                  ? styles.userText // Color del texto para el usuario actual
-                  : styles.otherText // Color del texto para otros usuarios
-              ]}>{props.currentMessage?.text}</Text>
-              <Text style={[
-                styles.timestamp,
-                props.currentMessage?.user._id === 1
-                  ? styles.userTimestamp // Color de la marca de tiempo para el usuario actual
-                  : styles.otherTimestamp // Color de la marca de tiempo para otros usuarios
-              ]}>
-                {props.currentMessage?.createdAt
-                  ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : ''}
-              </Text>
-            </View>
-          )}
-          renderSend={renderSend}
-          placeholder="Haz un comentario"
-          renderInputToolbar={renderInputToolbar}
+  const renderMessageImage = (props: any) => {
+    const { currentMessage } = props;
+    return (
+      <TouchableOpacity onPress={() => setFullScreenImage(currentMessage.image)}>
+        <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: currentMessage.image }}
+          style={styles.messageImage}
         />
-      </KeyboardAvoidingView>
-      
-    </SafeAreaView>
-  );
+        <Text style={styles.timestampImage}>
+        {props.currentMessage?.createdAt
+          ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : ''}
+        </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+  
+
+  const handleOptionSelect = (option: string) => {
+    setModalVisible(false);
+    switch (option) {
+      case 'photo':
+        ImagePicker.launchCamera({ mediaType: 'photo' }, (response) => {
+          if (response.didCancel) {
+            console.log('User cancelled image picker');
+          } else if (response.errorMessage) {
+            console.log('ImagePicker Error: ', response.errorMessage);
+          } else if (response.assets && response.assets.length > 0) {
+            const image = response.assets[0];
+            // Handle selected image here
+            console.log('Image selected: ', image);
+            const newMessage: IMessage = {
+              _id: Math.random().toString(36).substring(7),
+              text: '', 
+              createdAt: new Date(),
+              user: {
+                _id: roleId,
+                name: props.role,
+                avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
+              },
+            };
+            onSend([newMessage], image.uri);
+          }
+        });
+        break;
+
+      case 'video': 
+        ImagePicker.launchCamera({ mediaType: 'video' }, (response) => {
+          if (response.assets && response.assets.length > 0) {
+            const video = response.assets[0];
+
+            console.log('Video selected: ', video);
+            const newMessage: IMessage = {
+              _id: Math.random().toString(36).substring(7),
+              text: '', 
+              createdAt: new Date(),
+              user: {
+                _id: roleId,
+                name: props.role,
+                avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
+              },
+            };
+            onSend([newMessage], undefined, video.uri);
+          }
+        });
+        break;
+
+      case 'gallery':
+        ImagePicker.launchImageLibrary({ mediaType: 'photo' }, (response) => {
+          if (response.assets && response.assets.length > 0) {
+            const image = response.assets[0];
+            console.log('Media selected: ', image);
+            const newMessage: IMessage = {
+              _id: Math.random().toString(36).substring(7),
+              text: '', 
+              createdAt: new Date(),
+              user: {
+                _id: roleId,
+                name: props.role,
+                avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
+              },
+            };
+            onSend([newMessage], image.uri);
+          }
+        });
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  if( queryComments.isFetching ){
+    return(
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Cargando</Text>
+          <Image
+            source={loadingGif}
+          />
+        </View>
+      </SafeAreaView>
+    )
+  } else {
+
+    return (
+      <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Comentarios</Text>
+          </View>
+          <KeyboardAvoidingView
+            style={styles.chatContainer}
+            behavior="height" // Esto es para que la barra de comentarios salga por arriba del teclado cuando se despliega el teclado
+          >
+            <GiftedChat
+              messages={queryComments.data}
+              onSend={newMessage => onSend(newMessage)}
+              user={{ _id: roleId }} // ID del usuario actual
+              renderAvatar={(props) => (
+                <Image
+                  source={{ uri: props.currentMessage?.user.avatar as string }}
+                  style={styles.avatar}
+                />
+              )}
+              
+              renderBubble={(props) => (
+                <View
+                  style={[
+                    styles.bubble,
+                    props.currentMessage?.user._id === roleId ? styles.userBubble : styles.otherBubble
+                  ]}
+                >
+                  {props.currentMessage?.text && (
+                    <Text style={styles.text}>{props.currentMessage.text}</Text>
+                  )}
+                  {props.currentMessage?.image && renderMessageImage(props)}
+                  {props.currentMessage?.video && (
+                    <View style={styles.videoContainer}>
+                      <Video
+                        source={{ uri: props.currentMessage.video }}
+                        style={styles.messageVideo}
+                        controls={true}
+                        resizeMode="cover"
+                      />
+                      <Text style={styles.timestampImage}>
+                      {props.currentMessage?.createdAt
+                        ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : ''}
+                      </Text>
+                    </View>
+
+                  )}
+                  {!props.currentMessage?.image && !props.currentMessage?.video && (
+                    <Text style={styles.timestamp}>
+                      {props.currentMessage?.createdAt
+                        ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : ''}
+                    </Text>
+                  )}
+                </View>
+              )}
+              renderSend={renderSend}
+              placeholder="Haz un comentario"
+              renderInputToolbar={renderInputToolbar}
+            />
+          </KeyboardAvoidingView>
+          <Modal
+            visible={!!fullScreenImage}
+            animationType="fade"
+            transparent={true}
+            onRequestClose={() => setFullScreenImage(null)}
+          >
+            <View style={styles.fullScreenImageContainer}>
+              <Image
+                source={{ uri: fullScreenImage || '' }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setFullScreenImage(null)}
+              >
+                <Text style={styles.closeButtonText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </Modal>
+
+          <Modal
+            transparent={true}
+            visible={modalVisible}
+            animationType="fade"
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalButton}>
+                  <Button title="Galería" onPress={() => handleOptionSelect('gallery')} />
+                </View>
+                <View style={styles.modalButton}>
+                  <Button title="Foto" onPress={() => handleOptionSelect('photo')} />
+                </View>
+                <View style={styles.modalButton}>
+                  <Button title="Video" onPress={() => handleOptionSelect('video')} />
+                </View>
+                <View style={{...styles.modalButton, width: '50%', alignSelf: 'center', marginTop: 30}}>
+                  <Button title="Cancelar" onPress={() => setModalVisible(false)} />
+                </View>
+              </View>
+            </View>
+          </Modal>
+          <Modal
+              transparent={true}
+              visible={uploadingVisible}
+              animationType="fade"
+              onRequestClose={() => setModalVisible(false)}
+            >
+            <View style={{...styles.modalContainer, justifyContent: 'center'}}>
+              <View style={{...styles.modalContent, backgroundColor: Colors.white, width: 'auto'}}>
+                <Text>{modalMessage}</Text>
+              </View>
+            </View>
+          </Modal>
+      </SafeAreaView>
+    );
+  }
 };
 
 export default ShowComment;
@@ -162,15 +448,15 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
+    borderTopWidth: 1,
+    borderTopColor: Colors.lightGray,
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
   },
   chatContainer: {
-    height: "50%",
+    flex: 1,
     maxHeight: Dimensions.get('window').height / 2,
   },
   bubble: {
@@ -181,31 +467,30 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     backgroundColor: Colors.lightblue, 
-    alignSelf: 'flex-start',
   },
   otherBubble: {
     backgroundColor: Colors.gray, 
-    alignSelf: 'flex-end',
   },
   text: {
     fontSize: 16,
-  },
-  userText: {
-    color: Colors.white, 
-  },
-  otherText: {
     color: Colors.white,
   },
   timestamp: {
     marginTop: 5,
     fontSize: 10,
     textAlign: 'right',
-  },
-  userTimestamp: {
     color: Colors.white,
   },
-  otherTimestamp: {
+  timestampImage: {
+    marginTop: 5,
+    fontSize: 10,
+    textAlign: 'right',
     color: Colors.white,
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    marginRight: 5, // Ajusta el espaciado desde el borde derecho de la burbuja
+    marginBottom: 5, 
   },
   avatar: {
     width: 40,
@@ -226,5 +511,86 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     margin: 5
-  }
+  },
+  loadingContainer: {
+    flex: 1, 
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  optionButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 20,
+    marginLeft: 10,
+  },
+  optionButtonText: {
+    color: Colors.white,
+    fontSize: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: "80%",
+    padding: 20,
+    backgroundColor: 'transparent',
+    borderRadius: 10,
+  },
+  modalButton: {
+    margin: 10,
+  },
+  sendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  fullScreenImageContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#000',
+  },
+  messageImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoContainer: {
+    width: 250,
+    height: 250,
+    borderRadius: 5,
+    overflow: 'hidden',
+    margin: -5,
+  },
+  imageContainer: {
+    width: 250,
+    height: 250,
+    borderRadius: 5,
+    overflow: 'hidden',
+    margin: -5,
+  },
+  messageVideo: {
+    width: '100%',
+    height: '100%',
+  },
 });

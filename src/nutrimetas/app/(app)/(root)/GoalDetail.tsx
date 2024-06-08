@@ -1,3 +1,5 @@
+import { StyleSheet, TouchableOpacity, View, Text, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { View, Text, TextProps, useThemeColor } from '@/components/Themed'
@@ -7,6 +9,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useGlobalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import Colors from '@/constants/Colors';
+import ShowComment from './showComment';
 
 interface Timestamp {
     seconds: number;
@@ -94,7 +97,7 @@ const fetchGoalDetails = async (selectedGoal: string) => {
 
 const GoalDetail = () => {
     const navigation = useNavigation();
-    const { selectedGoal } = useGlobalSearchParams();
+    const { selectedGoal, role } = useGlobalSearchParams();
     const arrowColor = useThemeColor({ light: Colors.black, dark: Colors.white }, 'text');
 
     const { data: goalData, error, isLoading } = useQuery({
@@ -124,7 +127,7 @@ const GoalDetail = () => {
     const portionText = AmountData?.Value === '1' ? PortionData?.Name : PortionData?.Plural;
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Icon name="arrow-back" size={24} color={arrowColor} />
@@ -141,7 +144,10 @@ const GoalDetail = () => {
                     {AmountData?.Value} {portionText} {FrequencyData?.Name}
                 </Text>
             </View>
-        </View>
+            <View style={styles.commentsContainer}>
+                <ShowComment role={role as string} goalId={selectedGoal as string} />
+            </View>
+        </SafeAreaView>
     );
 };
 
@@ -185,5 +191,9 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 10,
         fontSize: 18,
+    },
+    commentsContainer: {
+        flex: 2,
+        alignContent: 'flex-end',
     },
 });
