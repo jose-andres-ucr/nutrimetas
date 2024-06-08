@@ -8,9 +8,8 @@ import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
-import { CheckBox} from 'react-native-elements';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 const GoalList = () => {
     const router = useRouter();
@@ -21,13 +20,15 @@ const GoalList = () => {
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
 
-    // estados para las fechas
+    // Estados para los filtros
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [startDate, setStartDate] = useState(new Date());
     const [originalGoals, setOriginalGoals] = useState<any[]>([]);
     const [originalGoalsSaved, setOriginalGoalsSaved] = useState(false);
     const [showBackdrop, setShowBackdrop] = useState(false);
-
+    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    const [endDate, setEndDate] = useState(new Date());
+    
     useEffect(() => {
         // Guarda las metas originales solo la primera vez que se cargan
         if (!originalGoalsSaved && goals.length > 0) {
@@ -62,7 +63,6 @@ const GoalList = () => {
 
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
-
         for (const goalId of patientGoals) {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
@@ -84,7 +84,6 @@ const GoalList = () => {
         }
 
         setGoals(goalsFromFirebase);
-        
         setLoading(false);
     };
 
@@ -169,27 +168,38 @@ const GoalList = () => {
     const handleCancel = () => {
         setShowPopup(false);
         setShowBackdrop(false);
+        setError(false);
     };
 
+    const [error, setError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
     const handleConfirm = () => {
-        const formattedStartDate = startDate.toISOString();
-    
-        // Calcular la fecha final como 7 días después de la fecha de inicio
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 7);
-        /*const formattedEndDate = endDate.toISOString();
-        console.log('Fecha de Inicio:', formattedStartDate);
-        console.log('Fecha Límite:', formattedEndDate); */
-    
-        filterGoalsByDateRange(startDate, endDate);
+        if (endDate < startDate) {
+            setError(true);
+            setErrorMessage("La fecha de inicio debe ser anterior a la fecha de fin");
+            return;
+        }else{
+            setError(false);
+        }
+        filterGoalsByDateRange(startDate, endDate); // Pasa la fecha final al filtro
         setShowPopup(false);
         setShowBackdrop(false);
     };
 
-    const handleStartDateChange = (event, selectedDate) => {
+    const handleStartDateChange = (event: DateTimePickerEvent, selectedDate?: Date | undefined) => {
         setShowStartDatePicker(false);
         if (selectedDate) {
             setStartDate(selectedDate);
+            console.log('Fecha de inicio seleccionada:', selectedDate);
+        }
+    };
+
+    const handleEndDateChange = (event: DateTimePickerEvent, selectedDate?: Date | undefined) => {
+        setShowEndDatePicker(false);
+        if (selectedDate) {
+            setEndDate(selectedDate);
+            console.log('Fecha de fin seleccionada:', selectedDate);
         }
     };
 
@@ -197,22 +207,35 @@ const GoalList = () => {
         setShowPopup(false);
         setGoals(originalGoals); // Restablece las metas a los valores originales
         setShowBackdrop(false);
+        setError(false);
     }
 
-    const filterGoalsByDateRange = async (startDate, endDate) => {
+    const filterGoalsByDateRange = async (startDate: Date, endDate: Date) => {
+        console.log('Fechas seleccionadas para filtrar:', startDate, endDate);
         if (patientId) {
             setLoading(true);
             try {
-                // Ajustar las fechas de inicio y fin para incluir la primera y última hora 
+                // Ajustar las fechas de inicio y fin para incluir la primera y última hora
                 const adjustedStartDate = new Date(startDate);
-                adjustedStartDate.setHours(0, 0, 0, 0); 
+                adjustedStartDate.setHours(0, 0, 0, 0);
                 const adjustedEndDate = new Date(endDate);
-                adjustedEndDate.setHours(23, 59, 59, 999); 
-    
+                adjustedEndDate.setHours(23, 59, 59, 999);
+                
                 // Filtrar las metas originales por las fechas ajustadas
                 const filteredGoals = originalGoals.filter(goal => {
-                    const goalStartDate = new Date(goal.StartDate.toDate());
-                    return goalStartDate >= adjustedStartDate && goalStartDate <= adjustedEndDate;
+                    const goalStartDate = goal.StartDate ? goal.StartDate.toDate() : undefined;
+                    const goalEndDate = goal.Deadline ? goal.Deadline.toDate() : undefined;
+                    console.log("Fecha de inicio de la meta:", goalStartDate);
+                    console.log("Fecha de fin de la meta:", goalEndDate);
+                    // Verificar si hay superposición entre los rangos de fechas
+                    const isWithinRange = (goalStartDate && goalEndDate) &&
+                                          (goalStartDate <= adjustedEndDate) &&
+                                          (goalEndDate >= adjustedStartDate);
+                        if (isWithinRange) {
+                        // Imprimir solo las metas que se filtraron
+                        console.log("Meta filtrada:",goalStartDate, "y fin", goalEndDate);
+                    }
+                    return isWithinRange;
                 });
                 setGoals(filteredGoals);
             } catch (error) {
@@ -222,7 +245,6 @@ const GoalList = () => {
             }
         }
     };
-    
 
     if (loading) {
         return (
@@ -232,14 +254,14 @@ const GoalList = () => {
             </View>
         );
     }
-
+/*
     if (goals.length === 0) {
         return (
             <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
             </View>
         );
-    }
+    } */
 
     return (
         <View style={styles.container}>
@@ -258,7 +280,6 @@ const GoalList = () => {
             {showBackdrop && <View style={styles.backdrop} />}
             {/* Ventana emergente */}
             {showPopup && (
-                
                 <View style={styles.popupContainer}>
                     <View style={styles.filtersHeader}>
                         <Text style={styles.filterTitle}>Filtros</Text>
@@ -276,6 +297,19 @@ const GoalList = () => {
                             onChange={handleStartDateChange}
                         />
                     )}
+                    <Text style={styles.dateTitle} >Fecha de fin</Text>
+                    <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
+                        <Text>{endDate.toDateString()}</Text>
+                        <FontAwesome name="calendar" size={24} color="gray" />
+                    </TouchableOpacity>
+                    {showEndDatePicker && (
+                        <DateTimePicker
+                            value={endDate}
+                            mode="date"
+                            display="default"
+                            onChange={handleEndDateChange}
+                        />
+                    )}
                     <View style={{ flexDirection: 'row' }}>
                         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
                             <Text style={styles.buttonText}>Salir</Text>
@@ -287,9 +321,20 @@ const GoalList = () => {
                     <TouchableOpacity style={styles.button} onPress={handleReset}>
                         <Text style={styles.buttonText}>Eliminar Filtros</Text>
                     </TouchableOpacity>
+                    {error && (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>{errorMessage}</Text>
+                        </View>
+                    )}
                 </View>
             )}
-
+            {loading ? (
+                <Text>Cargando...</Text>
+            ) : goals.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
+                </View>
+            ) : (
             <FlatList
                 data={goals}
                 renderItem={({ item }) => (
@@ -308,6 +353,7 @@ const GoalList = () => {
                 )}
                 keyExtractor={(item, index) => `${item.title}-${index}`}
             />   
+            )}
             {role === 'professional' && (
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
                     <Icon name="add" size={24} color="white" />
@@ -490,5 +536,19 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 5,
         borderColor: Colors.gray,
+    },
+    errorContainer: {
+        position: 'absolute',
+        top: 120,
+        right: 170,
+        backgroundColor: Colors.red,
+        padding: 5,
+        borderRadius: 5,
+        marginTop: 10,
+        maxWidth: 160,
+    },
+    errorText: {
+        color: Colors.white,
+        fontWeight: "bold",
     },
 });
