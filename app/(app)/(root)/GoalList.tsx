@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
-import { CheckBox} from 'react-native-elements';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -16,7 +15,7 @@ const GoalList = () => {
     const router = useRouter();
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
-    const { role } = useContext(SessionContext);
+    const role = useContext(SessionContext)?.role;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
@@ -84,7 +83,7 @@ const GoalList = () => {
         }
 
         setGoals(goalsFromFirebase);
-        
+
         setLoading(false);
     };
 
@@ -112,7 +111,7 @@ const GoalList = () => {
         const data = doc.exists ? doc.data() : null;
         return data;
     };
-    
+
 
     const buildDescription = async (goalData: any) => {
         try {
@@ -147,20 +146,20 @@ const GoalList = () => {
 
     const onPressHandle = (selectedGoalId: string) => {
         console.log(selectedGoalId);
-        router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role } });
+        router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role ? role : "" } });
     };
 
     const handleAddGoal = () => {
         router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
         // navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
-    
+
     const handleDailyGoal = () => {
         console.log('daily register');
         router.push({ pathname: '/DailyGoal', params: { patientId: patientId } });
         console.log({ pathname: '/DailyGoal', params: { sessionDocId: patientId } });
     };
-    
+
     const handleFilterPress = () => {
         setShowPopup(true);
         setShowBackdrop(true);
@@ -173,14 +172,14 @@ const GoalList = () => {
 
     const handleConfirm = () => {
         const formattedStartDate = startDate.toISOString();
-    
+
         // Calcular la fecha final como 7 días después de la fecha de inicio
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 7);
         /*const formattedEndDate = endDate.toISOString();
         console.log('Fecha de Inicio:', formattedStartDate);
         console.log('Fecha Límite:', formattedEndDate); */
-    
+
         filterGoalsByDateRange(startDate, endDate);
         setShowPopup(false);
         setShowBackdrop(false);
@@ -205,10 +204,10 @@ const GoalList = () => {
             try {
                 // Ajustar las fechas de inicio y fin para incluir la primera y última hora 
                 const adjustedStartDate = new Date(startDate);
-                adjustedStartDate.setHours(0, 0, 0, 0); 
+                adjustedStartDate.setHours(0, 0, 0, 0);
                 const adjustedEndDate = new Date(endDate);
-                adjustedEndDate.setHours(23, 59, 59, 999); 
-    
+                adjustedEndDate.setHours(23, 59, 59, 999);
+
                 // Filtrar las metas originales por las fechas ajustadas
                 const filteredGoals = originalGoals.filter(goal => {
                     const goalStartDate = new Date(goal.StartDate.toDate());
@@ -222,7 +221,7 @@ const GoalList = () => {
             }
         }
     };
-    
+
 
     if (loading) {
         return (
@@ -249,8 +248,8 @@ const GoalList = () => {
                 </TouchableOpacity>
                 <Text style={styles.title}>Metas</Text>
                 <TouchableOpacity onPress={handleFilterPress} style={styles.filterContainer}>
-                    <Image 
-                        style={styles.filterImage} 
+                    <Image
+                        style={styles.filterImage}
                         source={{ uri: 'https://icons-for-free.com/iff/png/512/filter-131979013401653166.png' }}
                     />
                 </TouchableOpacity>
@@ -258,7 +257,7 @@ const GoalList = () => {
             {showBackdrop && <View style={styles.backdrop} />}
             {/* Ventana emergente */}
             {showPopup && (
-                
+
                 <View style={styles.popupContainer}>
                     <View style={styles.filtersHeader}>
                         <Text style={styles.filterTitle}>Filtros</Text>
@@ -307,7 +306,7 @@ const GoalList = () => {
                     </TouchableOpacity>
                 )}
                 keyExtractor={(item, index) => `${item.title}-${index}`}
-            />   
+            />
             {role === 'professional' && (
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
                     <Icon name="add" size={24} color="white" />
@@ -315,7 +314,7 @@ const GoalList = () => {
             )}
             {role === 'patient' && (
                 <TouchableOpacity style={styles.registerDayButton} onPress={handleDailyGoal}>
-                    <Icon name="create" size={24} color="white"/>
+                    <Icon name="create" size={24} color="white" />
                 </TouchableOpacity>
             )}
         </View>
@@ -332,7 +331,7 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         backgroundColor: Colors.backdrop,
-        zIndex: 998, 
+        zIndex: 998,
     },
     popupContainer: {
         position: 'absolute',
@@ -346,12 +345,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 999,
-        left: '45%', 
+        left: '45%',
     },
     filtersHeader: {
         position: 'absolute',
         top: 10,
-        left: 10,       
+        left: 10,
     },
     filterTitle: {
         fontSize: 18,
@@ -359,7 +358,7 @@ const styles = StyleSheet.create({
         textAlign: 'left',
         marginLeft: 10,
     },
-    dateTitle:{
+    dateTitle: {
         marginTop: 10,
         marginBottom: -10,
     },
@@ -367,7 +366,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.lightblue,
         padding: 10,
         borderRadius: 5,
-        marginTop: 10,    
+        marginTop: 10,
     },
     buttonText: {
         color: Colors.white,
@@ -375,18 +374,18 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     cancelButton: {
-        backgroundColor: Colors.red, 
+        backgroundColor: Colors.red,
         padding: 10,
         borderRadius: 5,
         marginTop: 10,
-        marginRight: 5, 
+        marginRight: 5,
     },
     confirmButton: {
-        backgroundColor: Colors.green, 
+        backgroundColor: Colors.green,
         padding: 10,
         borderRadius: 5,
         marginTop: 10,
-        marginLeft: 5, 
+        marginLeft: 5,
     },
     container: {
         flex: 1,
