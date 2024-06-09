@@ -92,6 +92,7 @@ export default function AddPatient() {
           phone: data.phone,
           email: data.email,
           password: data.password,
+          activated: false
         })
         .then(() => {
           console.log('Usuario agregado!')
