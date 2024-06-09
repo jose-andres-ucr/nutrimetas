@@ -26,7 +26,7 @@ import LoginForm from "@/components/LoginForm";
 import IconPopup from "@/components/IconPopup";
 
 // Firestore DB
-import firestore from '@react-native-firebase/firestore';
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 // Firestore Authentication
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
@@ -37,6 +37,9 @@ import {
     UserData,
     UserRole
 } from "@/shared/LoginSession";
+
+// User DB document collections
+import Collections from "@/constants/Collections";
 
 // Possible login states 
 type LoginAttempt = {
@@ -113,20 +116,30 @@ export default function LoginPage(
     // ... Retrieval of user data via Firebase Firestore
     const handleRetrievalAttempt = function (email: string) : Promise<UserData> {
         // Both DB errors arising from the access promise and unexpected
-        //  ones arising from asignment are dealt with the same
+        // ones arising from asignment are dealt with the same
         const handleDbError = (dbError : Error) => { throw(dbError) };
+
+        type CollectedDocs = FirebaseFirestoreTypes
+            .QuerySnapshot<FirebaseFirestoreTypes.DocumentData>;
 
         // DB errors arising from missing user data are dealt with slightly
         // differently
-        const handleDocQuery = (queryResult : any, collectionRole : UserRole) => {
+        const handleDocQuery = (queryResult : CollectedDocs, collectionRole : UserRole) => {
             if (queryResult.docs.length === 1) {
-                return {doc : queryResult.docs[0], role : collectionRole} ;
+                const doc = queryResult.docs[0];
+
+                // Construct the user data according to which collection
+                // the user's data sheet belongs to
+                const collectedData : UserData = {
+                    docId : doc.id,
+                    docContents : doc.data(), 
+                    role : collectionRole,
+                }
+
+                return collectedData ;
             }
 
-            throw (
-                Error("No se encontraron los datos para el rol de" 
-                + collectionRole
-            ))
+            throw (Error("db/missing-user"));
         };
 
         // Find the data as a patient...
@@ -149,17 +162,23 @@ export default function LoginPage(
         // the case
         return Promise.any([patientDataFound, professionalDataFound])
             .then(
-                (queryResults) => {    
-                    // Construct the user data according to which collection
-                    // the user's data sheet belongs to
-                    const {doc, role} = queryResults;
-                    return {
-                        docId : doc.id, 
-                        role: role,
-                        docContents: doc.data,
-                    }
+                (userData : UserData) => {    
+                    return userData;
                 },
-                handleDbError
+                (aggregateError : AggregateError) => {
+                    // Check if any errors stem from being unable to find a user
+                    const [patientError, professionalError] : Error[] 
+                        = aggregateError.errors;
+
+                    if (patientError.message === "db/missing-user" 
+                        && professionalError.message == "db/missing-user") {
+                        return Promise
+                            .reject("No se encontraron los datos del usuario")
+                    }
+
+                    // Otherwise, propagate the error
+                    return Promise.reject(aggregateError);
+                }
             )
             .catch(handleDbError);
     }
@@ -171,56 +190,39 @@ export default function LoginPage(
             .signInWithEmailAndPassword(email, password)
             .then(
                 (Credentials : FirebaseAuthTypes.UserCredential) => {
-                    console.log('Authentication SUCCESFUL');          
-                    
-                    const userId : string = Credentials.user.uid;
-                    console.log('UID', userId);
-
-                    return userId;
+                    return Promise.resolve(Credentials.user.uid);
                 }, 
-                (authError) => {
-                    console.log('Authentication FAILED');
-
-                    // Check for invalid credentials
-                    if (authError.code === 'auth/invalid-credential') {
-                        console.log('Credentials are invalid!');
-
-                        triggerFailedSignIn({
-                            message: "Credenciales incorrectas.",
-                            isExpected: true,
-                        });
-                    }
-                    else if (authError.code === 'auth/invalid-email') {
-                        console.log('Email address is invalid!');
-
-                        triggerFailedSignIn({
-                            message: "Dirección de correo incorrecta.",
-                            isExpected: true,
-                        });
-                    }
-                    else if (authError.code === 'auth/invalid-password') {
-                        console.log('Password is invalid!');
-
-                        triggerFailedSignIn({
-                            message: "Contraseña incorrecta.",
-                            isExpected: true,
-                        });
-                    }
-
-                    // Or other unexpected errors
-                    else {
-                        console.log("Unexpected error while authenticating "
-                        + "sign-in via Firebase", authError);
-
-                        triggerFailedSignIn({
-                            message: `No se logró autenticar al usuario: ${authError.code}.`,
-                            isExpected: false,
-                        });
-                    }
-
-                    // Error has been handled
-                    return Promise.reject(null);
+                (authError) => {;
+                    return Promise.reject(authError);
                 }
+            );
+    }
+
+    // ... User account activation
+    const handleAccountActivation = ( userDocId: string, userRole : UserRole) => {
+        const collection : string | undefined = (userRole === "patient" ? 
+            Collections.Patient : (userRole === "professional" ?
+                Collections.Professionals : undefined)
+        );
+
+        if (collection === undefined) {
+            return Promise.reject(
+                Error("No existe colección asociada al rol de" + userRole)
+            );
+        }
+
+        console.log("Borrando de ", userDocId, " con el rol ", userRole)
+
+        return firestore()
+            .collection(collection)
+            .doc(userDocId)
+            .update({
+                password: firestore.FieldValue.delete(),
+                activated: true
+            })
+            .then(
+                () => Promise.resolve(),
+                (error) => Promise.reject(error)
             );
     }
 
@@ -239,24 +241,150 @@ export default function LoginPage(
         const dataRetrieved = handleRetrievalAttempt(data.email);
 
         // Build user session
-         Promise.all([authenticated, dataRetrieved])
+         Promise.allSettled([authenticated, dataRetrieved])
             .then(
-                (res) => {
-                    const [userData, userId] = [res[1], res[0]];
-                    triggerSuccesfulSignIn(userData, userId);
-                },
-                // Handle errors not handled already
-                (dbError) => {
-                    if (dbError !== null) {
-                        triggerFailedSignIn({
-                            message: dbError.message,
-                            isExpected: false,
-                        });
-                    }
+                (results) => {
+                    const [authentication, dataPulled] = results;
 
-                    // Error has been handled
-                    return Promise.reject(null);
-                } 
+                    // If the user has data associated with them
+                    if (dataPulled.status == "fulfilled") {
+                        console.log("User data collection SUCCESFUL");
+                        const userData = dataPulled.value;
+                        const accountActivated = userData.docContents.activated;
+
+                        // And signed in to their associated account, 
+                        // sign them in
+                        if (authentication.status == "fulfilled") {
+                            console.log("Account authentication SUCCESFUL");
+                            const userId = authentication.value;
+
+                            // Make sure to register their account if it isn't
+                            // already registered
+                            // TODO: Handle error gracefully
+                            if (accountActivated === false) {
+                                console.log("Activating account...")
+                                handleAccountActivation(userData.docId, userData.role)
+                                    .then(
+                                        () => console.log(
+                                            "User activation updated")
+                                        ,
+                                        () => console.warn(
+                                            "Unable to update user activation"
+                                        )
+                                    )
+                            }
+                            
+                            triggerSuccesfulSignIn(userData, userId);
+                        }
+
+                        // Otherwise, if there's no associated account, create
+                        // one for them
+                        else if (!accountActivated) {
+                            console.log("Creating account...");
+
+                            if (data.password === userData.docContents.password) {
+                                console.log("Passwords match");
+                                auth()
+                                    .createUserWithEmailAndPassword(data.email, 
+                                        data.password)
+                                    .then(
+                                        (userCreds) => {
+                                        console.log("Auth credentials created succesfully");
+
+                                        handleAccountActivation(userData.docId, 
+                                            userData.role)
+                                            .then(
+                                                () => {
+                                                    console.log("DB updated succesfully");
+
+                                                    const userId = 
+                                                        userCreds.user.uid;
+                                                    triggerSuccesfulSignIn(userData,
+                                                        userId);
+                                                },
+                                                (activationError) => {
+                                                    triggerFailedSignIn({
+                                                        message: activationError
+                                                            .message,
+                                                        isExpected: false,
+                                                    });
+                                                }
+                                            )
+                                        },
+                                        (error) => {
+                                            triggerFailedSignIn({
+                                                message: error.message,
+                                                isExpected: false,
+                                            });
+                                        }
+                                    );
+                            } else {
+                                triggerFailedSignIn({
+                                    message: "Credenciales incorrectas.",
+                                    isExpected: true,
+                                });
+                            }
+                        }
+
+                        // Otherwise, if there is an associated account yet
+                        // the sign in failed, reject the attempt
+                        else {
+                            const authError = authentication.reason;
+
+                            // Check for invalid credentials
+                            if (authError.code === 'auth/invalid-credential') {
+                                console.log('Credentials are invalid!');
+
+                                triggerFailedSignIn({
+                                    message: "Credenciales incorrectas.",
+                                    isExpected: true,
+                                });
+                            }
+                            else if (authError.code === 'auth/invalid-email') {
+                                console.log('Email address is invalid!');
+
+                                triggerFailedSignIn({
+                                    message: "Dirección de correo incorrecta.",
+                                    isExpected: true,
+                                });
+                            }
+                            else if (authError.code === 'auth/invalid-password') {
+                                console.log('Password is invalid!');
+
+                                triggerFailedSignIn({
+                                    message: "Contraseña incorrecta.",
+                                    isExpected: true,
+                                });
+                            }
+
+                            // Or other unexpected errors
+                            else {
+                                console.log("Unexpected error while authenticating "
+                                + "sign-in via Firebase", authError);
+
+                                triggerFailedSignIn({
+                                    message: `No se logró autenticar al usuario: ${authError.code}.`,
+                                    isExpected: false,
+                                });
+                            }
+                        }
+                    } else {
+                        console.log("User data collection FAILED");
+                        let dbError : string = dataPulled.reason;
+
+                        if (dbError === "No se encontraron los datos del usuario") {
+                            triggerFailedSignIn({
+                                message: "Credenciales incorrectas",
+                                isExpected: true,
+                            });
+                        } else {
+                            triggerFailedSignIn({
+                                message: dbError,
+                                isExpected: false,
+                            });
+                        }
+                    }
+                }, 
             )
         // Ignore any other unhandled error
             .catch(() => {});

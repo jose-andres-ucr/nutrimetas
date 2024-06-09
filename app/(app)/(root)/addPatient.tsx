@@ -38,7 +38,7 @@ const patientForm = z.object({
     .email({message: "El correo es inválido."}),
   password: z      
     .string()
-    .min(5, { message: "La contraseña debe tener al menos 5 caracteres" })
+    .min(6, { message: "La contraseña debe tener al menos 6 caracteres" })
 });
 
 type PatientFormType = z.infer<typeof patientForm>
@@ -92,6 +92,7 @@ export default function AddPatient() {
           phone: data.phone,
           email: data.email,
           password: data.password,
+          activated: false
         })
         .then(() => {
           console.log('Usuario agregado!')
