@@ -1,4 +1,4 @@
-import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, FlatList, View, Text, Image, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect, useContext } from 'react';
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { useRouter } from 'expo-router';
@@ -8,11 +8,16 @@ import { useGoalFirestoreQuery } from '@/components/FetchData';
 
 const TemplatedGoals = () => {
     const router = useRouter();
-    const { data: templatedGoals = [], error, isLoading} = useGoalFirestoreQuery();
+    const { data: templatedGoals = [], error, isLoading } = useGoalFirestoreQuery();
 
     if (isLoading) {
-        return <Text>Cargando...</Text>;
-    }   
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.blue} />
+                <Text style={styles.loadingText}>Cargando...</Text>
+            </View>
+        );
+    }
 
     const onPressHandle = async (goalDocId: string) => {
         router.push({ pathname: '/CheckboxPatients', params: { goalDocId: goalDocId } });
@@ -48,13 +53,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingLeft: 20,
-        paddingRight: 20, 
+        paddingRight: 20,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        marginLeft: 10, 
+        marginLeft: 10,
     },
     item: {
         flexDirection: 'row',
@@ -88,5 +93,14 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         textAlign: 'center'
-    }
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 18,
+    },
 });
