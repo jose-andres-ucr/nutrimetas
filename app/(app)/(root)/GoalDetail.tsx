@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     },
     detailText: {
         fontSize: 17,
-        marginVertical: 18,
+        marginVertical: 14,
     },
     boldText: {
         fontWeight: 'bold',
