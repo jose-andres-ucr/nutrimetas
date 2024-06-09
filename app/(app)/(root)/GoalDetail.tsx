@@ -93,6 +93,14 @@ const fetchGoalDetails = async (selectedGoal: string) => {
     }
 };
 
+const formatDate = (timestamp: Timestamp) => {
+    const date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+};
+
 const GoalDetail = () => {
     const navigation = useNavigation();
     const { selectedGoal, role } = useGlobalSearchParams();
@@ -121,7 +129,7 @@ const GoalDetail = () => {
         return <Text>No se encontraron detalles para esta meta.</Text>;
     }
 
-    const { TypeData, ActionData, RubricData, AmountData, FrequencyData, PortionData } = goalData;
+    const { TypeData, ActionData, RubricData, AmountData, FrequencyData, PortionData, StartDate, Deadline } = goalData;
     const portionText = AmountData?.Value === '1' ? PortionData?.Name : PortionData?.Plural;
 
     return (
@@ -140,6 +148,14 @@ const GoalDetail = () => {
                 <Text style={styles.detailText}>
                     <Text style={styles.boldText}>Cantidad: </Text>
                     {AmountData?.Value} {portionText} {FrequencyData?.Name}
+                </Text>
+                <Text style={styles.detailText}>
+                    <Text style={styles.boldText}>Fecha de inicio: </Text>
+                    {formatDate(StartDate)}
+                </Text>
+                <Text style={styles.detailText}>
+                    <Text style={styles.boldText}>Fecha límite: </Text>
+                    {formatDate(Deadline)}
                 </Text>
             </View>
             <View style={styles.commentsContainer}>
@@ -176,7 +192,7 @@ const styles = StyleSheet.create({
     },
     detailText: {
         fontSize: 17,
-        marginVertical: 25,
+        marginVertical: 14,
     },
     boldText: {
         fontWeight: 'bold',

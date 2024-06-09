@@ -194,7 +194,6 @@ const DailyGoal = () => {
         </View>
     );
 }
-
 export default DailyGoal;
 
 const styles = StyleSheet.create({
