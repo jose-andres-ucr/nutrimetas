@@ -137,7 +137,7 @@ const CheckboxPatients = () => {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Icon name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <Text style={styles.title}>Asignar Metas Emplatilladas</Text>
+                <Text style={styles.title}>Asignar Meta Seleccionada</Text>
             </View>
             <FlatList
                 data={filteredPatients}
@@ -173,7 +173,7 @@ const CheckboxPatients = () => {
                 style={[styles.addButton, (!selectedIds.length || clicked) && styles.addButtonDisabled]}
                 disabled={!selectedIds.length || clicked}
             >
-                <Text style={styles.addButtonText}>Asignar platilla</Text>
+                <Text style={styles.addButtonText}>Asignar meta</Text>
             </TouchableOpacity>
         </View>
     );
