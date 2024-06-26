@@ -1,19 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from 'expo-router';
 import React from 'react';
-import { Control, Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Platform, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRoute } from '@react-navigation/native';
 import Colors from '@/constants/Colors';
 import { useRouter, useGlobalSearchParams } from 'expo-router';
 import { View } from "@/components/Themed";
-import { Dropdown } from "react-native-element-dropdown";
+import RenderDropdown from "@/components/RenderDropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
-import { CommonType, useDropDownDataFirestoreQuery } from "@/components/FetchData";
+import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
 
 export const partialGoalForm = z.object({
   type: z
@@ -30,46 +28,12 @@ export const partialGoalForm = z.object({
     .min(1, { message: "Debe seleccionar una cantidad" }),
 });
 
-type GoalFormType = z.infer<typeof partialGoalForm>
-
-const renderDropdown = (
-  name: keyof GoalFormType,
-  data: CommonType[],
-  control: Control<GoalFormType>,
-  refs: { [key: string]: React.MutableRefObject<IDropdownRef | null> },
-  placeholder: string
-) => (
-  <Controller
-    control={control}
-    render={({ field: { onChange, onBlur, value } }) => (
-      <Dropdown
-        ref={refs[`${name}Ref`]}
-        style={styles.dropdown}
-        placeholderStyle={styles.placeholderStyle}
-        selectedTextStyle={styles.selectedTextStyle}
-        inputSearchStyle={styles.inputSearchStyle}
-        iconStyle={styles.iconStyle}
-        data={data}
-        search
-        maxHeight={220}
-        labelField="name"
-        valueField="id"
-        placeholder={placeholder}
-        searchPlaceholder="Buscar..."
-        value={value}
-        onChange={(item) => onChange(item?.id || '')}
-        onBlur={onBlur}
-      />
-    )}
-    name={name}
-  />
-);
+type GoalFormType = z.infer<typeof partialGoalForm>;
 
 export default function AssignGoal() {
   const router = useRouter();
-  const route = useRoute();
   const { patientId } = useGlobalSearchParams();
-  //const patientId = route.params?.sessionDocId;
+
 
   const {
     control,
@@ -119,7 +83,7 @@ export default function AssignGoal() {
         <View style={[styles.textInfo, { paddingTop: 0 }]}>
           <Text>Tipo</Text>
         </View>
-        {renderDropdown('type', typeData, control, refs, "Seleccione un tipo")}
+        <RenderDropdown name='type' data={typeData} control={control} refs={refs} placeholder="Seleccione un tipo" />
         {errors.type ? (
           <Text style={styles.error}>{errors.type.message}</Text>
         ) : null}
@@ -127,7 +91,7 @@ export default function AssignGoal() {
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Acción</Text>
         </View>
-        {renderDropdown('action', actionData, control, refs, "Seleccione una acción")}
+        <RenderDropdown name='action' data={actionData} control={control} refs={refs} placeholder="Seleccione una acción" />
         {errors.action ? (
           <Text style={styles.error}>{errors.action.message}</Text>
         ) : null}
@@ -135,7 +99,7 @@ export default function AssignGoal() {
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Rubro</Text>
         </View>
-        {renderDropdown('rubric', rubricData, control, refs, "Seleccione un rubro")}
+        <RenderDropdown name='rubric' data={rubricData} control={control} refs={refs} placeholder="Seleccione un rubro" />
         {errors.rubric ? (
           <Text style={styles.error}>{errors.rubric.message}</Text>
         ) : null}
@@ -143,7 +107,7 @@ export default function AssignGoal() {
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Cantidad</Text>
         </View>
-        {renderDropdown('amount', amountData, control, refs, "Seleccione una cantidad")}
+        <RenderDropdown name='amount' data={amountData} control={control} refs={refs} placeholder="Seleccione una cantidad" />
         {errors.amount ? (
           <Text style={styles.error}>{errors.amount.message}</Text>
         ) : null}

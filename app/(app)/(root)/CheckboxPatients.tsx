@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, Image, StyleSheet } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import Colors from '@/constants/Colors';
@@ -6,17 +6,20 @@ import { useRouter, useGlobalSearchParams } from 'expo-router';
 import { showMessage } from 'react-native-flash-message';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useCheckBoxPatientsFirestoreQuery } from '@/components/FetchData';
+import PatientItem from '../../../components/PatientItem';
+
 type CallbackFunction = () => void;
 
 
 const CheckboxPatients = () => {
     const router = useRouter();
     const { goalDocId } = useGlobalSearchParams();
-    const { data: patients = [], error, isLoading: loading} = useCheckBoxPatientsFirestoreQuery();
+
+    const { data: patients = [], error, isLoading: loading } = useCheckBoxPatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [clicked, setClicked] = useState<boolean>(false);
-
+    const normalizedGoalDocId = Array.isArray(goalDocId) ? goalDocId[0] : goalDocId;
     const normalizeString = (str: string) => {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
@@ -51,10 +54,26 @@ const CheckboxPatients = () => {
         setTimeout(callback, 4000);
     }
 
+    const showErrorMessage = (callback: CallbackFunction) => {
+        showMessage({
+            type: "danger",
+            message: "Error",
+            description: "Hubo un error al agregar la meta a los pacientes",
+            backgroundColor: Colors.red,
+            color: Colors.white,
+            icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-red-cross-mark-approval-16197.png' }} {...props} />,
+            style: {
+                borderRadius: 10,
+            },
+        });
+        setTimeout(callback, 4000);
+    }
+
+
     const onSubmit = () => {
         if (clicked) return;
         setClicked(true);
-        const goalDocRef = firestore().collection('Goal').doc(goalDocId.toString());
+        const goalDocRef = firestore().collection('Goal').doc(goalDocId?.toString());
         if (selectedIds.length > 0) {
             const updatePromises = selectedIds.map(patientId => (
                 firestore()
@@ -80,18 +99,11 @@ const CheckboxPatients = () => {
                 })
                 .catch((error) => {
                     setClicked(false);
-                    console.error('Error updating goals for patients: ', error);
+                    showErrorMessage(() => { });
                 });
         } else {
-            setClicked(false);
-            showSuccessMessage(() => {
-                router.back();
-            });
+            showErrorMessage(() => { });
         }
-    };
-
-    const formatId = (idNumber: string) => {
-        return idNumber.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
     };
 
     const filteredPatients = patients.filter(patient => {
@@ -111,44 +123,6 @@ const CheckboxPatients = () => {
         return false;
     });
 
-    const renderItem = ({ item }: { item: any }) => {
-        const isChecked = selectedIds.includes(item.id);
-        const hasGoal = item.Goals && item.Goals.some((goal: any) => goal.id.toString() === goalDocId);
-        return (
-            <View>
-                <View style={styles.item}>
-                    {loading ? (
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <Text>Cargando...</Text>
-                        </View>
-                    ) : (
-                        <>
-                            {hasGoal ? (
-                                <View >
-                                    <Icon name="checkmark-outline" size={24} color="gray" />
-                                </View>
-
-                            ) : (
-                                <TouchableOpacity onPress={() => handleCheckboxPress(item.id)}>
-                                    <View style={[styles.checkbox, isChecked && styles.checked]} />
-                                </TouchableOpacity>
-                            )}
-
-                            <Image
-                                style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                            />
-                            <View style={styles.nameAndIdContainer}>
-                                <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
-                                <Text style={styles.itemId}>{formatId(item.idNumber)}</Text>
-                            </View>
-                        </>
-                    )}
-                </View>
-            </View>
-        );
-    };
-
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -163,11 +137,10 @@ const CheckboxPatients = () => {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Icon name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <Text style={styles.title}>Asignar Metas Emplatilladas</Text>
+                <Text style={styles.title}>Asignar Meta Seleccionada</Text>
             </View>
             <FlatList
                 data={filteredPatients}
-                renderItem={renderItem}
                 keyExtractor={(item) => item.idNumber}
                 ListHeaderComponent={
                     <View style={styles.searchContainer}>
@@ -185,17 +158,26 @@ const CheckboxPatients = () => {
                         </View>
                     </View>
                 }
+                renderItem={({ item }) => (
+                    <PatientItem
+                        item={item}
+                        handleCheckboxPress={handleCheckboxPress}
+                        selectedIds={selectedIds}
+                        loading={loading}
+                        goalDocId={normalizedGoalDocId ?? ''}
+                    />
+                )}
             />
             <TouchableOpacity
                 onPress={onSubmit}
                 style={[styles.addButton, (!selectedIds.length || clicked) && styles.addButtonDisabled]}
                 disabled={!selectedIds.length || clicked}
             >
-                <Text style={styles.addButtonText}>Asignar platilla</Text>
+                <Text style={styles.addButtonText}>Asignar meta</Text>
             </TouchableOpacity>
         </View>
-
     );
+
 }
 
 const styles = StyleSheet.create({
