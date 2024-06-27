@@ -46,7 +46,7 @@ type PatientFormType = z.infer<typeof patientForm>
 
 export default function AddPatient() {
 
-  var session = useContext(SessionContext);
+  const session = useContext(SessionContext);
 
   const {
     control,
@@ -75,7 +75,13 @@ export default function AddPatient() {
 
   const idExists = async (idNumber: string) => {
     try {
-      const user = await firestore().collection('Patient').where('idNumber', '==', idNumber).get();
+      const user = await firestore()
+        .collection('Professionals')
+        .doc(session?.docId)
+        .collection('Patient')
+        .where('idNumber', '==', idNumber)
+        .get();
+      console.log("Usuario", user)
       return user.empty? false: true;
     } catch (error) {
       console.error("Error al comprobar si el usuario ya existe: ", error);
@@ -87,6 +93,8 @@ export default function AddPatient() {
     const userExists = await idExists(data.idNumber)
     if (!userExists) {
       const newUser = firestore()
+        .collection('Professionals')
+        .doc(session?.docId)
         .collection('Patient')
         .add({
           firstName: data.firstName,
@@ -162,7 +170,7 @@ export default function AddPatient() {
         },
     })
   }
-  
+
   if (session == undefined){
     return (
         <SafeAreaView style={styles.container}>
