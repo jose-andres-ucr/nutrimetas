@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
-import React from 'react';
+import React, { useContext } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, Image, TextInput as TextInputRn, ScrollView } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import { useMutation } from "@tanstack/react-query"
+import { SessionContext } from "@/shared/LoginSession";
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -44,6 +45,8 @@ const patientForm = z.object({
 type PatientFormType = z.infer<typeof patientForm>
 
 export default function AddPatient() {
+
+  var session = useContext(SessionContext);
 
   const {
     control,
@@ -158,6 +161,26 @@ export default function AddPatient() {
         borderRadius: 10, 
         },
     })
+  }
+  
+  if (session == undefined){
+    return (
+        <SafeAreaView style={styles.container}>
+          <Text style={{fontSize: 24, fontWeight: 'bold'}}>Error en el inicio de sesion</Text>
+          <Text style={{fontSize: 16, margin: 20}}>
+            No es posible crear pacientes en este momento, intentelo mas tarde.
+          </Text>
+          <Link href='/(app)/(root)/(tabs)/expedientes' style={{
+            ...styles.button, 
+            borderWidth: 1,
+            borderColor: "black",
+            lineHeight: 35
+            }}>
+              Volver al inicio
+          </Link>
+
+        </SafeAreaView>
+    )
   }
 
   return (
