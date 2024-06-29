@@ -71,13 +71,11 @@ const PatientList = () => {
         }
     });
 
-    console.log(filteredPatients)
-
     function formatId(idNumber: string) {
         return idNumber.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
     }
     
-    if (filteredPatients.length == 0){
+    if (patients.length == 0){
         return(
             <SafeAreaView>
                 <View style={{height: "100%", alignItems: 'center', marginTop: '70%'}}>

@@ -99,7 +99,7 @@ export default function AddPatient() {
         .add({
           firstName: data.firstName,
           lastName: data.lastName,
-          idNumber: data.idNumber,
+          idNumber: data.idNumber.replace(/-/g, ''),
           phone: data.phone,
           email: data.email,
           password: data.password,
