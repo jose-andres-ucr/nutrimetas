@@ -1,18 +1,22 @@
 import { StyleSheet, TouchableOpacity, FlatList, TextInput, Image } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SessionContext } from '@/shared/LoginSession';
 
 const PatientList = () => {
+    const session = useContext(SessionContext);
     const router = useRouter();
     const [patients, setPatients] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const unsubscribe = firestore()
+            .collection('Professionals')
+            .doc(session?.docId)
             .collection('Patient')
             .onSnapshot((snapshot) => {
                 const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -67,10 +71,27 @@ const PatientList = () => {
         }
     });
 
+    console.log(filteredPatients)
+
     function formatId(idNumber: string) {
         return idNumber.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
     }
-
+    
+    if (filteredPatients.length == 0){
+        return(
+            <SafeAreaView>
+                <View style={{height: "100%", alignItems: 'center', marginTop: '70%'}}>
+                    <Text style={{textAlign:'center', fontSize: 18}}>
+                        No hay pacientes que mostrar. Agregue uno con el botón de abajo
+                    </Text>
+                    <Image
+                        source={require("@/assets/images/below-arrow.png")}
+                        style={{width:24, height: 24, margin: 20}}
+                    />
+                </View>
+            </SafeAreaView>
+        )
+    }
     return (
         <SafeAreaView>
             <FlatList
