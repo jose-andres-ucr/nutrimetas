@@ -15,6 +15,7 @@ const GoalList = () => {
     const router = useRouter();
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
+    const session = useContext(SessionContext);
     const role = useContext(SessionContext)?.role;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,6 +43,8 @@ const GoalList = () => {
         // Maneja la suscripción a los cambios de Patient en Firestore
         if (patientId) {
             const unsubscribe = firestore()
+                .collection('Professionals')
+                .doc(session?.docId)
                 .collection('Patient')
                 .doc(patientId.toString())
                 .onSnapshot((snapshot) => {
