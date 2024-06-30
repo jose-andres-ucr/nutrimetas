@@ -12,6 +12,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 const GoalList = () => {
+    const [errorVisible, setErrorVisible] = useState(false);
     const router = useRouter();
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
@@ -29,7 +30,7 @@ const GoalList = () => {
     const [showBackdrop, setShowBackdrop] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [endDate, setEndDate] = useState(new Date());
-    
+
     useEffect(() => {
         // Guarda las metas originales solo la primera vez que se cargan
         if (!originalGoalsSaved && goals.length > 0) {
@@ -63,6 +64,10 @@ const GoalList = () => {
             setLoading(false);
         }
     }, [patientId]);
+
+    const getGoalById = (goalId: any) => {
+        return goals.find(goal => goal.goalSelectId === goalId);
+    };
 
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
@@ -148,13 +153,22 @@ const GoalList = () => {
     };
 
     const onPressHandle = (selectedGoalId: string) => {
-        console.log(selectedGoalId);
         router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role ? role : "" } });
+    };
+
+    const editGoal = (selectedGoalId: string) => {
+        const selectedGoal = getGoalById(selectedGoalId);
+        const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
+        if (selectedGoal) {
+            setErrorVisible(false); 
+            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, patientId: patientId} });
+        } else {
+            setErrorVisible(true);
+        }
     };
 
     const handleAddGoal = () => {
         router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
-        // navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
 
     const handleDailyGoal = () => {
@@ -182,7 +196,7 @@ const GoalList = () => {
             setError(true);
             setErrorMessage("La fecha inicial debe ser anterior a la fecha final");
             return;
-        }else{
+        } else {
             setError(false);
         }
         filterGoalsByDateRange(startDate, endDate);
@@ -220,14 +234,14 @@ const GoalList = () => {
                 adjustedStartDate.setHours(0, 0, 0, 0);
                 const adjustedEndDate = new Date(endDate);
                 adjustedEndDate.setHours(23, 59, 59, 999);
-                
+
                 // Filtrar las metas originales 
                 const filteredGoals = originalGoals.filter(goal => {
                     const goalStartDate = goal.StartDate ? goal.StartDate.toDate() : undefined;
                     const goalEndDate = goal.Deadline ? goal.Deadline.toDate() : undefined;
                     const isWithinRange = (goalStartDate && goalEndDate) &&
-                                          (goalStartDate <= adjustedEndDate) &&
-                                          (goalEndDate >= adjustedStartDate);
+                        (goalStartDate <= adjustedEndDate) &&
+                        (goalEndDate >= adjustedStartDate);
                     return isWithinRange;
                 });
                 setGoals(filteredGoals);
@@ -320,24 +334,34 @@ const GoalList = () => {
                     <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
                 </View>
             ) : (
-            <FlatList
-                data={goals}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
-                        <View style={styles.item}>
-                            <Image
-                                style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                            />
-                            <View style={styles.goalDetails}>
-                                <Text style={styles.itemTitle}>{item.title}</Text>
-                                <Text style={styles.itemDescription}>{item.description}</Text>
+                <FlatList
+                    data={goals}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
+                            <View style={styles.item}>
+                                <Image
+                                    style={styles.itemImage}
+                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                />
+                                <View style={styles.goalDetails}>
+                                    <Text style={styles.itemTitle}>{item.title}</Text>
+                                    <Text style={styles.itemDescription}>{item.description}</Text>
+                                </View>
+                                <View>
+                                {errorVisible && (
+                                    <Text style={{ color: 'red', fontSize: 16 }}>
+                                        Meta no encontrada. Por favor, selecciona una meta válida.
+                                    </Text>
+                                )}
+                                <TouchableOpacity onPress={() => editGoal(item.goalSelectId)} style={styles.editIconContainer}>
+                                    <Icon name="pencil" size={24} color="gray" />
+                                </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
-                    </TouchableOpacity>
-                )}
-                keyExtractor={(item, index) => `${item.title}-${index}`}
-            />   
+                        </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => `${item.title}-${index}`}
+                />
             )}
             {role === 'professional' && (
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
@@ -535,5 +559,15 @@ const styles = StyleSheet.create({
     errorText: {
         color: Colors.white,
         fontWeight: "bold",
+    },
+    editIcon: {
+        padding: 8,
+    },
+    editIconContainer: {
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
     },
 });
