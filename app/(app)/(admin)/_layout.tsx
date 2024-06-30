@@ -1,5 +1,5 @@
 // Core React hooks & misc. stuff
-import {useEffect, useState, useContext} from "react";
+import {useEffect, useContext} from "react";
 
 // React Native UI
 import FlashMessage from "react-native-flash-message";
