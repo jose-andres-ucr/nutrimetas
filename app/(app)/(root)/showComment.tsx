@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { StyleSheet, Image, TouchableOpacity, Dimensions, KeyboardAvoidingView, Button, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
@@ -9,12 +9,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import storage from '@react-native-firebase/storage';
 import * as ImagePicker from 'react-native-image-picker';
 import Video from "react-native-video"
+import { SessionContext } from '@/shared/LoginSession';
 
 import attachment from '@/assets/images/attachment.png';
 import sendIcon3 from '@/assets/images/sendIcon2.png';
 
 type messageProps = {
-  role: string,
   goalId: string
 };
 
@@ -54,14 +54,14 @@ const ShowComment = (props: messageProps) => {
     queryKey: [GET_COMMENTS_QUERY_KEY, props.goalId], 
     queryFn: getComments
   })
-  //console.log('BREACKPOINT GOALID', props.goalId);
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadingVisible, setUploadingVisible] = useState(false)
   const [modalMessage, setModalMessage] = useState('');
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+  const role = useContext(SessionContext)?.role
 
-  const roleId = props.role == "patient" ? 2 : 1
+  const roleId = role == "patient" ? 2 : 1
 
   React.useEffect(() => {
     console.log("Fetching", queryComments.isFetching)
@@ -138,7 +138,7 @@ const ShowComment = (props: messageProps) => {
         createdAt: newMessage[0].createdAt,
         user: {
           _id: roleId,
-          name: props.role,
+          name: role,
           avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
       };
@@ -297,7 +297,7 @@ const ShowComment = (props: messageProps) => {
               createdAt: new Date(),
               user: {
                 _id: roleId,
-                name: props.role,
+                name: role,
                 avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
               },
             };
@@ -318,7 +318,7 @@ const ShowComment = (props: messageProps) => {
               createdAt: new Date(),
               user: {
                 _id: roleId,
-                name: props.role,
+                name: role,
                 avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
               },
             };
@@ -338,7 +338,7 @@ const ShowComment = (props: messageProps) => {
               createdAt: new Date(),
               user: {
                 _id: roleId,
-                name: props.role,
+                name: role,
                 avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
               },
             };
@@ -467,7 +467,8 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
-    maxHeight: Dimensions.get('window').height / 2,
+    //marginBottom: "-10%",
+    //maxHeight: Dimensions.get('window').height / 2,
   },
   bubble: {
     maxWidth: '80%',
@@ -492,7 +493,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   timestampImage: {
-    //marginTop: 5,
     fontSize: 10,
     textAlign: 'right',
     color: Colors.white,

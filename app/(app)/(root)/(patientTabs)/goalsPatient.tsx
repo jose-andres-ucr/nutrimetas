@@ -8,7 +8,6 @@ import { useGlobalSearchParams } from 'expo-router';
 export default function Goals() {
     const { patientId } = useGlobalSearchParams();
     
-    console.log('BREACKPOINT', patientId as string);
     return (
         <SafeAreaView style={styles.container}>
             <GoalList goalId={patientId as string}/>

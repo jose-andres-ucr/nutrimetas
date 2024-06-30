@@ -48,6 +48,7 @@ export default function TabLayout() {
           headerTitle: () => <Nutrimetas />, 
           tabBarIcon: ({ color }) => <TabBarIcon name="address-book-o" color={color} />,
         }}
+        //initialParams={{ patientId: 'somePatientId' }}
       />
     </Tabs>
   );
