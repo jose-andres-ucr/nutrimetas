@@ -9,5 +9,6 @@ export default {
   Portion: "Portion",
   Professionals: "Professionals",
   Rubric: "Rubric",
+  Template: "Template",
   Type: "Type",
 };
