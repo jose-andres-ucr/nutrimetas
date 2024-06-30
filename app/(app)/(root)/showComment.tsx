@@ -24,7 +24,9 @@ interface UploadMediaParams {
 }
 
 const getComments = async ({ queryKey }: { queryKey: [typeof GET_COMMENTS_QUERY_KEY, string] }): Promise<IMessage[]> => {
+  
   const [, goalId] = queryKey;
+  console.log('ESTOY ACA', goalId);
   const comments = await firebase.firestore()
     .collection('Goal')
     .doc(goalId)
@@ -52,7 +54,7 @@ const ShowComment = (props: messageProps) => {
     queryKey: [GET_COMMENTS_QUERY_KEY, props.goalId], 
     queryFn: getComments
   })
-
+  //console.log('BREACKPOINT GOALID', props.goalId);
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadingVisible, setUploadingVisible] = useState(false)

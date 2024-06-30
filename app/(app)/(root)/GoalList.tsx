@@ -11,10 +11,14 @@ import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
-const GoalList = () => {
+type messageProps = {
+    goalId: string
+  };
+
+const GoalList = (props: messageProps) => {
     const router = useRouter();
     const navigation = useNavigation();
-    const { patientId } = useGlobalSearchParams();
+    const patientId  = props.goalId;
     const session = useContext(SessionContext);
     const role = useContext(SessionContext)?.role;
     const [goals, setGoals] = useState<any[]>([]);

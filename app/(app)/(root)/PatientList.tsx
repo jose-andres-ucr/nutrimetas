@@ -41,7 +41,9 @@ const PatientList = () => {
     };
 
     const onPressHandle = async (patientDocId: string) => {
-        router.push({ pathname: '/GoalList', params: { patientId: patientDocId } });
+        //router.push({ pathname: '/GoalList', params: { patientId: patientDocId } });
+        //router.push('/(app)/(root)/(patientTabs)/(tabs)/goalsPatient');
+        router.push({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientDocId } });
     };
 
     const filteredPatients = patients.filter(patient => {
