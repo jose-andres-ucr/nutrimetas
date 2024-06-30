@@ -157,10 +157,17 @@ export default function LoginPage(
             .limit(1)
             .get()
             .then((res) => handleDocQuery(res, "professional"), handleDbError);
+        
+        const adminDataFound = firestore()
+            .collection("Admin")
+            .where("email", "==", email)
+            .limit(1)
+            .get()
+            .then((res) => handleDocQuery(res, "admin"), handleDbError);
 
         // Pick the data that fits, or report that none was found is that was
         // the case
-        return Promise.any([patientDataFound, professionalDataFound])
+        return Promise.any([patientDataFound, professionalDataFound, adminDataFound])
             .then(
                 (userData : UserData) => {    
                     return userData;
@@ -480,6 +487,12 @@ export default function LoginPage(
                 case "professional": {
                     // TODO: Change to proper professional route
                     router.push("/(app)/(root)/(tabs)/expedientes")
+                    break;
+                }
+
+                case "admin": {
+                    // TODO: Change to proper professional route
+                    router.push("/(app)/(admin)/(tabs)/professionals")
                     break;
                 }
 
