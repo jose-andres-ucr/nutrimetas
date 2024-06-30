@@ -19,8 +19,9 @@ const styles = StyleSheet.create({
       backgroundColor: Colors.white
     },
     listContainer: {
+      flex: 1,
+      alignContent: 'flex-end',
       paddingHorizontal: 20,
-      top: -55,
     },
     addButton: {
       backgroundColor: Colors.lightblue,
