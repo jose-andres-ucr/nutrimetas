@@ -11,7 +11,7 @@ export const SessionDispatchContext =
     createContext<Dispatch<LoginAction>>(() => {console.log("AAA")});
 
 // User roles on the app
-export type UserRole = "professional" | "patient";
+export type UserRole = "professional" | "patient" | "admin";
 
 // User data on the DB
 export type UserData = {
