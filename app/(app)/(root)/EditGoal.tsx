@@ -9,7 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import Colors from '@/constants/Colors';
 import { useRouter, useGlobalSearchParams } from 'expo-router';
 import { View } from "@/components/Themed";
-import RenderDropdown from "@/components/RenderDropdown";
+import EditDropdown from "@/components/EditDropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
 import { RouteProp, useRoute } from "@react-navigation/native";
@@ -22,7 +22,7 @@ type ConfigGoalScreenRouteProp = RouteProp<{
   };
 }, 'params'>;
 
-export const partialGoalForm = z.object({
+export const GoalForm = z.object({
   type: z
     .string()
     .min(1, { message: "Debe seleccionar un tipo" }),
@@ -37,12 +37,12 @@ export const partialGoalForm = z.object({
     .min(1, { message: "Debe seleccionar una cantidad" }),
 });
 
-type GoalFormType = z.infer<typeof partialGoalForm>;
+type GoalFormType = z.infer<typeof GoalForm>;
 
 export default function EditGoal() {
   const router = useRouter();
   const route = useRoute<ConfigGoalScreenRouteProp>();
-  const { serializedGoal,patientId} = route.params;
+  const { serializedGoal, patientId } = route.params;
   const [GoalData, setParsedFormData] = useState<any>(null);
 
   useEffect(() => {
@@ -51,12 +51,11 @@ export default function EditGoal() {
     }
   }, [serializedGoal]);
 
-  console.log("lest goooo",GoalData);
-
   const {
     control,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm({
     defaultValues: {
       type: '',
@@ -64,8 +63,18 @@ export default function EditGoal() {
       rubric: '',
       amount: '',
     },
-    resolver: zodResolver(partialGoalForm),
+    resolver: zodResolver(GoalForm),
   });
+
+  useEffect(() => {
+    
+    if (GoalData) {
+      setValue('type', GoalData?.Type || '');
+      setValue('action', GoalData?.Action || '');
+      setValue('rubric', GoalData?.Rubric || '');
+      setValue('amount', GoalData?.Amount || '');
+    }
+  }, [GoalData, setValue]);
 
   const refs = {
     typeRef: React.useRef<IDropdownRef>(null),
@@ -75,14 +84,7 @@ export default function EditGoal() {
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
-    const serializedFormData = encodeURIComponent(JSON.stringify(data));
-    router.replace({
-      pathname: '/configGoal',
-      params: {
-        formData: serializedFormData,
-        patientId: patientId
-      }
-    });
+    console.log("ma data",data);
   };
 
   const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
@@ -97,7 +99,7 @@ export default function EditGoal() {
         <View style={[styles.textInfo, { paddingTop: 0 }]}>
           <Text>Tipo</Text>
         </View>
-        <RenderDropdown name='type' data={typeData} control={control} refs={refs} placeholder="Seleccione un tipo" />
+        <EditDropdown name='type' data={typeData} control={control} refs={refs} placeholder="Seleccione un tipo" value={GoalData?.Type || ""} />
         {errors.type ? (
           <Text style={styles.error}>{errors.type.message}</Text>
         ) : null}
@@ -105,7 +107,7 @@ export default function EditGoal() {
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Acción</Text>
         </View>
-        <RenderDropdown name='action' data={actionData} control={control} refs={refs} placeholder="Seleccione una acción" />
+        <EditDropdown name='action' data={actionData} control={control} refs={refs} placeholder="Seleccione una acción" value={GoalData?.Action || ""} />
         {errors.action ? (
           <Text style={styles.error}>{errors.action.message}</Text>
         ) : null}
@@ -113,7 +115,7 @@ export default function EditGoal() {
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Rubro</Text>
         </View>
-        <RenderDropdown name='rubric' data={rubricData} control={control} refs={refs} placeholder="Seleccione un rubro" />
+        <EditDropdown name='rubric' data={rubricData} control={control} refs={refs} placeholder="Seleccione un rubro" value={GoalData?.Rubric || ""} />
         {errors.rubric ? (
           <Text style={styles.error}>{errors.rubric.message}</Text>
         ) : null}
@@ -121,7 +123,7 @@ export default function EditGoal() {
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Cantidad</Text>
         </View>
-        <RenderDropdown name='amount' data={amountData} control={control} refs={refs} placeholder="Seleccione una cantidad" />
+        <EditDropdown name='amount' data={amountData} control={control} refs={refs} placeholder="Seleccione una cantidad" value={GoalData?.Amount || ""} />
         {errors.amount ? (
           <Text style={styles.error}>{errors.amount.message}</Text>
         ) : null}
@@ -163,11 +165,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.green
+    marginBottom: 4,
   },
   separator: {
     marginVertical: 30,
