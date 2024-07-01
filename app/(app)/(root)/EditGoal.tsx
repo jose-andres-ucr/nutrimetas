@@ -35,6 +35,12 @@ export const GoalForm = z.object({
   amount: z
     .string()
     .min(1, { message: "Debe seleccionar una cantidad" }),
+  portion: z
+    .string()
+    .min(1, { message: "Debe seleccionar una porción" }),
+  frequency: z
+    .string()
+    .min(1, { message: "Debe seleccionar alguna frecuencia" }),
 });
 
 type GoalFormType = z.infer<typeof GoalForm>;
@@ -62,17 +68,21 @@ export default function EditGoal() {
       action: '',
       rubric: '',
       amount: '',
+      portion: '',
+      frequency: '',
     },
     resolver: zodResolver(GoalForm),
   });
 
   useEffect(() => {
-    
+
     if (GoalData) {
       setValue('type', GoalData?.Type || '');
       setValue('action', GoalData?.Action || '');
       setValue('rubric', GoalData?.Rubric || '');
       setValue('amount', GoalData?.Amount || '');
+      setValue('portion', GoalData?.Portion || '');
+      setValue('frequency', GoalData?.Frequency || '');
     }
   }, [GoalData, setValue]);
 
@@ -81,16 +91,20 @@ export default function EditGoal() {
     actionRef: React.useRef<IDropdownRef>(null),
     rubricRef: React.useRef<IDropdownRef>(null),
     amountRef: React.useRef<IDropdownRef>(null),
+    portionRef: React.useRef<IDropdownRef>(null),
+    frequencyRef: React.useRef<IDropdownRef>(null),
   } as const;
 
   const onSubmit = (data: GoalFormType) => {
-    console.log("ma data",data);
+    console.log("ma data", data);
   };
 
   const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
   const { data: typeData = [], error: typeError, isLoading: typeLoading } = useDropDownDataFirestoreQuery('Type');
   const { data: rubricData = [], error: rubricError, isLoading: rubricLoading } = useDropDownDataFirestoreQuery('Rubric');
   const { data: amountData = [], error: amountError, isLoading: amountLoading } = useDropDownDataFirestoreQuery('Amount');
+  const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
+  const { data: frequencyData = [], error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
 
   return (
     <ScrollView>
@@ -126,6 +140,22 @@ export default function EditGoal() {
         <EditDropdown name='amount' data={amountData} control={control} refs={refs} placeholder="Seleccione una cantidad" value={GoalData?.Amount || ""} />
         {errors.amount ? (
           <Text style={styles.error}>{errors.amount.message}</Text>
+        ) : null}
+
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Porción</Text>
+        </View>
+        <EditDropdown name='portion' data={portionData} control={control} refs={refs} placeholder="Seleccione una porción" value={GoalData?.Portion || ""} />
+        {errors.portion ? (
+          <Text style={styles.error}>{errors.portion?.message}</Text>
+        ) : null}
+        
+        <View style={[styles.textInfo, { paddingTop: 5 }]}>
+          <Text>Frecuencia</Text>
+        </View>
+        <EditDropdown name='frequency' data={frequencyData} control={control} refs={refs} placeholder="Seleccione una frecuencia" value={GoalData?.Frequency || ""} />
+        {errors.frequency ? (
+          <Text style={styles.error}>{errors.frequency?.message}</Text>
         ) : null}
 
         <View style={styles.buttonContainer}>

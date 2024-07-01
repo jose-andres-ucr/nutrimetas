@@ -10,6 +10,8 @@ type GoalFormType = {
   action: string;
   rubric: string;
   amount: string;
+  portion: string;
+  frequency: string;
 };
 
 type EditDropdownProps = {
@@ -18,7 +20,7 @@ type EditDropdownProps = {
   control: Control<GoalFormType>;
   refs: { [key: string]: React.MutableRefObject<IDropdownRef | null> };
   placeholder: string;
-  value?: string; // Valor inicial opcional
+  value?: string; 
 };
 
 const EditDropdown: React.FC<EditDropdownProps> = ({ name, data, control, refs, placeholder, value }) => {

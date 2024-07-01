@@ -200,7 +200,6 @@ export default function InfoGoals() {
   };
 
   const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
-
   const { data: frequencyData, error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
 
   return (
