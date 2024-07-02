@@ -12,6 +12,8 @@ type GoalFormType = {
   amount: string;
   portion: string;
   frequency: string;
+  notificationTime: Date;
+  
 };
 
 type EditDropdownProps = {
@@ -24,6 +26,9 @@ type EditDropdownProps = {
 };
 
 const EditDropdown: React.FC<EditDropdownProps> = ({ name, data, control, refs, placeholder, value }) => {
+  if (name === 'notificationTime') {
+    return null;
+  }
   return (
     <Controller
       control={control}
@@ -58,7 +63,7 @@ const styles = StyleSheet.create({
     margin: 13,
     padding: 7,
     marginVertical: 10,
-    width: "70%",
+    width: "80%",
     height: 50,
     borderColor: '#ccc',
     borderRadius: 5,

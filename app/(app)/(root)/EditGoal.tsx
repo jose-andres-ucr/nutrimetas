@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Platform, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
+import { Platform, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,9 @@ import EditDropdown from "@/components/EditDropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
 import { RouteProp, useRoute } from "@react-navigation/native";
-
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
+const today = new Date();
 
 type ConfigGoalScreenRouteProp = RouteProp<{
   params: {
@@ -41,6 +43,9 @@ export const GoalForm = z.object({
   frequency: z
     .string()
     .min(1, { message: "Debe seleccionar alguna frecuencia" }),
+  notificationTime: z
+    .date()
+    .optional(),
 });
 
 type GoalFormType = z.infer<typeof GoalForm>;
@@ -50,12 +55,15 @@ export default function EditGoal() {
   const route = useRoute<ConfigGoalScreenRouteProp>();
   const { serializedGoal, patientId } = route.params;
   const [GoalData, setParsedFormData] = useState<any>(null);
+  const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
 
   useEffect(() => {
     if (serializedGoal) {
       setParsedFormData(JSON.parse(decodeURIComponent(serializedGoal)));
     }
   }, [serializedGoal]);
+ 
+  console.log("inicial",GoalData);
 
   const {
     control,
@@ -70,6 +78,7 @@ export default function EditGoal() {
       amount: '',
       portion: '',
       frequency: '',
+      notificationTime: resetTimeToZero(today),
     },
     resolver: zodResolver(GoalForm),
   });
@@ -106,10 +115,14 @@ export default function EditGoal() {
   const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
   const { data: frequencyData = [], error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
 
+  function resetTimeToZero(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  }
+
   return (
-    <ScrollView>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Editar Meta</Text>
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Editar Meta</Text>
+      <ScrollView contentContainerStyle={styles.formContent}>
         <View style={[styles.textInfo, { paddingTop: 0 }]}>
           <Text>Tipo</Text>
         </View>
@@ -149,7 +162,7 @@ export default function EditGoal() {
         {errors.portion ? (
           <Text style={styles.error}>{errors.portion?.message}</Text>
         ) : null}
-        
+
         <View style={[styles.textInfo, { paddingTop: 5 }]}>
           <Text>Frecuencia</Text>
         </View>
@@ -157,6 +170,37 @@ export default function EditGoal() {
         {errors.frequency ? (
           <Text style={styles.error}>{errors.frequency?.message}</Text>
         ) : null}
+
+        <View style={[styles.textInfo, { paddingTop: 5, paddingBottom: 10 }]}>
+          <Text>Hora de Notificación</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View>
+              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowNotificationTimePicker(true)}>
+                <Text>{value.toLocaleTimeString()}</Text>
+                <FontAwesome name="clock-o" size={24} color="gray" />
+              </TouchableOpacity>
+              {showNotificationTimePicker && (
+                <DateTimePicker
+                  value={new Date(value)}
+                  mode="time"
+                  display="default"
+                  onChange={(_, selectedDate) => {
+                    setShowNotificationTimePicker(false);
+                    onChange(selectedDate);
+                  }}
+                  negativeButton={{ label: 'Cancelar' }}
+                  positiveButton={{ label: 'Aceptar' }}
+                />
+              )}
+            </View>
+          )}
+          name="notificationTime"
+          defaultValue={GoalData?.notificationTime || resetTimeToZero(today)}
+
+        />
 
         <View style={styles.buttonContainer}>
           <Button
@@ -176,15 +220,13 @@ export default function EditGoal() {
           >
             <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
           </Button>
-
         </View>
 
         <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-      </SafeAreaView>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -192,89 +234,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: '5%',
   },
+  formContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 15,
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
+  textInfo: {
+    justifyContent: 'flex-start',
     width: '80%',
+    backgroundColor: Colors.transparent,
+    marginVertical: 5,
   },
-  inputField: {
-    marginVertical: 10,
-    width: "70%"
+  buttonContainer: {
+    marginTop: 40,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    width: '100%',
+    backgroundColor: Colors.transparent,
   },
   button: {
     height: 40,
     borderRadius: 5,
     width: 165,
-    marginTop: 24,
-    marginBottom: 24,
-    textAlign: "center",
-    alignSelf: "center",
+    marginVertical: 12,
+    textAlign: 'center',
     fontSize: 16,
-    fontWeight: "bold"
+    fontWeight: 'bold',
+    marginBottom: 50,
   },
   returnButton: {
     borderWidth: 1,
     borderColor: Colors.black,
     backgroundColor: Colors.transparent,
   },
-  buttonContainer: {
-    marginTop: 40,
-    backgroundColor: Colors.transparent,
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    width: "100%"
-  },
   error: {
     color: Colors.red,
+    marginTop: 4,
   },
-  dropdown: {
-    margin: 13,
-    padding: 7,
-    marginVertical: 10,
-    width: "70%",
-    height: 50,
-    borderColor: Colors.gray,
+  datePickerStyle: {
+    width: '80%',
+    padding: 10,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: Colors.white
-  },
-  placeholderStyle: {
-    fontSize: 16,
-  },
-  selectedTextStyle: {
-    fontSize: 16,
-  },
-  iconStyle: {
-    width: 20,
-    height: 20,
-  },
-  inputSearchStyle: {
-    height: 40,
-    fontSize: 16,
-  },
-  textInfo: {
-    justifyContent: 'flex-start',
-    width: '70%',
-    backgroundColor: Colors.transparent,
-  },
-  loadingText: {
-    marginTop: 30,
-    fontSize: 18,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    borderColor: Colors.gray,
+    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 18,
-    color: 'red',
-    marginTop: 70,
-    alignItems: 'center',
+    flexDirection: 'row',
   },
 });
