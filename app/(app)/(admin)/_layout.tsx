@@ -99,7 +99,7 @@ export default function RootLayout() {
   }
 
   // If the session is invalidated, redirect to the sign-in page
-  if (session === undefined) {
+  if (session === undefined || session.role !== "admin") {
     return <Redirect href="/sign-in" />;
   }
 
