@@ -46,9 +46,8 @@ export default function TabLayout() {
         options={{
           title: "Comentarios",
           headerTitle: () => <Nutrimetas />, 
-          tabBarIcon: ({ color }) => <TabBarIcon name="address-book-o" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="address-card-o" color={color} />,
         }}
-        //initialParams={{ patientId: 'somePatientId' }}
       />
     </Tabs>
   );

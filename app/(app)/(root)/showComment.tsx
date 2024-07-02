@@ -15,7 +15,7 @@ import attachment from '@/assets/images/attachment.png';
 import sendIcon3 from '@/assets/images/sendIcon2.png';
 
 type messageProps = {
-  goalId: string
+  userId: string //Antes esto se llamada GoalId
 };
 
 interface UploadMediaParams {
@@ -23,16 +23,18 @@ interface UploadMediaParams {
   isImage: boolean;
 }
 
-const getComments = async ({ queryKey }: { queryKey: [typeof GET_COMMENTS_QUERY_KEY, string] }): Promise<IMessage[]> => {
+const getComments = async ({ queryKey }: { queryKey: [typeof GET_COMMENTS_QUERY_KEY, string, string] }): Promise<IMessage[]> => {
   
-  const [, goalId] = queryKey;
-  console.log('ESTOY ACA', goalId);
+  const [, professionalID, patientID] = queryKey;
+ 
   const comments = await firebase.firestore()
-    .collection('Goal')
-    .doc(goalId)
-    .collection('comments')
-    .orderBy('createdAt', 'desc')
-    .get();
+  .collection('Professionals')
+  .doc(professionalID)
+  .collection('Patient')
+  .doc(patientID)
+  .collection('comments')
+  .orderBy('createdAt', 'desc')
+  .get();
   return comments.docs.map(doc => {
     const data = doc.data();
     return {
@@ -49,17 +51,21 @@ const getComments = async ({ queryKey }: { queryKey: [typeof GET_COMMENTS_QUERY_
 const GET_COMMENTS_QUERY_KEY = ["get-comments"] as const;
 
 const ShowComment = (props: messageProps) => {
-  
-  var queryComments = useQuery({ 
-    queryKey: [GET_COMMENTS_QUERY_KEY, props.goalId], 
-    queryFn: getComments
-  })
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadingVisible, setUploadingVisible] = useState(false)
   const [modalMessage, setModalMessage] = useState('');
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const role = useContext(SessionContext)?.role
+  const patientIdContext = useContext(SessionContext)?.docId //aqui va el del paciente
+
+  const professionalID = useContext(SessionContext)?.docId //aqui el del profesional
+  const patientID = role == "professional" ? props.userId : patientIdContext;
+
+  var queryComments = useQuery({ 
+    queryKey: [GET_COMMENTS_QUERY_KEY, professionalID as string, patientID as string], 
+    queryFn: getComments
+  })
 
   const roleId = role == "patient" ? 2 : 1
 
@@ -67,13 +73,15 @@ const ShowComment = (props: messageProps) => {
     console.log("Fetching", queryComments.isFetching)
     const unsubscribe = firebase
       .firestore()
-      .collection('Goal')
-      .doc(props.goalId)
+      .collection('Professionals')
+      .doc(patientID)
+      .collection('Patient')
+      .doc(patientID)
       .collection('comments')
       .orderBy('createdAt', 'desc')
       .onSnapshot((querySnapshot) => {
         queryClient.setQueryData(
-          [GET_COMMENTS_QUERY_KEY, props.goalId],
+          [GET_COMMENTS_QUERY_KEY, props.userId],
           querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -93,17 +101,18 @@ const ShowComment = (props: messageProps) => {
   const uploadMediaToStorage = async ({ uri, isImage }: UploadMediaParams): Promise<string>=> {
     const randomComponent1 = Math.random().toString(36).substring(2, 9);
     const randomComponent2 = Math.random().toString(36).substring(2, 9);
-    const uniqueImageId = randomComponent1 + randomComponent2;
+    const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ''); 
+    const uniqueImageId = randomComponent1 + randomComponent2 + patientID + timestamp;
 
     let storageRef 
 
     if (isImage){
-      storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.jpg`);
-      console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.jpg`);
+      storageRef = storage().ref(`Comments/${patientID}/${uniqueImageId}.jpg`);
+      console.log("Path es", `Comments/${patientID}/${uniqueImageId}.jpg`);
 
     }else{
-      storageRef = storage().ref(`Comments/${props.goalId}/${uniqueImageId}.mp4`);
-      console.log("Path es", `Comments/${props.goalId}/${uniqueImageId}.mp4`);
+      storageRef = storage().ref(`Comments/${patientID}/${uniqueImageId}.mp4`);
+      console.log("Path es", `Comments/${patientID}/${uniqueImageId}.mp4`);
     }
 
     await storageRef.putFile(uri);
@@ -161,7 +170,9 @@ const ShowComment = (props: messageProps) => {
         messageData.video = videoUrl;
       }
 
-      await db.collection('Goal').doc(props.goalId).collection('comments').add(messageData);
+      await db.collection('Goal').doc(props.userId).collection('comments').add(messageData);// HAY QUE QUITAR ESTO
+
+      await db.collection('Professionals').doc(professionalID).collection('Patient').doc(patientID).collection('comments').add(messageData);
       console.log("Guardado!");
     } catch (error) {
       console.error("Error saving message to Firestore: ", error);

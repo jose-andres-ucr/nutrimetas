@@ -6,6 +6,7 @@ import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionContext } from '@/shared/LoginSession';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PatientList = () => {
     const session = useContext(SessionContext);
@@ -40,10 +41,22 @@ const PatientList = () => {
         });
     };
 
-    const onPressHandle = async (patientDocId: string) => {
+    //const onPressHandle = async (patientDocId: string) => {
         //router.push({ pathname: '/GoalList', params: { patientId: patientDocId } });
         //router.push('/(app)/(root)/(patientTabs)/(tabs)/goalsPatient');
-        router.push({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientDocId } });
+        //router.push({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientDocId } });
+    //};
+
+    const onPressHandle = async (patientDocId: string) => {
+        try {
+            // Guardar patientDocId en el local storage
+            await AsyncStorage.setItem('selectedPatientId', patientDocId);
+    
+            // Navegar a la nueva pantalla
+            router.push({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientDocId } });
+        } catch (error) {
+            console.error('Error saving patient ID:', error);
+        }
     };
 
     const filteredPatients = patients.filter(patient => {

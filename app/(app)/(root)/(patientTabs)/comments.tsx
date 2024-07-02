@@ -1,16 +1,33 @@
-import { Link } from "expo-router";
 import { SafeAreaView, View, StyleSheet, Text } from "react-native";
 import Colors from "@/constants/Colors";
 import ShowComments from '@/app/(app)/(root)/showComment';
-import { useGlobalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Comments() {
-    const { patientId } = useGlobalSearchParams(); //Nesecito que de alguna manera a Comments le lleguen ese parametro
+  const [patientId, setPatientId] = useState<string | null>(null);
+
+  useEffect(() => {
+      const getPatientId = async () => {
+          try {
+              const storedPatientId = await AsyncStorage.getItem('selectedPatientId');
+              if (storedPatientId) {
+                  setPatientId(storedPatientId);
+                  console.log("BREAKPOINT pac", storedPatientId)
+              }
+          } catch (error) {
+              console.error('Error fetching patient ID from local storage:', error);
+          }
+      };
+
+      getPatientId();
+  }, []);
+
 
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.listContainer}>
-          <ShowComments goalId={patientId as string} />
+          <ShowComments userId={patientId as string} />
         </View>
       </SafeAreaView>
     );

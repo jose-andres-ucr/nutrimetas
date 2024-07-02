@@ -19,8 +19,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.gray,
-    top: "-9.5%",
-    marginBottom: "-16%",
+    top: "-13%",
+    marginBottom: "-22%",
   },
   button: {
     backgroundColor: Colors.lightblue,
