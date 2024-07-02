@@ -63,7 +63,8 @@ export default function EditGoal() {
     }
   }, [serializedGoal]);
  
-  console.log("inicial",GoalData);
+  console.log("defaultValue", GoalData?.NotificationTime ? new Date(GoalData.NotificationTime.seconds * 1000) : today);
+
 
   const {
     control,
@@ -92,6 +93,9 @@ export default function EditGoal() {
       setValue('amount', GoalData?.Amount || '');
       setValue('portion', GoalData?.Portion || '');
       setValue('frequency', GoalData?.Frequency || '');
+      setValue('notificationTime', GoalData?.NotificationTime
+        ? new Date(GoalData.NotificationTime.seconds * 1000)
+        : resetTimeToZero(today));
     }
   }, [GoalData, setValue]);
 
@@ -198,7 +202,7 @@ export default function EditGoal() {
             </View>
           )}
           name="notificationTime"
-          defaultValue={GoalData?.notificationTime || resetTimeToZero(today)}
+          defaultValue={GoalData?.NotificationTime ? new Date(GoalData.NotificationTime.seconds * 1000) : new Date(today.getFullYear(), today.getMonth(), today.getDate(), 5, 56)}
 
         />
 
