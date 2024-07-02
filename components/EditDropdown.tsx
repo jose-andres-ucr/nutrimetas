@@ -13,6 +13,8 @@ type GoalFormType = {
   portion: string;
   frequency: string;
   notificationTime: Date;
+  startDate: Date;
+  deadline: Date;
   
 };
 
@@ -26,7 +28,7 @@ type EditDropdownProps = {
 };
 
 const EditDropdown: React.FC<EditDropdownProps> = ({ name, data, control, refs, placeholder, value }) => {
-  if (name === 'notificationTime') {
+  if (name === 'notificationTime' || name === 'startDate' || name === 'deadline' ) {
     return null;
   }
   return (

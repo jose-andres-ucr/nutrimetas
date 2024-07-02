@@ -46,7 +46,25 @@ export const GoalForm = z.object({
   notificationTime: z
     .date()
     .optional(),
-});
+  startDate: z
+    .date(),
+  deadline: z
+    .date(),
+}).refine(schema => {
+  const startDate = schema.startDate;
+  const deadline = schema.deadline;
+  const startYear = startDate.getFullYear();
+  const startMonth = startDate.getMonth();
+  const startDay = startDate.getDate();
+
+  const deadlineYear = deadline.getFullYear();
+  const deadlineMonth = deadline.getMonth();
+  const deadlineDay = deadline.getDate();
+
+  return startYear < deadlineYear ||
+    (startYear === deadlineYear && startMonth < deadlineMonth) ||
+    (startYear === deadlineYear && startMonth === deadlineMonth && startDay <= deadlineDay);
+}, { message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"] },);
 
 type GoalFormType = z.infer<typeof GoalForm>;
 
@@ -55,6 +73,8 @@ export default function EditGoal() {
   const route = useRoute<ConfigGoalScreenRouteProp>();
   const { serializedGoal, patientId } = route.params;
   const [GoalData, setParsedFormData] = useState<any>(null);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
 
   useEffect(() => {
@@ -62,9 +82,6 @@ export default function EditGoal() {
       setParsedFormData(JSON.parse(decodeURIComponent(serializedGoal)));
     }
   }, [serializedGoal]);
- 
-  console.log("defaultValue", GoalData?.NotificationTime ? new Date(GoalData.NotificationTime.seconds * 1000) : today);
-
 
   const {
     control,
@@ -80,6 +97,8 @@ export default function EditGoal() {
       portion: '',
       frequency: '',
       notificationTime: resetTimeToZero(today),
+      startDate: today,
+      deadline: today,
     },
     resolver: zodResolver(GoalForm),
   });
@@ -93,9 +112,9 @@ export default function EditGoal() {
       setValue('amount', GoalData?.Amount || '');
       setValue('portion', GoalData?.Portion || '');
       setValue('frequency', GoalData?.Frequency || '');
-      setValue('notificationTime', GoalData?.NotificationTime
-        ? new Date(GoalData.NotificationTime.seconds * 1000)
-        : resetTimeToZero(today));
+      setValue('notificationTime', GoalData?.NotificationTime ? new Date(GoalData.NotificationTime.seconds * 1000) : resetTimeToZero(today));
+      setValue('startDate', GoalData?.StartDate ? new Date(GoalData.StartDate.seconds * 1000) : today);
+      setValue('deadline', today);
     }
   }, [GoalData, setValue]);
 
@@ -205,6 +224,72 @@ export default function EditGoal() {
           defaultValue={GoalData?.NotificationTime ? new Date(GoalData.NotificationTime.seconds * 1000) : new Date(today.getFullYear(), today.getMonth(), today.getDate(), 5, 56)}
 
         />
+
+        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
+          <Text>Fecha de Inicio</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View>
+              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
+                <Text>{value.toDateString()}</Text>
+                <FontAwesome name="calendar" size={24} color="gray" />
+              </TouchableOpacity>
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={value}
+                  mode="date"
+                  display="default"
+                  onChange={(_, selectedDate) => {
+                    setShowStartDatePicker(false);
+                    onChange(selectedDate);
+                  }}
+                  minimumDate={today}
+                  negativeButton={{ label: 'Cancelar' }}
+                  positiveButton={{ label: 'Aceptar' }}
+                />
+              )}
+            </View>
+          )}
+          name="startDate"
+          defaultValue={today}
+        />
+        {errors.startDate ? (
+          <Text style={styles.error}>{errors.startDate.message}</Text>
+        ) : null}
+
+        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
+          <Text>Fecha Límite</Text>
+        </View>
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View>
+              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowDeadlineDatePicker(true)}>
+                <Text>{value.toDateString()}</Text>
+                <FontAwesome name="calendar" size={24} color="gray" />
+              </TouchableOpacity>
+              {showDeadlineDatePicker && (
+                <DateTimePicker
+                  value={value}
+                  mode="date"
+                  display="default"
+                  onChange={(_, selectedDate) => {
+                    setShowDeadlineDatePicker(false);
+                    onChange(selectedDate);
+                  }}
+                  minimumDate={today}
+                  negativeButton={{ label: 'Cancelar' }}
+                  positiveButton={{ label: 'Aceptar' }}
+                />
+              )}
+            </View>
+          )}
+          name="deadline" />
+        {errors.deadline ? (
+          <Text style={styles.error}>{errors.deadline.message}</Text>
+        ) : null}
 
         <View style={styles.buttonContainer}>
           <Button
