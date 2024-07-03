@@ -46,6 +46,7 @@ const ProfessionalList = () => {
     };
 
     const onPressHandle = async (professionalDocId: string) => {
+        console.log("EN PROFESIONALLIST ", professionalDocId);
         router.push({ pathname: '/transferPatient', params: { professionalId: professionalDocId } });
     };
 

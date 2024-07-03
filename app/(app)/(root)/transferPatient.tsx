@@ -1,11 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, Image, StyleSheet } from 'react-native';
-//import firestore from '@react-native-firebase/firestore';
 import Colors from '@/constants/Colors';
 import { useRouter} from 'expo-router';
 import { showMessage } from 'react-native-flash-message';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useCheckBoxPatientsFirestoreQuery } from '@/components/FetchData';
+import { usePatientsFirestoreQuery } from '@/components/FetchData';
 import TransferredPatientItem from '../../../components/TransferredPatientItem';
 import { SessionContext } from '@/shared/LoginSession';
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
@@ -17,8 +16,11 @@ const TransferPatient = () => {
     const router = useRouter();
     const actualProfessionalID = useContext(SessionContext)?.docId
     const { targetProfessionalId } = useGlobalSearchParams();
+    const targetProfessionalIdString = Array.isArray(targetProfessionalId) ? targetProfessionalId[0] : targetProfessionalId; //Esto lo transforma en string 
 
-    const { data: patients = [], error, isLoading: loading } = useCheckBoxPatientsFirestoreQuery();
+    console.log("TERMINO SIENDOOOO", targetProfessionalIdString);
+    
+    const { data: patients = [], error, isLoading: loading } = usePatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [clicked, setClicked] = useState<boolean>(false);
@@ -105,38 +107,35 @@ const TransferPatient = () => {
     };
     
     const transferPatients = async (patientDocs: PatientDocument[]) => {
-        const transferPromises = patientDocs.map(doc => {
+        const transferPromises = patientDocs.map(async (doc) => {
             const patientData = doc.data();
             const patientId = doc.id;
+            
+            console.log("targetProfessionalIdString: ", targetProfessionalIdString)
 
             if (!patientData) {
                 throw new Error(`Patient data is undefined for patient ID ${patientId}`);
             }
-
-            return firestore()
-                .collection('Professionals')
-                .doc(targetProfessionalId.toString())
-                .collection('Patient')
-                .doc(patientId)
-                .set(patientData)
-                .then(() => firestore()
+    
+            try {
+                
+                await firestore()
                     .collection('Professionals')
-                    .doc(actualProfessionalID)
+                    .doc(targetProfessionalIdString)
                     .collection('Patient')
                     .doc(patientId)
-                    .delete()
-                )
-                .then(() => {
-                    console.log("Patient transferred: ", patientId);
-                })
-                .catch((error) => {
-                    console.error('Error transferring patient: ', error);
-                    throw error; 
-                });
+                    .set(patientData);
+               
+                console.log("Patient transferred: ", patientId);
+            } catch (error) {
+                console.error('Error transferring patient: ', error);
+                throw error; 
+            }
         });
-
+    
         await Promise.all(transferPromises);
     };
+    
 
     const handleSuccess = () => {
         setClicked(false);

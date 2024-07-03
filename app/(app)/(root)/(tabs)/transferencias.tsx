@@ -3,13 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
-import SelectProfessional from '../ProfessionalList';
+import ProfessionalList from '../ProfessionalList';
 
 export default function Transferencias() {
   return (
     <SafeAreaView style={styles.container}>
         <View style={styles.listContainer}>
-            <SelectProfessional/> 
+            <ProfessionalList/> 
         </View>
     </SafeAreaView>
   );
