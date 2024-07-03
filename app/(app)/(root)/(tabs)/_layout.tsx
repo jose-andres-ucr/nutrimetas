@@ -37,8 +37,9 @@ export default function TabLayout() {
         name="expedientes"
         options={{
           title: "Expedientes",
-          headerTitle: () => <ExpedientesScreen />, 
+          //headerTitle: () => <ExpedientesScreen />, 
           tabBarIcon: ({ color }) => <TabBarIcon name="address-book" color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -48,7 +49,17 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="flag" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="transferencias"
+        options={{
+          title: 'Mover Pacientes',
+          //headerTitle: () => <ExpedientesScreen />, 
+          tabBarIcon: ({ color }) => <TabBarIcon name="address-card-o" color={color} />,
+          headerShown: false,
+        }}
+      />
     </Tabs>
+    
   );
 }
 
@@ -58,5 +69,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: 'bold',
     color: Colors.green,
+    top: '10%'
   },
 });
