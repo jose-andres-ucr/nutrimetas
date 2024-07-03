@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, Image, StyleSheet } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import Colors from '@/constants/Colors';
@@ -7,19 +7,29 @@ import { showMessage } from 'react-native-flash-message';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useCheckBoxPatientsFirestoreQuery } from '@/components/FetchData';
 import PatientItem from '../../../components/PatientItem';
+import Collections from '@/constants/Collections';
+import { SessionContext } from '@/shared/LoginSession';
 
 type CallbackFunction = () => void;
 
+interface TemplateData {
+    Action: string;
+    Amount: string;
+    Frequency: string;
+    Portion: string;
+    Rubric: string;
+    Type: string;
+}
 
 const CheckboxPatients = () => {
     const router = useRouter();
-    const { goalDocId } = useGlobalSearchParams();
-
+    const { templateDocId } = useGlobalSearchParams();
+    const session = useContext(SessionContext);
     const { data: patients = [], error, isLoading: loading } = useCheckBoxPatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [clicked, setClicked] = useState<boolean>(false);
-    const normalizedGoalDocId = Array.isArray(goalDocId) ? goalDocId[0] : goalDocId;
+    const normalizedGoalDocId = Array.isArray(templateDocId) ? templateDocId[0] : templateDocId;
     const normalizeString = (str: string) => {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
@@ -70,37 +80,62 @@ const CheckboxPatients = () => {
     }
 
 
-    const onSubmit = () => {
+    const createGoalDocuments = async (templateData: TemplateData) => {
+        const startDate = new Date();
+        const deadlineDate = new Date(startDate);
+        deadlineDate.setDate(startDate.getDate() + 7);
+        const startDateTimestamp = firestore.Timestamp.fromDate(startDate);
+        const deadlineTimestamp = firestore.Timestamp.fromDate(deadlineDate);        
+        const notificationTime = firestore.Timestamp.fromDate(new Date(new Date().setHours(0, 0, 0, 0)));
+        const goalRefs = await Promise.all(selectedIds.map(async () => {
+            const newgoalDoc = firestore().collection(Collections.Goal).doc();
+            await newgoalDoc.set({
+                ...templateData,
+                StartDate: startDateTimestamp,
+                Deadline: deadlineTimestamp,
+                NotificationTime: notificationTime,
+            });
+            return newgoalDoc;
+        }));
+        return goalRefs;
+    };
+
+    const onSubmit = async () => {
         if (clicked) return;
         setClicked(true);
-        const goalDocRef = firestore().collection('Goal').doc(goalDocId?.toString());
         if (selectedIds.length > 0) {
-            const updatePromises = selectedIds.map(patientId => (
-                firestore()
-                    .collection('Patient')
-                    .doc(patientId)
-                    .update({
-                        Goals: firestore.FieldValue.arrayUnion(goalDocRef)
-                    })
-                    .then(() => {
-                        console.log("Patient sent: ", patientId);
-                    })
-                    .catch((error) => {
-                        console.error('Error adding goal to patient: ', error);
-                    })
-            ));
+            try {
+                const templateDoc = await firestore().collection(Collections.Template).doc(templateDocId?.toString()).get();
+                const templateData = templateDoc.data() as TemplateData;
+                if (!templateData) throw new Error('Template data not found');
 
-            Promise.all(updatePromises)
-                .then(() => {
-                    setClicked(false);
-                    router.back();
-                    showSuccessMessage(() => { });
-                    console.log('Patients Goals added!');
-                })
-                .catch((error) => {
-                    setClicked(false);
-                    showErrorMessage(() => { });
-                });
+                const goalRefs = await createGoalDocuments(templateData);
+                const updatePromises = selectedIds.map((patientId, index) => (
+                    firestore()
+                        .collection(Collections.Professionals)
+                        .doc(session?.docId)
+                        .collection(Collections.Patient)
+                        .doc(patientId)
+                        .update({
+                            Goals: firestore.FieldValue.arrayUnion(goalRefs[index])
+                        })
+                        .then(() => {
+                            console.log("Patient updated: ", patientId);
+                        })
+                        .catch((error) => {
+                            console.error('Error adding goal to patient: ', error);
+                        })
+                ));
+
+                await Promise.all(updatePromises);
+                setClicked(false);
+                router.back();
+                showSuccessMessage(() => { });
+                console.log('Patients Goals added!');
+            } catch (error) {
+                setClicked(false);
+                showErrorMessage(() => { });
+            }
         } else {
             showErrorMessage(() => { });
         }
