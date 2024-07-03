@@ -76,6 +76,7 @@ export default function InfoGoals() {
   const { formData, patientId } = route.params;
   const [firstGoalData, setParsedFormData] = useState<any>(null);
   const today = new Date();
+  const title = patientId ? "Asignar Meta" : "Crear Plantilla"
 
   useEffect(() => {
     if (formData) {
@@ -205,7 +206,7 @@ export default function InfoGoals() {
   return (
     <ScrollView>
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
         <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 

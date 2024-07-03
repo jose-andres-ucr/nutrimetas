@@ -4,11 +4,11 @@ import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firest
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
-import { useGoalFirestoreQuery } from '@/components/FetchData';
+import { useTemplateFirestoreQuery } from '@/components/FetchData';
 
 const TemplatedGoals = () => {
     const router = useRouter();
-    const { data: templatedGoals = [], error, isLoading } = useGoalFirestoreQuery();
+    const { data: templatedGoals = [], error, isLoading } = useTemplateFirestoreQuery();
 
     if (isLoading) {
         return (
