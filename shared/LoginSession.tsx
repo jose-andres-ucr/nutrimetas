@@ -20,6 +20,22 @@ export type UserData = {
     docContents: any,
 }
 
+// Patient data on the DB
+export type PatientData = UserData & {
+    role: "patient",
+    assignedProfDocId: string,
+}
+
+// Professional data on the DB
+export type ProfessionalData = UserData & {
+    role: "professional",
+}
+
+// Professional data on the DB
+export type AdminData = UserData & {
+    role: "admin",
+}
+
 // User session on the app
 export type LoginSession = {
     // TODO: Opt for DB schema instead of wildcard key-value type annotations
