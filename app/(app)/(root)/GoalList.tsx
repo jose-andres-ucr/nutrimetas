@@ -10,11 +10,50 @@ import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { TouchableWithoutFeedback } from 'react-native';
 
 interface Timestamp {
     seconds: number;
     nanoseconds: number;
+}
+
+interface TypeData {
+    Name: string;
+}
+
+interface ActionData {
+    Name: string;
+}
+
+interface RubricData {
+    Name: string;
+}
+
+interface AmountData {
+    Value: string;
+}
+
+interface FrequencyData {
+    Name: string;
+}
+
+interface PortionData {
+    Name: string;
+    Plural: string;
+}
+
+interface GoalData {
+    Action: string;
+    Amount: string;
+    Deadline: Timestamp;
+    Frequency: string;
+    NotificationTime: Timestamp;
+    Portion: string;
+    Rubric: string;
+    StartDate: Timestamp;
+    Type: string;
+    title?: string;
+    description?: string;
+    goalSelectId: string;
 }
 
 interface Goal {
@@ -42,7 +81,7 @@ const GoalList = () => {
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
-    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+
 
     // Estados para los filtros
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -85,7 +124,7 @@ const GoalList = () => {
         } else {
             setLoading(false);
         }
-    }, [patientId]);
+    }, [patientId, goals]);
 
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
@@ -107,7 +146,6 @@ const GoalList = () => {
                 console.error('Invalid goal ID:', goalId);
             }
         }
-
         setGoals(goalsFromFirebase);
 
         setLoading(false);
@@ -175,54 +213,16 @@ const GoalList = () => {
         router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role ? role : "" } });
     };
 
-    const handleDeleteGoal = async (goalId: string) => {
-        if (patientId) {
-            try {
-                const patientDocRef = firestore()
-                    .collection('Professionals')
-                    .doc(session?.docId)
-                    .collection('Patient')
-                    .doc(patientId.toString());
-
-                // Obtener el documento del paciente
-                const patientDoc = await patientDocRef.get();
-                if (!patientDoc.exists) {
-                    console.error("No se encontró el documento del paciente.");
-                    return;
-                }
-
-                const patientData = patientDoc.data();
-                const goals = patientData?.Goals || [];
-                console.log(patientData?.Goals);
-
-                // Encontrar la referencia del documento de la meta a eliminar
-                const goalRef = goals.find((goal: Goal) => goal.id === goalId);
-                if (!goalRef) {
-                    console.error("No se encontró la meta en el array de referencias.");
-                    return;
-                }
-
-                // Actualizar el array de metas del paciente
-                await patientDocRef.update({
-                    Goals: firestore.FieldValue.arrayRemove(goalRef)
-                });
-
-                // Eliminar el documento de la meta de la colección Goal
-                // await firestore().collection('Goal').doc(goalId).delete();
-
-                // Actualizar el estado local
-                setGoals(prevGoals => prevGoals.filter(goal => goal.goalSelectId !== goalId));
-                console.log("Eliminando meta: ", goalId);
-                setSelectedGoalId(null);
-            } catch (error) {
-                console.error("Error deleting goal:", error);
-            }
-        }
-    };
+    const handleDeleteGoals = async () => {
+        router.replace({
+            pathname: '/GoalDelete',
+            params: { patientId: patientId }
+        })
+        console.log("Eliminando");
+    }
 
     const handleAddGoal = () => {
         router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
-        // navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
 
     const handleDailyGoal = () => {
@@ -307,6 +307,8 @@ const GoalList = () => {
         }
     };
 
+
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -317,123 +319,120 @@ const GoalList = () => {
     }
 
     return (
-        <TouchableWithoutFeedback onPress={() => setSelectedGoalId(null)}>
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Icon name="arrow-back" size={24} color={arrowColor} />
-                    </TouchableOpacity>
-                    <Text style={styles.title}>Metas</Text>
-                    <TouchableOpacity onPress={handleFilterPress} style={styles.filterContainer}>
-                        <Image
-                            style={styles.filterImage}
-                            source={{ uri: 'https://icons-for-free.com/iff/png/512/filter-131979013401653166.png' }}
-                        />
-                    </TouchableOpacity>
-                </View>
-                {showBackdrop && <View style={styles.backdrop} />}
-                {/* Ventana emergente */}
-                {showPopup && (
-                    <View style={styles.popupContainer}>
-                        <View style={styles.filtersHeader}>
-                            <Text style={styles.filterTitle}>Filtros</Text>
-                        </View>
-                        <Text style={styles.dateTitle} >Fecha inicial</Text>
-                        <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
-                            <Text>{startDate.toDateString()}</Text>
-                            <FontAwesome name="calendar" size={24} color="gray" />
-                        </TouchableOpacity>
-                        {showStartDatePicker && (
-                            <DateTimePicker
-                                value={startDate}
-                                mode="date"
-                                display="default"
-                                onChange={handleStartDateChange}
-                            />
-                        )}
-                        <Text style={styles.dateTitle} >Fecha final</Text>
-                        <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
-                            <Text>{endDate.toDateString()}</Text>
-                            <FontAwesome name="calendar" size={24} color="gray" />
-                        </TouchableOpacity>
-                        {showEndDatePicker && (
-                            <DateTimePicker
-                                value={endDate}
-                                mode="date"
-                                display="default"
-                                onChange={handleEndDateChange}
-                            />
-                        )}
-                        <View style={{ flexDirection: 'row' }}>
-                            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                                <Text style={styles.buttonText}>Salir</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-                                <Text style={styles.buttonText}>Aplicar</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity style={styles.button} onPress={handleReset}>
-                            <Text style={styles.buttonText}>Eliminar Filtros</Text>
-                        </TouchableOpacity>
-                        {error && (
-                            <View style={styles.errorContainer}>
-                                <Text style={styles.errorText}>{errorMessage}</Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-                {loading ? (
-                    <Text>Cargando...</Text>
-                ) : goals.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
-                    </View>
-                ) : (
-                    <FlatList
-                        data={goals}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}
-                                onLongPress={() => role === 'professional' && setSelectedGoalId(item.goalSelectId)}
-                                activeOpacity={1}
-                            >
-                                <View style={[styles.item, selectedGoalId === item.goalSelectId && styles.selectedItem]}>
-                                    <Image
-                                        style={styles.itemImage}
-                                        source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                                    />
-                                    <View style={styles.goalDetails}>
-                                        <Text style={styles.itemTitle}>{item.title}</Text>
-                                        <Text style={styles.itemDescription}>{item.description}</Text>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-                        )}
-                        keyExtractor={(item, index) => `${item.title}-${index}`}
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Icon name="arrow-back" size={24} color={arrowColor} />
+                </TouchableOpacity>
+                <Text style={styles.title}>Metas</Text>
+                <TouchableOpacity onPress={handleFilterPress} style={styles.filterContainer}>
+                    <Image
+                        style={styles.filterImage}
+                        source={{ uri: 'https://icons-for-free.com/iff/png/512/filter-131979013401653166.png' }}
                     />
-                )}
-                {role === 'professional' && (
-                    <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
-                        <Icon name="add" size={24} color="white" />
+                </TouchableOpacity>
+                <TouchableOpacity>
+                    {role === 'professional' && (
+                        <View style={styles.deleteButtonContainer}>
+                            <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={handleDeleteGoals}
+                            >
+                                <Icon name="trash" size={24} color={Colors.white} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </TouchableOpacity>
+            </View>
+            {showBackdrop && <View style={styles.backdrop} />}
+            {/* Ventana emergente */}
+            {showPopup && (
+                <View style={styles.popupContainer}>
+                    <View style={styles.filtersHeader}>
+                        <Text style={styles.filterTitle}>Filtros</Text>
+                    </View>
+                    <Text style={styles.dateTitle}>Fecha inicial</Text>
+                    <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
+                        <Text>{startDate.toDateString()}</Text>
+                        <FontAwesome name="calendar" size={24} color="gray" />
                     </TouchableOpacity>
-                )}
-                {role === 'patient' && (
-                    <TouchableOpacity style={styles.registerDayButton} onPress={handleDailyGoal}>
-                        <Icon name="create" size={24} color="white" />
+                    {showStartDatePicker && (
+                        <DateTimePicker
+                            value={startDate}
+                            mode="date"
+                            display="default"
+                            onChange={handleStartDateChange}
+                        />
+                    )}
+                    <Text style={styles.dateTitle}>Fecha final</Text>
+                    <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
+                        <Text>{endDate.toDateString()}</Text>
+                        <FontAwesome name="calendar" size={24} color="gray" />
                     </TouchableOpacity>
-                )}
-                {role === 'professional' && selectedGoalId && (
-                    <View style={styles.deleteButtonContainer}>
-                        <TouchableOpacity
-                            style={styles.deleteButton}
-                            onPress={() => handleDeleteGoal(selectedGoalId)}
-                        >
-                            <Icon name="trash" size={24} color={Colors.white} />
-                            <Text style={styles.deleteButtonText}>Eliminar Meta</Text>
+                    {showEndDatePicker && (
+                        <DateTimePicker
+                            value={endDate}
+                            mode="date"
+                            display="default"
+                            onChange={handleEndDateChange}
+                        />
+                    )}
+                    <View style={{ flexDirection: 'row' }}>
+                        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                            <Text style={styles.buttonText}>Salir</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+                            <Text style={styles.buttonText}>Aplicar</Text>
                         </TouchableOpacity>
                     </View>
-                )}
-            </View>
-        </TouchableWithoutFeedback>
+                    <TouchableOpacity style={styles.button} onPress={handleReset}>
+                        <Text style={styles.buttonText}>Eliminar Filtros</Text>
+                    </TouchableOpacity>
+                    {error && (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>{errorMessage}</Text>
+                        </View>
+                    )}
+                </View>
+            )}
+            {loading ? (
+                <Text>Cargando...</Text>
+            ) : goals.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={goals}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
+                            <View style={styles.item}>
+                                <Image
+                                    style={styles.itemImage}
+                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                />
+                                <View style={styles.goalDetails}>
+                                    <Text style={styles.itemTitle}>{item.title}</Text>
+                                    <Text style={styles.itemDescription}>{item.description}</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => `${item.title}-${index}`}
+                />
+            )}
+            {role === 'professional' && (
+                <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
+                    <Icon name="add" size={24} color="white" />
+                </TouchableOpacity>
+
+            )}
+            {role === 'patient' && (
+                <TouchableOpacity style={styles.registerDayButton} onPress={handleDailyGoal}>
+                    <Icon name="create" size={24} color="white" />
+                </TouchableOpacity>
+            )}
+        </View>
     );
 }
 
@@ -622,8 +621,8 @@ const styles = StyleSheet.create({
     },
     deleteButtonContainer: {
         position: 'absolute',
-        top: 55,
-        right: 30,
+        top: -15,
+        left: 150,
         backgroundColor: Colors.red,
         padding: 5,
         borderRadius: 5,
