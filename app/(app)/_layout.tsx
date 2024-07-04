@@ -8,6 +8,10 @@ export default function AppLayout() {
     return (
     <Stack>
         <Stack.Screen 
+            name="(admin)"
+            options={{ headerShown: false }}
+        />
+        <Stack.Screen 
             name="(root)"
             options={{ headerShown: false }}
         />
