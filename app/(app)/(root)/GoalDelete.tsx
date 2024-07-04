@@ -6,24 +6,14 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
 import { SessionContext } from '@/shared/LoginSession';
-import { useGlobalSearchParams } from 'expo-router';
+import { useRouter, useGlobalSearchParams } from 'expo-router';
 
 interface Goal {
     id: string;
-    /*
-    Action: string;
-    Amount: string;
-    Deadline: Timestamp;
-    Frequency: string;
-    NotificationTime: Timestamp;
-    Portion: string;
-    Rubric: string;
-    StartDate: Timestamp;
-    Type: string;
-    */
 }
 
 const GoalDelete = () => {
+    const router = useRouter();
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
     const session = useContext(SessionContext);
@@ -179,7 +169,7 @@ const GoalDelete = () => {
                 });
 
                 setSelectedGoalIds([]);
-                navigation.goBack();
+                router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
             } catch (error) {
                 console.error("Error deleting goals:", error);
             }

@@ -11,67 +11,6 @@ import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
-interface Timestamp {
-    seconds: number;
-    nanoseconds: number;
-}
-
-interface TypeData {
-    Name: string;
-}
-
-interface ActionData {
-    Name: string;
-}
-
-interface RubricData {
-    Name: string;
-}
-
-interface AmountData {
-    Value: string;
-}
-
-interface FrequencyData {
-    Name: string;
-}
-
-interface PortionData {
-    Name: string;
-    Plural: string;
-}
-
-interface GoalData {
-    Action: string;
-    Amount: string;
-    Deadline: Timestamp;
-    Frequency: string;
-    NotificationTime: Timestamp;
-    Portion: string;
-    Rubric: string;
-    StartDate: Timestamp;
-    Type: string;
-    title?: string;
-    description?: string;
-    goalSelectId: string;
-}
-
-interface Goal {
-    id: string;
-    /*
-    Action: string;
-    Amount: string;
-    Deadline: Timestamp;
-    Frequency: string;
-    NotificationTime: Timestamp;
-    Portion: string;
-    Rubric: string;
-    StartDate: Timestamp;
-    Type: string;
-    */
-}
-
-
 const GoalList = () => {
     const router = useRouter();
     const navigation = useNavigation();
