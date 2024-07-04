@@ -44,12 +44,11 @@ export const GoalForm = z.object({
     .string()
     .min(1, { message: "Debe seleccionar alguna frecuencia" }),
   notificationTime: z
-    .date()
-    .optional(),
+    .date({ required_error: "Debe ingresar una hora de notificación válida" }),
   startDate: z
-    .date(),
+    .date({ required_error: "Debe ingresar una fecha de inicio" }),
   deadline: z
-    .date(),
+    .date({ required_error: "Debe ingresar una fecha límite" }),
 }).refine(schema => {
   const startDate = schema.startDate;
   const deadline = schema.deadline;
@@ -114,7 +113,7 @@ export default function EditGoal() {
       setValue('frequency', GoalData?.Frequency || '');
       setValue('notificationTime', GoalData?.NotificationTime ? new Date(GoalData.NotificationTime.seconds * 1000) : resetTimeToZero(today));
       setValue('startDate', GoalData?.StartDate ? new Date(GoalData.StartDate.seconds * 1000) : today);
-      setValue('deadline', today);
+      setValue('deadline', GoalData?.Deadline ? new Date(GoalData.Deadline.seconds * 1000) : today);
     }
   }, [GoalData, setValue]);
 
