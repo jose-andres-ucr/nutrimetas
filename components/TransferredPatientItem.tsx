@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import Colors from '@/constants/Colors';
+import profileIcon from '@/assets/images/ProfileIcon.png';
 
 interface Patient {
     id: string;
@@ -38,7 +39,7 @@ const PatientItem: React.FC<PatientItemProps> = ({ item, handleCheckboxPress, se
 
                         <Image
                             style={styles.itemImage}
-                            source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                            source={profileIcon}
                         />
                         <View style={styles.nameAndIdContainer}>
                             <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>

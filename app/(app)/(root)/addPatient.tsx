@@ -128,7 +128,7 @@ export default function AddPatient() {
 
   const successfulAddition = () => {
     showMessage({
-        position: "bottom",
+        position: "top",
         type: "success",
         message: "Exito!",
         description: "Paciente añadido exitosamente.",
@@ -143,7 +143,7 @@ export default function AddPatient() {
   
   const alreadyExistAlert = () => {
     showMessage({
-        position: "bottom",
+        position: "top",
         type: "warning",
         message: "Atención",
         description: "El paciente ya existe.",
@@ -158,7 +158,7 @@ export default function AddPatient() {
 
   const somethingWentWrong = () => {
     showMessage({
-        position: "bottom",
+        position: "top",
         type: "danger",
         message: "Error",
         description: "Algo salió mal.",

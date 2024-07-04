@@ -6,6 +6,8 @@ import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionContext } from '@/shared/LoginSession';
+import profileIcon from '@/assets/images/ProfileIcon.png';
+import searchIcon from '@/assets/images/searchIcon.png';
 
 function ExpedientesScreen() {
     return (
@@ -107,7 +109,7 @@ const PatientList = () => {
                         <View style={styles.item}>
                             <Image
                                 style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                source={profileIcon}
                             />
                             <View style={styles.nameAndIdContainer}>
                                 <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
@@ -126,7 +128,7 @@ const PatientList = () => {
                             <View style={styles.inputContainer}>
                                 <Image
                                     style={styles.searchIcon}
-                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
+                                    source={searchIcon}
                                 />
                                 <TextInput
                                     style={styles.searchBar}
@@ -138,6 +140,7 @@ const PatientList = () => {
                         </View>
                     </View>
                 }
+                
             />
         </SafeAreaView>
     );

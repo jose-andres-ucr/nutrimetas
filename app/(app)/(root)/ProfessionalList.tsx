@@ -6,12 +6,13 @@ import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionContext } from '@/shared/LoginSession';
+import profileIcon from '@/assets/images/ProfileIcon.png';
+import searchIcon from '@/assets/images/searchIcon.png';
 
 function ExpedientesScreen() {
     return (
-      <Text style={styles.subtitle}>
-        NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
-      </Text>
+        <Text style={styles.subtitle}>Elija Profesional Para Transferir Pacientes</Text>
+        
     );
   }
 
@@ -19,13 +20,15 @@ const ProfessionalList = () => {
     const router = useRouter();
     const [professionals, setProfessionals] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const actualProfessionalID = useContext(SessionContext)?.docId
 
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Professionals')
             .onSnapshot((snapshot) => {
                 const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-                setProfessionals(sortProfessionals(data));
+                const filteredData = data.filter(professional => professional.id !== actualProfessionalID);
+                setProfessionals(sortProfessionals(filteredData));
             });
 
         return () => unsubscribe();
@@ -47,7 +50,7 @@ const ProfessionalList = () => {
 
     const onPressHandle = async (professionalDocId: string) => {
         console.log("EN PROFESIONALLIST ", professionalDocId);
-        router.push({ pathname: '/transferPatient', params: { professionalId: professionalDocId } });
+        router.push({ pathname: '/transferPatient', params: { targetProfessionalId: professionalDocId } });
     };
 
     const filteredProfessionals = professionals.filter(professional => {
@@ -56,12 +59,10 @@ const ProfessionalList = () => {
 
         const firstNameMatch = normalizeString(professional.firstName).includes(searchTermLower);
         const lastNameMatch = normalizeString(professional.lastName).includes(searchTermLower);
-        //const idMatch = professional.idNumber.toLowerCase().startsWith(searchTermLower.replace(/-/g, ''));
 
         const fullNameWithLastName = normalizeString(professional.lastName.trim() + " " + professional.firstName.trim());
         const fullNameWithFirstName = normalizeString(professional.firstName.trim() + " " + professional.lastName.trim());
         const fullNameMatch = fullNameWithLastName.includes(searchTermLower) || fullNameWithFirstName.includes(searchTermLower);
-
 
         if (firstNameMatch) {
             return firstNameMatch;
@@ -72,14 +73,7 @@ const ProfessionalList = () => {
         if (fullNameMatch) {
             return fullNameMatch;
         }
-        //if (idMatch) {
-            //return idMatch;
-        //}
     });
-
-    function formatId(idNumber: string) {
-        return idNumber.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
-    }
     
     if (professionals.length == 0){
         return(
@@ -101,11 +95,10 @@ const ProfessionalList = () => {
                         <View style={styles.item}>
                             <Image
                                 style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                source={profileIcon}
                             />
                             <View style={styles.nameAndIdContainer}>
                                 <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
-                                {/*<Text style={styles.itemId}>{formatId(item.idNumber)}</Text>*/}
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -120,7 +113,7 @@ const ProfessionalList = () => {
                             <View style={styles.inputContainer}>
                                 <Image
                                     style={styles.searchIcon}
-                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
+                                    source={searchIcon}
                                 />
                                 <TextInput
                                     style={styles.searchBar}
@@ -185,12 +178,12 @@ const styles = StyleSheet.create({
     },
     title: {
         alignItems: 'center',
-        top: '-15%'
+        top: '-8%'
     },
     subtitle: {
-        fontSize: 30,
+        fontSize: 28,
         fontWeight: 'bold',
-        color: Colors.green,
-        top: '10%'
+        textAlign: 'left',
+        marginLeft: "-12%",
     },
 });

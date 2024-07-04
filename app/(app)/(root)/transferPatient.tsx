@@ -9,17 +9,19 @@ import TransferredPatientItem from '../../../components/TransferredPatientItem';
 import { SessionContext } from '@/shared/LoginSession';
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { useGlobalSearchParams } from 'expo-router';
+import greenCheckIcon from '@/assets/images/greenCheckIcon.png';
+import redCheckIcon from '@/assets/images/redCheckIcon.png';
+import searchIcon from '@/assets/images/searchIcon.png';
 
 type CallbackFunction = () => void;
 
 const TransferPatient = () => {
     const router = useRouter();
     const actualProfessionalID = useContext(SessionContext)?.docId
-    const { targetProfessionalId } = useGlobalSearchParams();
-    const targetProfessionalIdString = Array.isArray(targetProfessionalId) ? targetProfessionalId[0] : targetProfessionalId; //Esto lo transforma en string 
-
-    console.log("TERMINO SIENDOOOO", targetProfessionalIdString);
     
+    const { targetProfessionalId } = useGlobalSearchParams();
+    const targetProfessionalIdString = Array.isArray(targetProfessionalId) ? targetProfessionalId[0] : targetProfessionalId; 
+   
     const { data: patients = [], error, isLoading: loading } = usePatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -50,10 +52,10 @@ const TransferPatient = () => {
         showMessage({
             type: "success",
             message: "Success",
-            description: "La meta fue agregada exitosamente a todos los pacientes",
+            description: "Los pacientes fueron transferidos exitosamente",
             backgroundColor: Colors.green,
             color: Colors.white,
-            icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png' }} {...props} />,
+            icon: props => <Image source={greenCheckIcon} {...props} />,
             style: {
                 borderRadius: 10,
             },
@@ -65,10 +67,10 @@ const TransferPatient = () => {
         showMessage({
             type: "danger",
             message: "Error",
-            description: "Hubo un error al agregar la meta a los pacientes",
+            description: "Hubo un error al transferir los pacientes",
             backgroundColor: Colors.red,
             color: Colors.white,
-            icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-red-cross-mark-approval-16197.png' }} {...props} />,
+            icon: props => <Image source={redCheckIcon} {...props} />,
             style: {
                 borderRadius: 10,
             },
@@ -86,6 +88,7 @@ const TransferPatient = () => {
                 const patientDocs = await getPatientDocuments(selectedIds);
     
                 await transferPatients(patientDocs);
+                await deletePatients(patientDocs);
     
                 handleSuccess();
             } catch (error) {
@@ -110,11 +113,9 @@ const TransferPatient = () => {
         const transferPromises = patientDocs.map(async (doc) => {
             const patientData = doc.data();
             const patientId = doc.id;
-            
-            console.log("targetProfessionalIdString: ", targetProfessionalIdString)
 
             if (!patientData) {
-                throw new Error(`Patient data is undefined for patient ID ${patientId}`);
+                throw new Error(`Patient data is undefined`);
             }
     
             try {
@@ -126,7 +127,7 @@ const TransferPatient = () => {
                     .doc(patientId)
                     .set(patientData);
                
-                console.log("Patient transferred: ", patientId);
+                console.log('Patient ', patientId, ' transferred to professional ', targetProfessionalIdString);
             } catch (error) {
                 console.error('Error transferring patient: ', error);
                 throw error; 
@@ -134,6 +135,34 @@ const TransferPatient = () => {
         });
     
         await Promise.all(transferPromises);
+    };
+
+    const deletePatients = async (patientDocs: PatientDocument[]) => {
+        const deletePromises = patientDocs.map(async (doc) => {
+            const patientData = doc.data();
+            const patientId = doc.id;
+
+            if (!patientData) {
+                throw new Error(`Patient data is undefined`);
+            }
+    
+            try {
+                
+                await firestore()
+                .collection('Professionals')
+                .doc(actualProfessionalID)
+                .collection('Patient')
+                .doc(patientId)
+                .delete();
+               
+                console.log('Patient ', patientId, ' deleted from professional ', actualProfessionalID);
+            } catch (error) {
+                console.error('Error deleting patient: ', error);
+                throw error; 
+            }
+        });
+    
+        await Promise.all(deletePromises);
     };
     
 
@@ -191,7 +220,7 @@ const TransferPatient = () => {
                         <View style={styles.inputContainer}>
                             <Image
                                 style={styles.searchIcon}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
+                                source={searchIcon}
                             />
                             <TextInput
                                 style={styles.searchBar}
