@@ -1,25 +1,30 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Platform, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
 import { Text, Button } from "react-native-paper";
 import { z } from "zod";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Colors from '@/constants/Colors';
-import { useRouter, useGlobalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { View } from "@/components/Themed";
 import EditDropdown from "@/components/EditDropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { showMessage } from "react-native-flash-message";
+import Collections from "@/constants/Collections";
+import firestore from '@react-native-firebase/firestore';
+
 const today = new Date();
 
 type ConfigGoalScreenRouteProp = RouteProp<{
   params: {
     serializedGoal: string;
+    GoalId: string;
     patientId: string;
   };
 }, 'params'>;
@@ -66,15 +71,24 @@ export const GoalForm = z.object({
 }, { message: "La fecha límite debe ser mayor a la fecha de inicio", path: ["deadline"] },);
 
 type GoalFormType = z.infer<typeof GoalForm>;
+type CallbackFunction = () => void;
 
 export default function EditGoal() {
   const router = useRouter();
   const route = useRoute<ConfigGoalScreenRouteProp>();
-  const { serializedGoal, patientId } = route.params;
+  const { serializedGoal, GoalId, patientId } = route.params;
   const [GoalData, setParsedFormData] = useState<any>(null);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlineDatePicker, setShowDeadlineDatePicker] = useState(false);
   const [showNotificationTimePicker, setShowNotificationTimePicker] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
+  const { data: typeData = [], error: typeError, isLoading: typeLoading } = useDropDownDataFirestoreQuery('Type');
+  const { data: rubricData = [], error: rubricError, isLoading: rubricLoading } = useDropDownDataFirestoreQuery('Rubric');
+  const { data: amountData = [], error: amountError, isLoading: amountLoading } = useDropDownDataFirestoreQuery('Amount');
+  const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
+  const { data: frequencyData = [], error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
 
   useEffect(() => {
     if (serializedGoal) {
@@ -126,16 +140,65 @@ export default function EditGoal() {
     frequencyRef: React.useRef<IDropdownRef>(null),
   } as const;
 
-  const onSubmit = (data: GoalFormType) => {
-    console.log("ma data", data);
-  };
+  const showSuccessMessage = (callback: CallbackFunction) => {
+    showMessage({
+      type: "success",
+      message: "Success",
+      description: "La meta fue agregada exitosamente",
+      backgroundColor: Colors.green,
+      color: Colors.white,
+      icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png' }} {...props} />,
+      style: {
+        borderRadius: 10,
+      },
+    });
+    setTimeout(callback, 2000);
+  }
 
-  const { data: actionData = [], error: actionError, isLoading: actionLoading } = useDropDownDataFirestoreQuery('Action');
-  const { data: typeData = [], error: typeError, isLoading: typeLoading } = useDropDownDataFirestoreQuery('Type');
-  const { data: rubricData = [], error: rubricError, isLoading: rubricLoading } = useDropDownDataFirestoreQuery('Rubric');
-  const { data: amountData = [], error: amountError, isLoading: amountLoading } = useDropDownDataFirestoreQuery('Amount');
-  const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
-  const { data: frequencyData = [], error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
+  const showErrorMessage = (callback: CallbackFunction) => {
+    showMessage({
+      type: "danger",
+      message: "Error",
+      description: "Hubo un error al agregar la meta a los pacientes",
+      backgroundColor: Colors.red,
+      color: Colors.white,
+      icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-red-cross-mark-approval-16197.png' }} {...props} />,
+      style: {
+        borderRadius: 10,
+      },
+    });
+    setTimeout(callback, 4000);
+  }
+
+  const onSubmit = (data: GoalFormType) => {
+    setLoading(true);
+    const updatedGoalData = {
+      Deadline: data.deadline,
+      Frequency: data.frequency,
+      StartDate: data.startDate,
+      NotificationTime: data.notificationTime,
+      Type: data.type,
+      Action: data.action,
+      Rubric: data.rubric,
+      Amount: data.amount,
+      Portion: data.portion,
+    };
+
+    const goalDocRef = firestore().collection(Collections.Goal).doc(GoalId);
+
+    goalDocRef.update(updatedGoalData)
+      .then(() => {
+        console.log('Goal updated!');
+        setLoading(false);
+        showSuccessMessage(() => { });
+        router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
+      })
+      .catch((error) => {
+        setLoading(false);
+        showErrorMessage(() => { });
+        console.error('Error updating goal: ', error);
+      });
+  };
 
   function resetTimeToZero(date: Date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
@@ -294,6 +357,7 @@ export default function EditGoal() {
           <Button
             style={{ ...styles.button, ...styles.returnButton }}
             mode="contained"
+            disabled={loading}
             onPress={() => router.back()}
           >
             <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text>
@@ -302,11 +366,12 @@ export default function EditGoal() {
           <Button
             style={{ ...styles.button, backgroundColor: Colors.lightblue }}
             mode="contained"
+            disabled={loading}
             onPress={handleSubmit((form) => {
               onSubmit({ ...form });
             })}
           >
-            <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>Continuar</Text>
+            <Text style={{ fontSize: 16, color: Colors.white, fontWeight: 'bold' }}>{loading ? "Cargando" : "Actualizar"}</Text>
           </Button>
         </View>
 
@@ -375,3 +440,4 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
 });
+

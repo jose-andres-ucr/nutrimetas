@@ -161,7 +161,7 @@ const GoalList = () => {
         const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
         if (selectedGoal) {
             setErrorVisible(false); 
-            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, patientId: patientId} });
+            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId , patientId: patientId} });
         } else {
             setErrorVisible(true);
         }
