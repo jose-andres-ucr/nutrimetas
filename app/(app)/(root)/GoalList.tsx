@@ -11,6 +11,18 @@ import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
+const images = {
+    carne: require('@/assets/images/carnes.png'),
+    fruta: require('@/assets/images/frutas.png'),
+    actividadFisica: require('@/assets/images/actividadFisica.png'),
+    agua: require('@/assets/images/agua.png'),
+    cafe: require('@/assets/images/cafe.png'),
+    harinas: require('@/assets/images/harinas.png'),
+    lacteos: require('@/assets/images/lacteos.png'),
+    vegetales: require('@/assets/images/vegetales.png'),
+}
+
+
 const GoalList = () => {
     const [errorVisible, setErrorVisible] = useState(false);
     const router = useRouter();
@@ -21,6 +33,7 @@ const GoalList = () => {
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
+
 
     // Estados para los filtros
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -63,7 +76,7 @@ const GoalList = () => {
         } else {
             setLoading(false);
         }
-    }, [patientId]);
+    }, [patientId, goals]);
 
     const getGoalById = (goalId: any) => {
         return goals.find(goal => goal.goalSelectId === goalId);
@@ -89,7 +102,6 @@ const GoalList = () => {
                 console.error('Invalid goal ID:', goalId);
             }
         }
-
         setGoals(goalsFromFirebase);
 
         setLoading(false);
@@ -101,7 +113,7 @@ const GoalList = () => {
             if (rubricDoc.exists) {
                 const rubricData = rubricDoc.data();
                 if (rubricData && rubricData.Name) {
-                    return rubricData.Name;
+                    return rubricData.Name.charAt(0).toUpperCase() + rubricData.Name.slice(1);;
                 } else {
                     throw new Error('Rubric data or Name is missing');
                 }
@@ -160,12 +172,20 @@ const GoalList = () => {
         const selectedGoal = getGoalById(selectedGoalId);
         const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
         if (selectedGoal) {
-            setErrorVisible(false); 
-            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId , patientId: patientId} });
+            setErrorVisible(false);
+            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
         } else {
             setErrorVisible(true);
         }
     };
+
+    const handleDeleteGoals = () => {
+        router.push({
+            pathname: '/GoalDelete',
+            params: { patientId: patientId }
+        })
+        console.log("Eliminando");
+    }
 
     const handleAddGoal = () => {
         router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
@@ -253,6 +273,30 @@ const GoalList = () => {
         }
     };
 
+    const getImageSource = (rubric: string) => {
+        const lowerCaseRubric = rubric.toLowerCase();
+        switch (lowerCaseRubric) {
+            case 'actividad física':
+                return images.carne;
+            case 'frutas':
+                return images.fruta;
+            case 'harinas':
+                return images.harinas;
+            case 'vegetales':
+                return images.vegetales;
+            case 'café':
+                return images.cafe;
+            case 'carnes rojas':
+                return images.carne;
+            case 'lácteos':
+                return images.lacteos;
+            case 'agua':
+                return images.agua;
+            default:
+                return images.actividadFisica; // imagen por defecto
+        }
+    };
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -275,6 +319,18 @@ const GoalList = () => {
                         source={{ uri: 'https://icons-for-free.com/iff/png/512/filter-131979013401653166.png' }}
                     />
                 </TouchableOpacity>
+                <TouchableOpacity>
+                    {role === 'professional' && (
+                        <View style={styles.deleteButtonContainer}>
+                            <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={handleDeleteGoals}
+                            >
+                                <Icon name="trash" size={24} color={Colors.white} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </TouchableOpacity>
             </View>
             {showBackdrop && <View style={styles.backdrop} />}
             {/* Ventana emergente */}
@@ -283,7 +339,7 @@ const GoalList = () => {
                     <View style={styles.filtersHeader}>
                         <Text style={styles.filterTitle}>Filtros</Text>
                     </View>
-                    <Text style={styles.dateTitle} >Fecha inicial</Text>
+                    <Text style={styles.dateTitle}>Fecha inicial</Text>
                     <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
                         <Text>{startDate.toDateString()}</Text>
                         <FontAwesome name="calendar" size={24} color="gray" />
@@ -296,7 +352,7 @@ const GoalList = () => {
                             onChange={handleStartDateChange}
                         />
                     )}
-                    <Text style={styles.dateTitle} >Fecha final</Text>
+                    <Text style={styles.dateTitle}>Fecha final</Text>
                     <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
                         <Text>{endDate.toDateString()}</Text>
                         <FontAwesome name="calendar" size={24} color="gray" />
@@ -341,21 +397,21 @@ const GoalList = () => {
                             <View style={styles.item}>
                                 <Image
                                     style={styles.itemImage}
-                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                    source={getImageSource(item.title)}
                                 />
                                 <View style={styles.goalDetails}>
                                     <Text style={styles.itemTitle}>{item.title}</Text>
                                     <Text style={styles.itemDescription}>{item.description}</Text>
                                 </View>
                                 <View>
-                                {errorVisible && (
-                                    <Text style={{ color: 'red', fontSize: 16 }}>
-                                        Meta no encontrada. Por favor, selecciona una meta válida.
-                                    </Text>
-                                )}
-                                <TouchableOpacity onPress={() => editGoal(item.goalSelectId)} style={styles.editIconContainer}>
-                                    <Icon name="pencil" size={24} color="gray" />
-                                </TouchableOpacity>
+                                    {errorVisible && (
+                                        <Text style={{ color: 'red', fontSize: 16 }}>
+                                            Meta no encontrada. Por favor, selecciona una meta válida.
+                                        </Text>
+                                    )}
+                                    <TouchableOpacity onPress={() => editGoal(item.goalSelectId)} style={styles.editIconContainer}>
+                                        <Icon name="pencil" size={24} color="gray" />
+                                    </TouchableOpacity>
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -367,6 +423,7 @@ const GoalList = () => {
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
                     <Icon name="add" size={24} color="white" />
                 </TouchableOpacity>
+
             )}
             {role === 'patient' && (
                 <TouchableOpacity style={styles.registerDayButton} onPress={handleDailyGoal}>
@@ -569,5 +626,32 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#f0f0f0',
         borderRadius: 5,
+    },
+    deleteButtonContainer: {
+        position: 'absolute',
+        top: -15,
+        left: 150,
+        backgroundColor: Colors.red,
+        padding: 5,
+        borderRadius: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    deleteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    deleteButtonText: {
+        color: 'white',
+        marginLeft: 5,
+        fontWeight: 'bold',
+    },
+    selectedItem: {
+        shadowColor: Colors.gray,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 3,
+        backgroundColor: Colors.lightGray,
     },
 });
