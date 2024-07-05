@@ -11,6 +11,18 @@ import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
+const images = {
+    carne: require('@/assets/images/carnes.png'),
+    fruta: require('@/assets/images/frutas.png'),
+    actividadFisica: require('@/assets/images/actividadFisica.png'),
+    agua: require('@/assets/images/agua.png'),
+    cafe: require('@/assets/images/cafe.png'),
+    harinas: require('@/assets/images/harinas.png'),
+    lacteos: require('@/assets/images/lacteos.png'),
+    vegetales: require('@/assets/images/vegetales.png'),
+}
+
+
 const GoalList = () => {
     const router = useRouter();
     const navigation = useNavigation();
@@ -96,7 +108,7 @@ const GoalList = () => {
             if (rubricDoc.exists) {
                 const rubricData = rubricDoc.data();
                 if (rubricData && rubricData.Name) {
-                    return rubricData.Name;
+                    return rubricData.Name.charAt(0).toUpperCase() + rubricData.Name.slice(1);;
                 } else {
                     throw new Error('Rubric data or Name is missing');
                 }
@@ -246,7 +258,29 @@ const GoalList = () => {
         }
     };
 
-
+    const getImageSource = (rubric: string) => {
+        const lowerCaseRubric = rubric.toLowerCase();
+        switch (lowerCaseRubric) {
+            case 'actividad física':
+                return images.carne;
+            case 'frutas':
+                return images.fruta;
+            case 'harinas':
+                return images.harinas;
+            case 'vegetales':
+                return images.vegetales;
+            case 'café':
+                return images.cafe;
+            case 'carnes rojas':
+                return images.carne;
+            case 'lácteos':
+                return images.lacteos;
+            case 'agua':
+                return images.agua;
+            default:
+                return images.actividadFisica; // imagen por defecto
+        }
+    };
 
     if (loading) {
         return (
@@ -348,7 +382,7 @@ const GoalList = () => {
                             <View style={styles.item}>
                                 <Image
                                     style={styles.itemImage}
-                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                    source={getImageSource(item.title)}
                                 />
                                 <View style={styles.goalDetails}>
                                     <Text style={styles.itemTitle}>{item.title}</Text>
