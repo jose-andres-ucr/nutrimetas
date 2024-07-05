@@ -56,7 +56,7 @@ const CheckboxPatients = () => {
             description: "La meta fue agregada exitosamente a todos los pacientes",
             backgroundColor: Colors.green,
             color: Colors.white,
-            icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png' }} {...props} />,
+            icon: props => <Image source={require('@/assets/images/check.png')} {...props} />,
             style: {
                 borderRadius: 10,
             },
@@ -71,7 +71,7 @@ const CheckboxPatients = () => {
             description: "Hubo un error al agregar la meta a los pacientes",
             backgroundColor: Colors.red,
             color: Colors.white,
-            icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-red-cross-mark-approval-16197.png' }} {...props} />,
+            icon: props => <Image source={require('@/assets/images/error.png')} {...props} />,
             style: {
                 borderRadius: 10,
             },
@@ -85,7 +85,7 @@ const CheckboxPatients = () => {
         const deadlineDate = new Date(startDate);
         deadlineDate.setDate(startDate.getDate() + 7);
         const startDateTimestamp = firestore.Timestamp.fromDate(startDate);
-        const deadlineTimestamp = firestore.Timestamp.fromDate(deadlineDate);        
+        const deadlineTimestamp = firestore.Timestamp.fromDate(deadlineDate);
         const notificationTime = firestore.Timestamp.fromDate(new Date(new Date().setHours(0, 0, 0, 0)));
         const goalRefs = await Promise.all(selectedIds.map(async () => {
             const newgoalDoc = firestore().collection(Collections.Goal).doc();
@@ -110,22 +110,21 @@ const CheckboxPatients = () => {
                 if (!templateData) throw new Error('Template data not found');
 
                 const goalRefs = await createGoalDocuments(templateData);
-                const updatePromises = selectedIds.map((patientId, index) => (
-                    firestore()
+                const updatePromises = selectedIds.map(async (patientId, index) => {
+                    try {
+                        await firestore()
                         .collection(Collections.Professionals)
                         .doc(session?.docId)
                         .collection(Collections.Patient)
                         .doc(patientId)
                         .update({
-                            Goals: firestore.FieldValue.arrayUnion(goalRefs[index])
-                        })
-                        .then(() => {
-                            console.log("Patient updated: ", patientId);
-                        })
-                        .catch((error) => {
-                            console.error('Error adding goal to patient: ', error);
-                        })
-                ));
+                            Goals: firestore.FieldValue.arrayUnion(goalRefs[index]),
+                        });
+                        console.log("Patient updated: ", patientId);
+                    } catch (error) {
+                        console.error('Error adding goal to patient: ', error);
+                    }
+                });
 
                 await Promise.all(updatePromises);
                 setClicked(false);
@@ -182,7 +181,7 @@ const CheckboxPatients = () => {
                         <View style={styles.inputContainer}>
                             <Image
                                 style={styles.searchIcon}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
+                                source={require('@/assets/images/search.png')}
                             />
                             <TextInput
                                 style={styles.searchBar}

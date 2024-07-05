@@ -33,7 +33,7 @@ const TemplatedGoals = () => {
                         <View style={styles.item}>
                             <Image
                                 style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/512/flag+24px-131985190044767854.png' }}
+                                source={require('@/assets/images/goals.png')}
                             />
                             <View style={styles.goalDetails}>
                                 <Text style={styles.itemTitle}> {item.rubric} </Text>
@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1
     },
     itemImage: {
-        width: 60,
-        height: 60,
+        width: 35,
+        height: 35,
         marginRight: 10
     },
     goalDetails: {
