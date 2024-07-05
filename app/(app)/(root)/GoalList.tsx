@@ -76,11 +76,11 @@ const GoalList = () => {
                     if (goalData) {
                         const title = await buildTitle(goalData.Rubric);
                         const description = await buildDescription(goalData);
-                        //if (role === 'patient') {
+                        //if (role === 'patient') { // Notificar solo a los que se loguearon como paciente
                         const notificationDate = new Date(Date.now() + 60 * 1000); // 1 minuto después
                         scheduleNotification('Añadiendo Notificaciones', 'Has añadido una nueva meta.', notificationDate);
                         scheduleDailyNotifications(goalData, description);
-                        //}
+                        // }
                         goalsFromFirebase.push({ ...goalData, title, description, goalSelectId });
                     } else {
                         console.error('Goal data is undefined for goal ID:', goalId.id);
