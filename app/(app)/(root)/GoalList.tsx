@@ -2,7 +2,7 @@ import { StyleSheet, TouchableOpacity, FlatList, Image, ActivityIndicator } from
 import { View, Text, useThemeColor } from '@/components/Themed'
 import React, { useState, useEffect, useContext } from 'react';
 import Colors from '@/constants/Colors';
-import firestore from '@react-native-firebase/firestore';
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -10,6 +10,7 @@ import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { scheduleNotification } from '../../notification';
 
 const GoalList = () => {
     const router = useRouter();
@@ -29,7 +30,7 @@ const GoalList = () => {
     const [showBackdrop, setShowBackdrop] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [endDate, setEndDate] = useState(new Date());
-    
+
     useEffect(() => {
         // Guarda las metas originales solo la primera vez que se cargan
         if (!originalGoalsSaved && goals.length > 0) {
@@ -75,6 +76,11 @@ const GoalList = () => {
                     if (goalData) {
                         const title = await buildTitle(goalData.Rubric);
                         const description = await buildDescription(goalData);
+                        //if (role === 'patient') {
+                        const notificationDate = new Date(Date.now() + 60 * 1000); // 1 minuto después
+                        scheduleNotification('Añadiendo Notificaciones', 'Has añadido una nueva meta.', notificationDate);
+                        scheduleDailyNotifications(goalData, description);
+                        //}
                         goalsFromFirebase.push({ ...goalData, title, description, goalSelectId });
                     } else {
                         console.error('Goal data is undefined for goal ID:', goalId.id);
@@ -96,7 +102,7 @@ const GoalList = () => {
             if (rubricDoc.exists) {
                 const rubricData = rubricDoc.data();
                 if (rubricData && rubricData.Name) {
-                    return rubricData.Name;
+                    return rubricData.Name.charAt(0).toUpperCase() + rubricData.Name.slice(1);;
                 } else {
                     throw new Error('Rubric data or Name is missing');
                 }
@@ -116,7 +122,7 @@ const GoalList = () => {
     };
 
 
-    const buildDescription = async (goalData: any) => {
+    const buildDescription = async (goalData: FirebaseFirestoreTypes.DocumentData) => {
         try {
             const [typeData, actionData, rubricData, amountData, portionData, frequencyData] = await Promise.all([
                 fetchReferenceData('Type', goalData.Type),
@@ -144,6 +150,19 @@ const GoalList = () => {
         } catch (error) {
             console.error('Error building description:', error);
             return '';
+        }
+    };
+
+    const scheduleDailyNotifications = async (goalData: FirebaseFirestoreTypes.DocumentData, description: string) => {
+        if (goalData.NotificationTime && goalData.Deadline) {
+            const startTime = new Date(goalData.NotificationTime.seconds * 1000);
+            const endTime = new Date(goalData.Deadline.seconds * 1000);
+            let currentDate = new Date(startTime);
+            while (currentDate <= endTime) {
+                scheduleNotification('Recordatorio de Meta', description, currentDate);
+                // Incrementa el día
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
         }
     };
 
@@ -182,7 +201,7 @@ const GoalList = () => {
             setError(true);
             setErrorMessage("La fecha inicial debe ser anterior a la fecha final");
             return;
-        }else{
+        } else {
             setError(false);
         }
         filterGoalsByDateRange(startDate, endDate);
@@ -220,14 +239,14 @@ const GoalList = () => {
                 adjustedStartDate.setHours(0, 0, 0, 0);
                 const adjustedEndDate = new Date(endDate);
                 adjustedEndDate.setHours(23, 59, 59, 999);
-                
+
                 // Filtrar las metas originales 
                 const filteredGoals = originalGoals.filter(goal => {
                     const goalStartDate = goal.StartDate ? goal.StartDate.toDate() : undefined;
                     const goalEndDate = goal.Deadline ? goal.Deadline.toDate() : undefined;
                     const isWithinRange = (goalStartDate && goalEndDate) &&
-                                          (goalStartDate <= adjustedEndDate) &&
-                                          (goalEndDate >= adjustedStartDate);
+                        (goalStartDate <= adjustedEndDate) &&
+                        (goalEndDate >= adjustedStartDate);
                     return isWithinRange;
                 });
                 setGoals(filteredGoals);
@@ -320,24 +339,24 @@ const GoalList = () => {
                     <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
                 </View>
             ) : (
-            <FlatList
-                data={goals}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
-                        <View style={styles.item}>
-                            <Image
-                                style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                            />
-                            <View style={styles.goalDetails}>
-                                <Text style={styles.itemTitle}>{item.title}</Text>
-                                <Text style={styles.itemDescription}>{item.description}</Text>
+                <FlatList
+                    data={goals}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
+                            <View style={styles.item}>
+                                <Image
+                                    style={styles.itemImage}
+                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                />
+                                <View style={styles.goalDetails}>
+                                    <Text style={styles.itemTitle}>{item.title}</Text>
+                                    <Text style={styles.itemDescription}>{item.description}</Text>
+                                </View>
                             </View>
-                        </View>
-                    </TouchableOpacity>
-                )}
-                keyExtractor={(item, index) => `${item.title}-${index}`}
-            />   
+                        </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => `${item.title}-${index}`}
+                />
             )}
             {role === 'professional' && (
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
