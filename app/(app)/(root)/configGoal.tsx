@@ -76,6 +76,7 @@ export default function InfoGoals() {
   const { formData, patientId } = route.params;
   const [firstGoalData, setParsedFormData] = useState<any>(null);
   const today = new Date();
+  const title = patientId ? "Asignar Meta" : "Crear Plantilla"
 
   useEffect(() => {
     if (formData) {
@@ -118,7 +119,7 @@ export default function InfoGoals() {
       description: "La meta fue agregada exitosamente",
       backgroundColor: Colors.green,
       color: Colors.white,
-      icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png' }} {...props} />,
+      icon: props => <Image source={require('@/assets/images/check.png')} {...props} />,
       style: {
         borderRadius: 10,
       },
@@ -126,87 +127,70 @@ export default function InfoGoals() {
     setTimeout(callback, 2000);
   }
 
-  const onSubmit = (data: GoalFormType) => {
+  const onSubmit = async (data: GoalFormType) => {
     setLoading(true);
-    console.log("Enviados correctamente ", data)
+    console.log("Enviados correctamente ", data);
     const template = patientId === undefined ? true : false;
-    if (template) {
-      const newTemplateData = {
-        Frequency: data.frequency,
-        Type: data.type,
-        Action: data.action,
-        Rubric: data.rubric,
-        Amount: data.amount,
-        Portion: data.portion,
-      }
-      firestore()
-        .collection(Collections.Template)
-        .add(newTemplateData)
-        .then(() => {
-          console.log('Template added!');
-          setLoading(false);
-          showSuccessMessage(() => {
-            router.push({ pathname: '/goals' });
+
+    try {
+      if (template) {
+        const newTemplateData = {
+          Frequency: data.frequency,
+          Type: data.type,
+          Action: data.action,
+          Rubric: data.rubric,
+          Amount: data.amount,
+          Portion: data.portion,
+        };
+        await firestore().collection(Collections.Template).add(newTemplateData);
+        console.log('Template added!');
+        setLoading(false);
+        showSuccessMessage(() => {
+          router.push({ pathname: '/goals' });
+        });
+      } else {
+        const newGoalId = firestore().collection(Collections.Goal).doc().id;
+        const newGoalData = {
+          Deadline: data.deadline,
+          Frequency: data.frequency,
+          StartDate: data.startDate,
+          NotificationTime: data.notificationTime,
+          Type: data.type,
+          Action: data.action,
+          Rubric: data.rubric,
+          Amount: data.amount,
+          Portion: data.portion,
+        };
+        const goalDocRef = firestore().collection(Collections.Goal).doc(newGoalId);
+        await goalDocRef.set(newGoalData);
+        console.log('Goal added!');
+        await firestore()
+          .collection(Collections.Professionals)
+          .doc(session?.docId)
+          .collection(Collections.Patient)
+          .doc(patientId)
+          .update({
+            Goals: firestore.FieldValue.arrayUnion(goalDocRef),
           });
-        })
-        .catch((error) => {
-          console.error('Error adding template: ', error);
-        });
-    } else {
-      const newGoalId = firestore().collection(Collections.Goal).doc().id
-      const newGoalData = {
-        Deadline: data.deadline,
-        Frequency: data.frequency,
-        StartDate: data.startDate,
-        NotificationTime: data.notificationTime,
-        Type: data.type,
-        Action: data.action,
-        Rubric: data.rubric,
-        Amount: data.amount,
-        Portion: data.portion,
+        console.log("Patient sent: ", patientId);
+        setLoading(false);
+        showSuccessMessage(() => { });
+        console.log('Patient Goal added!');
+        router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
       }
-      const goalDocRef = firestore().collection(Collections.Goal).doc(newGoalId);
-      goalDocRef.set(newGoalData)
-        .then(() => {
-          console.log('Goal added!');
-          firestore()
-            .collection(Collections.Professionals)
-            .doc(session?.docId)
-            .collection(Collections.Patient)
-            .doc(patientId)
-            .update({
-              Goals: firestore.FieldValue.arrayUnion(goalDocRef)
-            })
-            .then(() => {
-              console.log("Patient sent: ", patientId);
-              setLoading(false);
-              showSuccessMessage(() => {
-              });
-              console.log('Patient Goal added!');
-              router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
-            })
-            .catch((error) => {
-              setLoading(false);
-              console.error('Error adding goal to patient: ', error);
-            });
-        })
-        .catch((error) => {
-          setLoading(false);
-          console.error('Error adding goal: ', error);
-        });
+    } catch (error) {
+      setLoading(false);
+      console.error('Error:', error);
     }
-
-
   };
 
   const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
-
   const { data: frequencyData, error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
 
   return (
     <ScrollView>
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
         <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
