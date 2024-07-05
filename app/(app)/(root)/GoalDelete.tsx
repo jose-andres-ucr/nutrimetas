@@ -251,7 +251,7 @@ const GoalDelete = () => {
                     keyExtractor={(item, index) => `${item.title}-${index}`}
                 />
             )}
-            {goals.length !== 0 && (
+            {goals.length !== 0 && selectedGoalIds.length !== 0 && (
                 <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteGoals}>
                     <Icon name="trash" size={24} color="white" />
                     <Text style={styles.deleteButtonText}>Eliminar Metas</Text>
