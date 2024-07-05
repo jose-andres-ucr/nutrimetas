@@ -11,6 +11,7 @@ import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { scheduleNotification } from '../../notification';
+import * as Notifications from 'expo-notifications';
 
 const images = {
     carne: require('@/assets/images/carnes.png'),
@@ -65,7 +66,6 @@ const GoalList = () => {
                 .onSnapshot((snapshot) => {
                     const patientData = snapshot.data();
                     const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
-
                     if (patientGoals.length > 0) {
                         fetchGoalsFromFirebase(patientGoals);
                     } else {
@@ -85,6 +85,8 @@ const GoalList = () => {
 
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
+        // Cancelar todas las notificaciones antes de programar nuevas
+        await Notifications.cancelAllScheduledNotificationsAsync();
         for (const goalId of patientGoals) {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
