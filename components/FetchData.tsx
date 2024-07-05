@@ -216,3 +216,43 @@ export const useCheckBoxPatientsFirestoreQuery = () => {
 
   return { data, error, isLoading };
 };
+
+export const usePatientsFirestoreQuery = () => {
+  const queryClient = useQueryClient();
+  const queryKey = ['patientsOfProfessional'] as const;
+  const session = useContext(SessionContext);
+
+  const { data, error, isLoading } = useQuery({
+      queryKey,
+      queryFn: fetchPatients,
+  });
+
+  useEffect(() => {
+    const unsubscribe = firestore()
+        .collection(Collections.Professionals)
+        .doc(session?.docId)
+        .collection(Collections.Patient)
+        .onSnapshot(
+            snapshot => {
+                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                queryClient.setQueryData(queryKey, sortPatients(data));
+            },
+            error => {
+                console.error("Error fetching patients: ", error);
+                showMessage({
+                    type: "danger",
+                    message: "Error",
+                    description: "Hubo un problema al obtener los datos de los pacientes.",
+                    backgroundColor: Colors.red,
+                    color: Colors.white,
+                });
+            }
+        );
+
+    return () => {
+        unsubscribe();
+    };
+  }, []);
+
+  return { data, error, isLoading };
+};

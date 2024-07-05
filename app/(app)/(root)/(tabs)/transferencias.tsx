@@ -1,19 +1,15 @@
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
-import PatientList from '../PatientList';
+import ProfessionalList from '../ProfessionalList';
 
-export default function Expedientes() {
+export default function Transferencias() {
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.listContainer}>
-        <PatientList />
-      </View>
-      <Link push href="/addPatient" style={styles.addButton}>
-        Registrar paciente
-      </Link>
+        <View style={styles.listContainer}>
+            <ProfessionalList/> 
+        </View>
     </SafeAreaView>
   );
 }
