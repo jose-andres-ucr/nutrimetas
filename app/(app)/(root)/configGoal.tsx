@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView } from 'react-native';
 import { Text, Button } from "react-native-paper";
@@ -13,12 +13,14 @@ import { Dropdown } from "react-native-element-dropdown";
 import { IDropdownRef } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
 import DateTimePicker, { DatePickerOptions } from '@react-native-community/datetimepicker';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import firestore from '@react-native-firebase/firestore';
+import firestore, { terminate } from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import { partialGoalForm } from "./assingGoal";
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
+import { SessionContext } from '@/shared/LoginSession';
+import Collections from "@/constants/Collections";
 
 const goalSecondaryForm = z.object({
   portion: z
@@ -70,13 +72,14 @@ export default function InfoGoals() {
   const [loading, setLoading] = useState<boolean>(false);
   const route = useRoute<ConfigGoalScreenRouteProp>();
   const router = useRouter();
+  const session = useContext(SessionContext);
   const { formData, patientId } = route.params;
   const [firstGoalData, setParsedFormData] = useState<any>(null);
   const today = new Date();
+  const title = patientId ? "Asignar Meta" : "Crear Plantilla"
 
   useEffect(() => {
     if (formData) {
-
       setParsedFormData(JSON.parse(decodeURIComponent(formData)));
     }
   }, [formData]);
@@ -116,7 +119,7 @@ export default function InfoGoals() {
       description: "La meta fue agregada exitosamente",
       backgroundColor: Colors.green,
       color: Colors.white,
-      icon: props => <Image source={{ uri: 'https://www.iconpacks.net/icons/5/free-icon-green-check-mark-approval-16196.png' }} {...props} />,
+      icon: props => <Image source={require('@/assets/images/check.png')} {...props} />,
       style: {
         borderRadius: 10,
       },
@@ -124,68 +127,70 @@ export default function InfoGoals() {
     setTimeout(callback, 2000);
   }
 
-  const onSubmit = (data: GoalFormType) => {
+  const onSubmit = async (data: GoalFormType) => {
     setLoading(true);
-    console.log("Enviados correctamente ", data)
+    console.log("Enviados correctamente ", data);
     const template = patientId === undefined ? true : false;
-    const newGoalId = firestore().collection('Goal').doc().id
-    const newGoalData = {
-      Deadline: data.deadline,
-      Frequency: data.frequency,
-      StartDate: data.startDate,
-      NotificationTime: data.notificationTime,
-      Type: data.type,
-      Action: data.action,
-      Rubric: data.rubric,
-      Amount: data.amount,
-      Portion: data.portion,
-      Template: template,
-    }
-    const goalDocRef = firestore().collection('Goal').doc(newGoalId);
-    goalDocRef.set(newGoalData)
-      .then(() => {
-        console.log('Goal added!');
-        if (patientId !== undefined) {
-          firestore()
-            .collection('Patient')
-            .doc(patientId)
-            .update({
-              Goals: firestore.FieldValue.arrayUnion(goalDocRef)
-            })
-            .then(() => {
-              console.log("Patient sent: ", patientId);
-              setLoading(false);
-              showSuccessMessage(() => {
-              });
-              console.log('Patient Goal added!');
-              router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
-            })
-            .catch((error) => {
-              setLoading(false);
-              console.error('Error adding goal to patient: ', error);
-            });
-        } else {
-          setLoading(false);
-          showSuccessMessage(() => {
-            router.push({ pathname: '/goals' }); //'/(tabs)/goals'
-          });
-        }
-      })
-      .catch((error) => {
-        setLoading(false);
-        console.error('Error adding goal: ', error);
-      });
 
+    try {
+      if (template) {
+        const newTemplateData = {
+          Frequency: data.frequency,
+          Type: data.type,
+          Action: data.action,
+          Rubric: data.rubric,
+          Amount: data.amount,
+          Portion: data.portion,
+        };
+        await firestore().collection(Collections.Template).add(newTemplateData);
+        console.log('Template added!');
+        setLoading(false);
+        showSuccessMessage(() => {
+          router.push({ pathname: '/goals' });
+        });
+      } else {
+        const newGoalId = firestore().collection(Collections.Goal).doc().id;
+        const newGoalData = {
+          Deadline: data.deadline,
+          Frequency: data.frequency,
+          StartDate: data.startDate,
+          NotificationTime: data.notificationTime,
+          Type: data.type,
+          Action: data.action,
+          Rubric: data.rubric,
+          Amount: data.amount,
+          Portion: data.portion,
+        };
+        const goalDocRef = firestore().collection(Collections.Goal).doc(newGoalId);
+        await goalDocRef.set(newGoalData);
+        console.log('Goal added!');
+        await firestore()
+          .collection(Collections.Professionals)
+          .doc(session?.docId)
+          .collection(Collections.Patient)
+          .doc(patientId)
+          .update({
+            Goals: firestore.FieldValue.arrayUnion(goalDocRef),
+          });
+        console.log("Patient sent: ", patientId);
+        setLoading(false);
+        showSuccessMessage(() => { });
+        console.log('Patient Goal added!');
+        router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Error:', error);
+    }
   };
 
   const { data: portionData = [], error: portionError, isLoading: portionLoading } = useDropDownDataFirestoreQuery('Portion');
-
   const { data: frequencyData, error: frequencyError, isLoading: frequencyLoading } = useDropDownDataFirestoreQuery('Frequency');
 
   return (
     <ScrollView>
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
         <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
@@ -259,101 +264,105 @@ export default function InfoGoals() {
           <Text style={styles.error}>{errors.frequency.message}</Text>
         ) : null}
 
-        <View style={[styles.textInfo, { paddingTop: 5, paddingBottom: 10 }]}>
-          <Text>Hora de Notificación</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <View>
-              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowNotificationTimePicker(true)}>
-                <Text>{value.toLocaleTimeString()}</Text>
-                <FontAwesome name="clock-o" size={24} color="gray" />
-              </TouchableOpacity>
-              {showNotificationTimePicker && (
-                <DateTimePicker
-                  value={new Date(value)}
-                  mode="time"
-                  display="default"
-                  onChange={(_, selectedDate) => {
-                    setShowNotificationTimePicker(false);
-                    onChange(selectedDate);
-                  }}
-                  negativeButton={{ label: 'Cancelar' }}
-                  positiveButton={{ label: 'Aceptar' }}
-                />
-              )}
+        {patientId !== undefined && (
+          <>
+            <View style={[styles.textInfo, { paddingTop: 5, paddingBottom: 10 }]}>
+              <Text>Hora de Notificación</Text>
             </View>
-          )}
-          name="notificationTime"
-          defaultValue={resetTimeToZero(today)}
-        />
+            <Controller
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <View>
+                  <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowNotificationTimePicker(true)}>
+                    <Text>{value.toLocaleTimeString()}</Text>
+                    <FontAwesome name="clock-o" size={24} color="gray" />
+                  </TouchableOpacity>
+                  {showNotificationTimePicker && (
+                    <DateTimePicker
+                      value={new Date(value)}
+                      mode="time"
+                      display="default"
+                      onChange={(_, selectedDate) => {
+                        setShowNotificationTimePicker(false);
+                        onChange(selectedDate);
+                      }}
+                      negativeButton={{ label: 'Cancelar' }}
+                      positiveButton={{ label: 'Aceptar' }}
+                    />
+                  )}
+                </View>
+              )}
+              name="notificationTime"
+              defaultValue={resetTimeToZero(today)}
+            />
 
-        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
-          <Text>Fecha de Inicio</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <View>
-              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
-                <Text>{value.toDateString()}</Text>
-                <FontAwesome name="calendar" size={24} color="gray" />
-              </TouchableOpacity>
-              {showStartDatePicker && (
-                <DateTimePicker
-                  value={value}
-                  mode="date"
-                  display="default"
-                  onChange={(_, selectedDate) => {
-                    setShowStartDatePicker(false);
-                    onChange(selectedDate);
-                  }}
-                  minimumDate={today}
-                  negativeButton={{ label: 'Cancelar' }}
-                  positiveButton={{ label: 'Aceptar' }}
-                />
-              )}
+            <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
+              <Text>Fecha de Inicio</Text>
             </View>
-          )}
-          name="startDate"
-          defaultValue={today}
-        />
-        {errors.startDate ? (
-          <Text style={styles.error}>{errors.startDate.message}</Text>
-        ) : null}
+            <Controller
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <View>
+                  <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
+                    <Text>{value.toDateString()}</Text>
+                    <FontAwesome name="calendar" size={24} color="gray" />
+                  </TouchableOpacity>
+                  {showStartDatePicker && (
+                    <DateTimePicker
+                      value={value}
+                      mode="date"
+                      display="default"
+                      onChange={(_, selectedDate) => {
+                        setShowStartDatePicker(false);
+                        onChange(selectedDate);
+                      }}
+                      minimumDate={today}
+                      negativeButton={{ label: 'Cancelar' }}
+                      positiveButton={{ label: 'Aceptar' }}
+                    />
+                  )}
+                </View>
+              )}
+              name="startDate"
+              defaultValue={today}
+            />
+            {errors.startDate ? (
+              <Text style={styles.error}>{errors.startDate.message}</Text>
+            ) : null}
 
-        <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
-          <Text>Fecha Límite</Text>
-        </View>
-        <Controller
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <View>
-              <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowDeadlineDatePicker(true)}>
-                <Text>{value.toDateString()}</Text>
-                <FontAwesome name="calendar" size={24} color="gray" />
-              </TouchableOpacity>
-              {showDeadlineDatePicker && (
-                <DateTimePicker
-                  value={value}
-                  mode="date"
-                  display="default"
-                  onChange={(_, selectedDate) => {
-                    setShowDeadlineDatePicker(false);
-                    onChange(selectedDate);
-                  }}
-                  minimumDate={today}
-                  negativeButton={{ label: 'Cancelar' }}
-                  positiveButton={{ label: 'Aceptar' }}
-                />
-              )}
+            <View style={[styles.textInfo, { paddingTop: 15, paddingBottom: 10 }]}>
+              <Text>Fecha Límite</Text>
             </View>
-          )}
-          name="deadline" />
-        {errors.deadline ? (
-          <Text style={styles.error}>{errors.deadline.message}</Text>
-        ) : null}
+            <Controller
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <View>
+                  <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowDeadlineDatePicker(true)}>
+                    <Text>{value.toDateString()}</Text>
+                    <FontAwesome name="calendar" size={24} color="gray" />
+                  </TouchableOpacity>
+                  {showDeadlineDatePicker && (
+                    <DateTimePicker
+                      value={value}
+                      mode="date"
+                      display="default"
+                      onChange={(_, selectedDate) => {
+                        setShowDeadlineDatePicker(false);
+                        onChange(selectedDate);
+                      }}
+                      minimumDate={today}
+                      negativeButton={{ label: 'Cancelar' }}
+                      positiveButton={{ label: 'Aceptar' }}
+                    />
+                  )}
+                </View>
+              )}
+              name="deadline" />
+            {errors.deadline ? (
+              <Text style={styles.error}>{errors.deadline.message}</Text>
+            ) : null}
+          </>
+        )}
 
 
         <View style={styles.buttonContainer}>

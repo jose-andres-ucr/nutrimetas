@@ -57,6 +57,7 @@ function RootLayoutNav() {
           <Stack.Screen name="DailyGoal" options={{ headerShown: false }} />
           <Stack.Screen name="transferPatient" options={{ headerShown: false }} />
           <Stack.Screen name="ProfessionalList" options={{ headerShown: false }} />
+          <Stack.Screen name="EditGoal" options={{ headerShown: false }} />
         </Stack>
     </ThemeProvider>
   );
