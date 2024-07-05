@@ -152,7 +152,7 @@ const GoalList = () => {
         router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role ? role : "" } });
     };
 
-    const handleDeleteGoals = async () => {
+    const handleDeleteGoals = () => {
         router.replace({
             pathname: '/GoalDelete',
             params: { patientId: patientId }
