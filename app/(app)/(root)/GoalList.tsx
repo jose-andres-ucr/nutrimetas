@@ -180,7 +180,7 @@ const GoalList = () => {
     };
 
     const handleDeleteGoals = () => {
-        router.replace({
+        router.push({
             pathname: '/GoalDelete',
             params: { patientId: patientId }
         })
@@ -397,7 +397,7 @@ const GoalList = () => {
                             <View style={styles.item}>
                                 <Image
                                     style={styles.itemImage}
-                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                    source={getImageSource(item.title)}
                                 />
                                 <View style={styles.goalDetails}>
                                     <Text style={styles.itemTitle}>{item.title}</Text>
