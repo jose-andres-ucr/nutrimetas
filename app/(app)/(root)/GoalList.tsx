@@ -24,6 +24,7 @@ const images = {
 
 
 const GoalList = () => {
+    const [errorVisible, setErrorVisible] = useState(false);
     const router = useRouter();
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
@@ -76,6 +77,10 @@ const GoalList = () => {
             setLoading(false);
         }
     }, [patientId, goals]);
+
+    const getGoalById = (goalId: any) => {
+        return goals.find(goal => goal.goalSelectId === goalId);
+    };
 
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
@@ -160,8 +165,18 @@ const GoalList = () => {
     };
 
     const onPressHandle = (selectedGoalId: string) => {
-        console.log(selectedGoalId);
         router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role ? role : "" } });
+    };
+
+    const editGoal = (selectedGoalId: string) => {
+        const selectedGoal = getGoalById(selectedGoalId);
+        const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
+        if (selectedGoal) {
+            setErrorVisible(false);
+            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
+        } else {
+            setErrorVisible(true);
+        }
     };
 
     const handleDeleteGoals = () => {
@@ -382,11 +397,21 @@ const GoalList = () => {
                             <View style={styles.item}>
                                 <Image
                                     style={styles.itemImage}
-                                    source={getImageSource(item.title)}
+                                    source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
                                 />
                                 <View style={styles.goalDetails}>
                                     <Text style={styles.itemTitle}>{item.title}</Text>
                                     <Text style={styles.itemDescription}>{item.description}</Text>
+                                </View>
+                                <View>
+                                    {errorVisible && (
+                                        <Text style={{ color: 'red', fontSize: 16 }}>
+                                            Meta no encontrada. Por favor, selecciona una meta válida.
+                                        </Text>
+                                    )}
+                                    <TouchableOpacity onPress={() => editGoal(item.goalSelectId)} style={styles.editIconContainer}>
+                                        <Icon name="pencil" size={24} color="gray" />
+                                    </TouchableOpacity>
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -591,6 +616,16 @@ const styles = StyleSheet.create({
     errorText: {
         color: Colors.white,
         fontWeight: "bold",
+    },
+    editIcon: {
+        padding: 8,
+    },
+    editIconContainer: {
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
     },
     deleteButtonContainer: {
         position: 'absolute',

@@ -116,35 +116,34 @@ const processGoalsSnapshot = async (snapshot: FirebaseFirestoreTypes.QuerySnapsh
   return goalsList;
 };
 
-const fetchGoals = async () => {
-  const snapshot = await firestore().collection(Collections.Goal).where('Template', '==', true).get();
+const fetchTemplate = async () => {
+  const snapshot = await firestore().collection(Collections.Template).get();
   return processGoalsSnapshot(snapshot);
 };
 
-export const useGoalFirestoreQuery = () => {
+export const useTemplateFirestoreQuery = () => {
   const queryClient = useQueryClient();
-  const queryKey = ['goals'] as const;
+  const queryKey = ['templates'] as const;
 
   const { data, error, isLoading } = useQuery({
     queryKey,
-    queryFn: fetchGoals,
+    queryFn: fetchTemplate,
 });
 
   useEffect(() => {
     const unsubscribe = firestore()
-      .collection(Collections.Goal)
-      .where('Template', '==', true)
+      .collection(Collections.Template)
       .onSnapshot(
           async snapshot => {
               try {
                   const goalsList = await processGoalsSnapshot(snapshot);
                   queryClient.setQueryData(queryKey, goalsList);
               } catch (error) {
-                  console.error("Error fetching goals: ", error);
+                  console.error("Error fetching templates: ", error);
               }
           },
           error => {
-              console.error("Error fetching goals: ", error);
+              console.error("Error fetching templates: ", error);
           }
       );
 
@@ -181,6 +180,7 @@ const fetchPatients = async () => {
 export const useCheckBoxPatientsFirestoreQuery = () => {
   const queryClient = useQueryClient();
   const queryKey = ['patients'] as const;
+  const session = useContext(SessionContext);
 
   const { data, error, isLoading } = useQuery({
       queryKey,
@@ -189,6 +189,8 @@ export const useCheckBoxPatientsFirestoreQuery = () => {
 
   useEffect(() => {
     const unsubscribe = firestore()
+        .collection(Collections.Professionals)
+        .doc(session?.docId)
         .collection(Collections.Patient)
         .onSnapshot(
             snapshot => {
