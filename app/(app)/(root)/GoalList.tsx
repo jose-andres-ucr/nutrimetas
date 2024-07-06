@@ -77,7 +77,7 @@ const GoalList = () => {
         } else {
             setLoading(false);
         }
-    }, [patientId, goals]);
+    }, [patientId]);
 
     const getGoalById = (goalId: any) => {
         return goals.find(goal => goal.goalSelectId === goalId);
@@ -201,7 +201,7 @@ const GoalList = () => {
     };
 
     const handleDeleteGoals = () => {
-        router.push({
+        router.replace({
             pathname: '/GoalDelete',
             params: { patientId: patientId }
         })
@@ -298,7 +298,7 @@ const GoalList = () => {
         const lowerCaseRubric = rubric.toLowerCase();
         switch (lowerCaseRubric) {
             case 'actividad física':
-                return images.carne;
+                return images.actividadFisica;
             case 'frutas':
                 return images.fruta;
             case 'harinas':
