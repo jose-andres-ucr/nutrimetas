@@ -189,7 +189,7 @@ const GoalDelete = () => {
         const lowerCaseRubric = rubric.toLowerCase();
         switch (lowerCaseRubric) {
             case 'actividad física':
-                return images.carne;
+                return images.actividadFisica;
             case 'frutas':
                 return images.fruta;
             case 'harinas':
