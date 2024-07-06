@@ -99,6 +99,7 @@ const GoalList = () => {
                         //if (role === 'patient') { // Notificar solo a los que se loguearon como paciente
                         const notificationDate = new Date(Date.now() + 60 * 1000); // 1 minuto después
                         scheduleNotification('Añadiendo Notificaciones', 'Has añadido una nueva meta.', notificationDate);
+                        console.log(notificationDate);
                         scheduleDailyNotifications(goalData, description);
                         // }
                         goalsFromFirebase.push({ ...goalData, title, description, goalSelectId });
@@ -177,6 +178,7 @@ const GoalList = () => {
             const startTime = new Date(goalData.NotificationTime.seconds * 1000);
             const endTime = new Date(goalData.Deadline.seconds * 1000);
             let currentDate = new Date(startTime);
+            console.log(currentDate);
             while (currentDate <= endTime) {
                 scheduleNotification('Recordatorio de Meta', description, currentDate);
                 // Incrementa el día
@@ -194,7 +196,7 @@ const GoalList = () => {
         const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
         if (selectedGoal) {
             setErrorVisible(false);
-            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
+            router.replace({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
         } else {
             setErrorVisible(true);
         }
