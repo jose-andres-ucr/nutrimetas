@@ -88,7 +88,7 @@ const ShowComment = (props: messageProps) => {
       .orderBy('createdAt', 'desc')
       .onSnapshot((querySnapshot) => {
         queryClient.setQueryData(
-          [GET_COMMENTS_QUERY_KEY, patientID],
+          [GET_COMMENTS_QUERY_KEY, professionalID, patientID],
           querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
