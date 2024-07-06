@@ -2,7 +2,7 @@ import { StyleSheet, TouchableOpacity, FlatList, Image, ActivityIndicator } from
 import { View, Text, useThemeColor } from '@/components/Themed'
 import React, { useState, useEffect, useContext } from 'react';
 import Colors from '@/constants/Colors';
-import firestore from '@react-native-firebase/firestore';
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -10,6 +10,8 @@ import { SessionContext } from '@/shared/LoginSession';
 import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { scheduleNotification } from '../../notification';
+import * as Notifications from 'expo-notifications';
 
 const images = {
     carne: require('@/assets/images/carnes.png'),
@@ -64,7 +66,6 @@ const GoalList = () => {
                 .onSnapshot((snapshot) => {
                     const patientData = snapshot.data();
                     const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
-
                     if (patientGoals.length > 0) {
                         fetchGoalsFromFirebase(patientGoals);
                     } else {
@@ -76,7 +77,7 @@ const GoalList = () => {
         } else {
             setLoading(false);
         }
-    }, [patientId, goals]);
+    }, [patientId]);
 
     const getGoalById = (goalId: any) => {
         return goals.find(goal => goal.goalSelectId === goalId);
@@ -84,6 +85,8 @@ const GoalList = () => {
 
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
+        // Cancelar todas las notificaciones antes de programar nuevas
+        await Notifications.cancelAllScheduledNotificationsAsync();
         for (const goalId of patientGoals) {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
@@ -93,6 +96,12 @@ const GoalList = () => {
                     if (goalData) {
                         const title = await buildTitle(goalData.Rubric);
                         const description = await buildDescription(goalData);
+                        //if (role === 'patient') { // Notificar solo a los que se loguearon como paciente
+                        const notificationDate = new Date(Date.now() + 60 * 1000); // 1 minuto después
+                        scheduleNotification('Añadiendo Notificaciones', 'Has añadido una nueva meta.', notificationDate);
+                        console.log(notificationDate);
+                        scheduleDailyNotifications(goalData, description);
+                        // }
                         goalsFromFirebase.push({ ...goalData, title, description, goalSelectId });
                     } else {
                         console.error('Goal data is undefined for goal ID:', goalId.id);
@@ -133,7 +142,7 @@ const GoalList = () => {
     };
 
 
-    const buildDescription = async (goalData: any) => {
+    const buildDescription = async (goalData: FirebaseFirestoreTypes.DocumentData) => {
         try {
             const [typeData, actionData, rubricData, amountData, portionData, frequencyData] = await Promise.all([
                 fetchReferenceData('Type', goalData.Type),
@@ -164,6 +173,20 @@ const GoalList = () => {
         }
     };
 
+    const scheduleDailyNotifications = async (goalData: FirebaseFirestoreTypes.DocumentData, description: string) => {
+        if (goalData.NotificationTime && goalData.Deadline) {
+            const startTime = new Date(goalData.NotificationTime.seconds * 1000);
+            const endTime = new Date(goalData.Deadline.seconds * 1000);
+            let currentDate = new Date(startTime);
+            console.log(currentDate);
+            while (currentDate <= endTime) {
+                scheduleNotification('Recordatorio de Meta', description, currentDate);
+                // Incrementa el día
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+    };
+
     const onPressHandle = (selectedGoalId: string) => {
         router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role ? role : "" } });
     };
@@ -173,14 +196,14 @@ const GoalList = () => {
         const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
         if (selectedGoal) {
             setErrorVisible(false);
-            router.push({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
+            router.replace({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
         } else {
             setErrorVisible(true);
         }
     };
 
     const handleDeleteGoals = () => {
-        router.push({
+        router.replace({
             pathname: '/GoalDelete',
             params: { patientId: patientId }
         })
@@ -277,7 +300,7 @@ const GoalList = () => {
         const lowerCaseRubric = rubric.toLowerCase();
         switch (lowerCaseRubric) {
             case 'actividad física':
-                return images.carne;
+                return images.actividadFisica;
             case 'frutas':
                 return images.fruta;
             case 'harinas':
