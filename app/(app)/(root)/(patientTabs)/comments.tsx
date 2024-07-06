@@ -27,7 +27,7 @@ export default function Comments() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.listContainer}>
-          <ShowComments userId={patientId as string} />
+          <ShowComments parientIDLocalStorage={patientId as string} />
         </View>
       </SafeAreaView>
     );

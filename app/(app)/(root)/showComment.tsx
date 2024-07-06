@@ -15,7 +15,7 @@ import attachment from '@/assets/images/attachment.png';
 import sendIcon3 from '@/assets/images/sendIcon2.png';
 
 type messageProps = {
-  userId: string //Antes esto se llamada GoalId
+  parientIDLocalStorage: string 
 };
 
 interface UploadMediaParams {
@@ -57,31 +57,38 @@ const ShowComment = (props: messageProps) => {
   const [modalMessage, setModalMessage] = useState('');
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const role = useContext(SessionContext)?.role
-  const patientIdContext = useContext(SessionContext)?.docId //aqui va el del paciente
+  const roleId = role == "patient" ? 2 : 1
+  
+  const userIDContext = useContext(SessionContext)?.docId // ID del la persona logueada //Nuevo
+  //const professionalIDContext = useContext(SessionContext)?.docIdProfessional //nuevo y no existe aun (es lo que tiene que hacer javier)
 
-  const professionalID = useContext(SessionContext)?.docId //aqui el del profesional
-  const patientID = role == "professional" ? props.userId : patientIdContext;
+  const professionalID = role == "professional" ? userIDContext : "NgUbhJ7rOEGnN0lrDF2T"; // Nuevo
+
+  const patientID = role == "patient" ? userIDContext : props.parientIDLocalStorage; 
+
+  console.log("PATIENT: ", patientID);
+  console.log("PROFESSIONAL: ", professionalID);
 
   var queryComments = useQuery({ 
     queryKey: [GET_COMMENTS_QUERY_KEY, professionalID as string, patientID as string], 
     queryFn: getComments
   })
 
-  const roleId = role == "patient" ? 2 : 1
+  
 
   React.useEffect(() => {
     console.log("Fetching", queryComments.isFetching)
     const unsubscribe = firebase
       .firestore()
       .collection('Professionals')
-      .doc(patientID)
+      .doc(professionalID)
       .collection('Patient')
       .doc(patientID)
       .collection('comments')
       .orderBy('createdAt', 'desc')
       .onSnapshot((querySnapshot) => {
         queryClient.setQueryData(
-          [GET_COMMENTS_QUERY_KEY, props.userId],
+          [GET_COMMENTS_QUERY_KEY, patientID],
           querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -169,8 +176,6 @@ const ShowComment = (props: messageProps) => {
         const videoUrl = await queryUpload.mutateAsync(params);
         messageData.video = videoUrl;
       }
-
-      await db.collection('Goal').doc(props.userId).collection('comments').add(messageData);// HAY QUE QUITAR ESTO
 
       await db.collection('Professionals').doc(professionalID).collection('Patient').doc(patientID).collection('comments').add(messageData);
       console.log("Guardado!");
