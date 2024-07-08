@@ -11,7 +11,7 @@ export default function Goals() {
         <TemplatedGoals />
       </View>
       <Link push href="/assingGoal" style={styles.button}>
-            Crear Meta
+            Crear Plantilla
       </Link>
     </SafeAreaView>
   );

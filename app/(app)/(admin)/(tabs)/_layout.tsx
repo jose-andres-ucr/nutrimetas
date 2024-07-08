@@ -1,6 +1,7 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
+import {Text, StyleSheet } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -14,6 +15,14 @@ function TabBarIcon(props: {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }
 
+function Nutrimetas() {
+  return (
+    <Text style={styles.subtitle}>
+      NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
+    </Text>
+  );
+}
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -25,29 +34,22 @@ export default function TabLayout() {
         headerTitleAlign: 'center',
       }}>
       <Tabs.Screen
-        name="expedientes"
+        name="professionals"
         options={{
-          title: "Expedientes",
-          tabBarIcon: ({ color }) => <TabBarIcon name="address-book" color={color} />,
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="goals"
-        options={{
-          title: 'Mis Plantillas',
-          tabBarIcon: ({ color }) => <TabBarIcon name="flag" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="transferencias"
-        options={{
-          title: 'Mover Pacientes',
-          tabBarIcon: ({ color }) => <TabBarIcon name="address-card-o" color={color} />,
-          headerShown: false,
+          title: "Profesionales",
+          headerTitle: () => <Nutrimetas />, 
+          tabBarIcon: ({ color }) => <TabBarIcon name="address-book-o" color={color} />,
         }}
       />
     </Tabs>
-    
   );
 }
+
+
+const styles = StyleSheet.create({
+  subtitle: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: Colors.green,
+  },
+});

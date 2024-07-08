@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import Colors from "@/constants/Colors";
 import Collections from "@/constants/Collections";
+import { SessionContext } from "@/shared/LoginSession";
 
 export type CommonType = {
   id: string;
@@ -115,35 +116,34 @@ const processGoalsSnapshot = async (snapshot: FirebaseFirestoreTypes.QuerySnapsh
   return goalsList;
 };
 
-const fetchGoals = async () => {
-  const snapshot = await firestore().collection(Collections.Goal).where('Template', '==', true).get();
+const fetchTemplate = async () => {
+  const snapshot = await firestore().collection(Collections.Template).get();
   return processGoalsSnapshot(snapshot);
 };
 
-export const useGoalFirestoreQuery = () => {
+export const useTemplateFirestoreQuery = () => {
   const queryClient = useQueryClient();
-  const queryKey = ['goals'] as const;
+  const queryKey = ['templates'] as const;
 
   const { data, error, isLoading } = useQuery({
     queryKey,
-    queryFn: fetchGoals,
+    queryFn: fetchTemplate,
 });
 
   useEffect(() => {
     const unsubscribe = firestore()
-      .collection(Collections.Goal)
-      .where('Template', '==', true)
+      .collection(Collections.Template)
       .onSnapshot(
           async snapshot => {
               try {
                   const goalsList = await processGoalsSnapshot(snapshot);
                   queryClient.setQueryData(queryKey, goalsList);
               } catch (error) {
-                  console.error("Error fetching goals: ", error);
+                  console.error("Error fetching templates: ", error);
               }
           },
           error => {
-              console.error("Error fetching goals: ", error);
+              console.error("Error fetching templates: ", error);
           }
       );
 
@@ -170,7 +170,9 @@ const sortPatients = (patientsList: any[]) => {
 };
 
 const fetchPatients = async () => {
-  const snapshot = await firestore().collection(Collections.Patient).get();
+  const session = useContext(SessionContext);
+  const snapshot = await firestore().collection(Collections.Professionals)
+  .doc(session?.docId).collection(Collections.Patient).get();
   const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   return sortPatients(patients);
 };
@@ -178,6 +180,7 @@ const fetchPatients = async () => {
 export const useCheckBoxPatientsFirestoreQuery = () => {
   const queryClient = useQueryClient();
   const queryKey = ['patients'] as const;
+  const session = useContext(SessionContext);
 
   const { data, error, isLoading } = useQuery({
       queryKey,
@@ -186,6 +189,48 @@ export const useCheckBoxPatientsFirestoreQuery = () => {
 
   useEffect(() => {
     const unsubscribe = firestore()
+        .collection(Collections.Professionals)
+        .doc(session?.docId)
+        .collection(Collections.Patient)
+        .onSnapshot(
+            snapshot => {
+                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                queryClient.setQueryData(queryKey, sortPatients(data));
+            },
+            error => {
+                console.error("Error fetching patients: ", error);
+                showMessage({
+                    type: "danger",
+                    message: "Error",
+                    description: "Hubo un problema al obtener los datos de los pacientes.",
+                    backgroundColor: Colors.red,
+                    color: Colors.white,
+                });
+            }
+        );
+
+    return () => {
+        unsubscribe();
+    };
+  }, []);
+
+  return { data, error, isLoading };
+};
+
+export const usePatientsFirestoreQuery = () => {
+  const queryClient = useQueryClient();
+  const queryKey = ['patientsOfProfessional'] as const;
+  const session = useContext(SessionContext);
+
+  const { data, error, isLoading } = useQuery({
+      queryKey,
+      queryFn: fetchPatients,
+  });
+
+  useEffect(() => {
+    const unsubscribe = firestore()
+        .collection(Collections.Professionals)
+        .doc(session?.docId)
         .collection(Collections.Patient)
         .onSnapshot(
             snapshot => {

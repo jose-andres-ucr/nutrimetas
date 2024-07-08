@@ -1,5 +1,5 @@
 // Core React hooks & misc. stuff
-import { useEffect, useState, useContext } from "react";
+import {useEffect, useContext} from "react";
 
 // React Native UI
 import FlashMessage from "react-native-flash-message";
@@ -43,24 +43,11 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <FlashMessage position="top" />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(patientTabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="addPatient" options={{ headerShown: false }} />
-        <Stack.Screen name="assingGoal" options={{ headerShown: false }} />
-        <Stack.Screen name="configGoal" options={{ headerShown: false }} />
-        <Stack.Screen name="PatientList" options={{ headerShown: false }} />
-        <Stack.Screen name="GoalList" options={{ headerShown: false }} />
-        <Stack.Screen name="CheckboxPatients" options={{ headerShown: false }} />
-        <Stack.Screen name="GoalDetail" options={{ headerShown: false }} />
-        <Stack.Screen name="showComment" options={{ headerShown: false }} />
-        <Stack.Screen name="DailyGoal" options={{ headerShown: false }} />
-        <Stack.Screen name="transferPatient" options={{ headerShown: false }} />
-        <Stack.Screen name="ProfessionalList" options={{ headerShown: false }} />
-        <Stack.Screen name="EditGoal" options={{ headerShown: false }} />
-        <Stack.Screen name="GoalDelete" options={{ headerShown: false }} />
-      </Stack>
+      <FlashMessage position="top" />      
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="addProfessional" options={{ headerShown: false }} />
+        </Stack>
     </ThemeProvider>
   );
 }
@@ -74,19 +61,19 @@ export default function RootLayout() {
   // Subscribe to Firebase Auth's authentication state as to notice
   // and account-for inconsistent sessions
   useEffect(() => {
-    const authUnsuscriber = auth()
-      .onAuthStateChanged(
-        (User) => {
-          if (User === null || User.uid !== session?.uid) {
-            sessionDispatch({
-              type: "reset",
-              newSession: session,
-            });
-          }
-        }
-      );
+      const authUnsuscriber = auth()
+        .onAuthStateChanged(
+            (User) => {
+                if (User === null || User.uid !== session?.uid) {
+                  sessionDispatch({
+                    type: "reset",
+                    newSession: session,
+                  });
+                }
+            }
+        );
 
-    return authUnsuscriber;
+      return authUnsuscriber;
   }, []);
 
   // Load required fonts
@@ -112,7 +99,7 @@ export default function RootLayout() {
   }
 
   // If the session is invalidated, redirect to the sign-in page
-  if (session === undefined) {
+  if (session === undefined || session.role !== "admin") {
     return <Redirect href="/sign-in" />;
   }
 

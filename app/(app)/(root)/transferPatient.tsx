@@ -1,35 +1,34 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, Image, StyleSheet } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
 import Colors from '@/constants/Colors';
-import { useRouter, useGlobalSearchParams } from 'expo-router';
+import { useRouter} from 'expo-router';
 import { showMessage } from 'react-native-flash-message';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useCheckBoxPatientsFirestoreQuery } from '@/components/FetchData';
-import PatientItem from '../../../components/PatientItem';
-import Collections from '@/constants/Collections';
+import { usePatientsFirestoreQuery } from '@/components/FetchData';
+import TransferredPatientItem from '../../../components/TransferredPatientItem';
 import { SessionContext } from '@/shared/LoginSession';
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { useGlobalSearchParams } from 'expo-router';
+import greenCheckIcon from '@/assets/images/greenCheckIcon.png';
+import redCheckIcon from '@/assets/images/redCheckIcon.png';
+import searchIcon from '@/assets/images/searchIcon.png';
 
 type CallbackFunction = () => void;
 
-interface TemplateData {
-    Action: string;
-    Amount: string;
-    Frequency: string;
-    Portion: string;
-    Rubric: string;
-    Type: string;
-}
-
-const CheckboxPatients = () => {
+const TransferPatient = () => {
     const router = useRouter();
-    const { templateDocId } = useGlobalSearchParams();
-    const session = useContext(SessionContext);
-    const { data: patients = [], error, isLoading: loading } = useCheckBoxPatientsFirestoreQuery();
+    const actualProfessionalID = useContext(SessionContext)?.docId
+    
+    const { targetProfessionalId } = useGlobalSearchParams();
+    const targetProfessionalIdString = Array.isArray(targetProfessionalId) ? targetProfessionalId[0] : targetProfessionalId; 
+   
+    const { data: patients = [], error, isLoading: loading } = usePatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [clicked, setClicked] = useState<boolean>(false);
-    const normalizedGoalDocId = Array.isArray(templateDocId) ? templateDocId[0] : templateDocId;
+
+    type PatientDocument = FirebaseFirestoreTypes.DocumentSnapshot<FirebaseFirestoreTypes.DocumentData>;
+
     const normalizeString = (str: string) => {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
@@ -53,10 +52,10 @@ const CheckboxPatients = () => {
         showMessage({
             type: "success",
             message: "Success",
-            description: "La meta fue agregada exitosamente a todos los pacientes",
+            description: "Los pacientes fueron transferidos exitosamente",
             backgroundColor: Colors.green,
             color: Colors.white,
-            icon: props => <Image source={require('@/assets/images/check.png')} {...props} />,
+            icon: props => <Image source={greenCheckIcon} {...props} />,
             style: {
                 borderRadius: 10,
             },
@@ -68,10 +67,10 @@ const CheckboxPatients = () => {
         showMessage({
             type: "danger",
             message: "Error",
-            description: "Hubo un error al agregar la meta a los pacientes",
+            description: "Hubo un error al transferir los pacientes",
             backgroundColor: Colors.red,
             color: Colors.white,
-            icon: props => <Image source={require('@/assets/images/error.png')} {...props} />,
+            icon: props => <Image source={redCheckIcon} {...props} />,
             style: {
                 borderRadius: 10,
             },
@@ -80,64 +79,104 @@ const CheckboxPatients = () => {
     }
 
 
-    const createGoalDocuments = async (templateData: TemplateData) => {
-        const startDate = new Date();
-        const deadlineDate = new Date(startDate);
-        deadlineDate.setDate(startDate.getDate() + 7);
-        const startDateTimestamp = firestore.Timestamp.fromDate(startDate);
-        const deadlineTimestamp = firestore.Timestamp.fromDate(deadlineDate);
-        const notificationTime = firestore.Timestamp.fromDate(new Date(new Date().setHours(0, 0, 0, 0)));
-        const goalRefs = await Promise.all(selectedIds.map(async () => {
-            const newgoalDoc = firestore().collection(Collections.Goal).doc();
-            await newgoalDoc.set({
-                ...templateData,
-                StartDate: startDateTimestamp,
-                Deadline: deadlineTimestamp,
-                NotificationTime: notificationTime,
-            });
-            return newgoalDoc;
-        }));
-        return goalRefs;
-    };
-
     const onSubmit = async () => {
         if (clicked) return;
         setClicked(true);
+        
         if (selectedIds.length > 0) {
             try {
-                const templateDoc = await firestore().collection(Collections.Template).doc(templateDocId?.toString()).get();
-                const templateData = templateDoc.data() as TemplateData;
-                if (!templateData) throw new Error('Template data not found');
-
-                const goalRefs = await createGoalDocuments(templateData);
-                const updatePromises = selectedIds.map(async (patientId, index) => {
-                    try {
-                        await firestore()
-                        .collection(Collections.Professionals)
-                        .doc(session?.docId)
-                        .collection(Collections.Patient)
-                        .doc(patientId)
-                        .update({
-                            Goals: firestore.FieldValue.arrayUnion(goalRefs[index]),
-                        });
-                        console.log("Patient updated: ", patientId);
-                    } catch (error) {
-                        console.error('Error adding goal to patient: ', error);
-                    }
-                });
-
-                await Promise.all(updatePromises);
-                setClicked(false);
-                router.back();
-                showSuccessMessage(() => { });
-                console.log('Patients Goals added!');
+                const patientDocs = await getPatientDocuments(selectedIds);
+    
+                await transferPatients(patientDocs);
+                await deletePatients(patientDocs);
+    
+                handleSuccess();
             } catch (error) {
-                setClicked(false);
-                showErrorMessage(() => { });
+                handleError(error);
             }
         } else {
             showErrorMessage(() => { });
         }
+    };
+
+    const getPatientDocuments = async (selectedIds: string[]) => {
+        return Promise.all(selectedIds.map(patientId => 
+            firestore().collection('Professionals')
+                .doc(actualProfessionalID)
+                .collection('Patient')
+                .doc(patientId)
+                .get()
+        ));
+    };
+    
+    const transferPatients = async (patientDocs: PatientDocument[]) => {
+        const transferPromises = patientDocs.map(async (doc) => {
+            const patientData = doc.data();
+            const patientId = doc.id;
+
+            if (!patientData) {
+                throw new Error(`Patient data is undefined`);
+            }
+    
+            try {
+                
+                await firestore()
+                    .collection('Professionals')
+                    .doc(targetProfessionalIdString)
+                    .collection('Patient')
+                    .doc(patientId)
+                    .set(patientData);
+               
+                console.log('Patient ', patientId, ' transferred to professional ', targetProfessionalIdString);
+            } catch (error) {
+                console.error('Error transferring patient: ', error);
+                throw error; 
+            }
+        });
+    
+        await Promise.all(transferPromises);
+    };
+
+    const deletePatients = async (patientDocs: PatientDocument[]) => {
+        const deletePromises = patientDocs.map(async (doc) => {
+            const patientData = doc.data();
+            const patientId = doc.id;
+
+            if (!patientData) {
+                throw new Error(`Patient data is undefined`);
+            }
+    
+            try {
+                
+                await firestore()
+                .collection('Professionals')
+                .doc(actualProfessionalID)
+                .collection('Patient')
+                .doc(patientId)
+                .delete();
+               
+                console.log('Patient ', patientId, ' deleted from professional ', actualProfessionalID);
+            } catch (error) {
+                console.error('Error deleting patient: ', error);
+                throw error; 
+            }
+        });
+    
+        await Promise.all(deletePromises);
+    };
+    
+
+    const handleSuccess = () => {
+        setClicked(false);
+        router.back();
+        showSuccessMessage(() => { });
+        console.log('Patients transferred!');
+    };
+    
+    const handleError = (error: any) => {
+        setClicked(false);
+        console.error('Error during patient transfer: ', error);
+        showErrorMessage(() => { });
     };
 
     const filteredPatients = patients.filter(patient => {
@@ -171,7 +210,7 @@ const CheckboxPatients = () => {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Icon name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <Text style={styles.title}>Asignar Meta Seleccionada</Text>
+                <Text style={styles.title}>Selecionar Pacientes A Transferir</Text>
             </View>
             <FlatList
                 data={filteredPatients}
@@ -181,7 +220,7 @@ const CheckboxPatients = () => {
                         <View style={styles.inputContainer}>
                             <Image
                                 style={styles.searchIcon}
-                                source={require('@/assets/images/search.png')}
+                                source={searchIcon}
                             />
                             <TextInput
                                 style={styles.searchBar}
@@ -193,12 +232,11 @@ const CheckboxPatients = () => {
                     </View>
                 }
                 renderItem={({ item }) => (
-                    <PatientItem
+                    <TransferredPatientItem
                         item={item}
                         handleCheckboxPress={handleCheckboxPress}
                         selectedIds={selectedIds}
                         loading={loading}
-                        goalDocId={normalizedGoalDocId ?? ''}
                     />
                 )}
             />
@@ -207,7 +245,7 @@ const CheckboxPatients = () => {
                 style={[styles.addButton, (!selectedIds.length || clicked) && styles.addButtonDisabled]}
                 disabled={!selectedIds.length || clicked}
             >
-                <Text style={styles.addButtonText}>Asignar meta</Text>
+                <Text style={styles.addButtonText}>Transferir pacientes</Text>
             </TouchableOpacity>
         </View>
     );
@@ -320,4 +358,4 @@ const styles = StyleSheet.create({
 
 });
 
-export default CheckboxPatients;
+export default TransferPatient;
