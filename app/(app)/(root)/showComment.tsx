@@ -13,6 +13,9 @@ import { SessionContext } from '@/shared/LoginSession';
 
 import attachment from '@/assets/images/attachment.png';
 import sendIcon3 from '@/assets/images/sendIcon2.png';
+import RenderBubble from './renderBubble';
+import RenderAvatar from './renderAvatar';
+import RenderInputToolbar from './renderInputToolbar';
 
 type messageProps = {
   parientIDLocalStorage: string 
@@ -55,17 +58,16 @@ const ShowComment = (props: messageProps) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadingVisible, setUploadingVisible] = useState(false)
   const [modalMessage, setModalMessage] = useState('');
-  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const role = useContext(SessionContext)?.role
   const roleId = role == "patient" ? 2 : 1
-  
   const userIDContext = useContext(SessionContext)?.docId // ID del la persona logueada //Nuevo
   //const professionalIDContext = useContext(SessionContext)?.docIdProfessional //nuevo y no existe aun (es lo que tiene que hacer javier)
-
   const professionalID = role == "professional" ? userIDContext : "NgUbhJ7rOEGnN0lrDF2T"; // Nuevo
-
   const patientID = role == "patient" ? userIDContext : props.parientIDLocalStorage; 
 
+  console.log("PROPS: ", props.parientIDLocalStorage);
+  console.log("Role: ", role);
+  console.log("UserID Context: ", userIDContext);
   console.log("PATIENT: ", patientID);
   console.log("PROFESSIONAL: ", professionalID);
 
@@ -74,9 +76,17 @@ const ShowComment = (props: messageProps) => {
     queryFn: getComments
   })
 
-  
+  const renderBubble = (props: any) => <RenderBubble {...props} />;
+  const renderAvatar = (props: any) => <RenderAvatar {...props} />;
+  const renderInputToolbar = (props: any) => <RenderInputToolbar {...props} />;
 
   React.useEffect(() => {
+    console.log("Dentro de useEffect - PROPS: ", props.parientIDLocalStorage);
+    console.log("Dentro de useEffect - Role: ", role);
+    console.log("Dentro de useEffect - UserID Context: ", userIDContext);
+    console.log("Dentro de useEffect - ID PROFESIONAL: ", professionalID);
+    console.log("Dentro de useEffect - ID PACIENTE: ", patientID);
+
     console.log("Fetching", queryComments.isFetching)
     const unsubscribe = firebase
       .firestore()
@@ -103,7 +113,7 @@ const ShowComment = (props: messageProps) => {
         );
       });
     return () => unsubscribe();
-  }, []);
+  }, [professionalID, patientID, props.parientIDLocalStorage]);
 
   const uploadMediaToStorage = async ({ uri, isImage }: UploadMediaParams): Promise<string>=> {
     const randomComponent1 = Math.random().toString(36).substring(2, 9);
@@ -176,116 +186,12 @@ const ShowComment = (props: messageProps) => {
         const videoUrl = await queryUpload.mutateAsync(params);
         messageData.video = videoUrl;
       }
-
+      console.log("Guardando comentario en colleccion Patient. PatientID es: ", patientID);
       await db.collection('Professionals').doc(professionalID).collection('Patient').doc(patientID).collection('comments').add(messageData);
       console.log("Guardado!");
     } catch (error) {
       console.error("Error saving message to Firestore: ", error);
     }
-  };
-  
-  const renderAvatar = (props: any) => {
-    return (
-      <Image
-        source={{ uri: props.currentMessage?.user.avatar as string }}
-        style={styles.avatar}
-      />
-    );
-  };
-
-  const renderBubble = (props: any) => {
-    return (
-      <View style={[ styles.bubble,
-        props.currentMessage?.user._id === roleId ? styles.userBubble : styles.otherBubble
-      ]} >
-        {props.currentMessage?.text && (
-          <Text style={styles.text}>{props.currentMessage.text}</Text>
-        )}
-        {props.currentMessage?.image && renderMessageImage(props)}
-        {props.currentMessage?.video && renderMessageVideo(props)}
-
-        {!props.currentMessage?.image && !props.currentMessage?.video && (
-          <Text style={styles.timestamp}>
-            {props.currentMessage?.createdAt
-              ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : ''}
-          </Text>
-        )}
-      </View>
-    );
-  };
-
-  const renderMessageImage = (props: any) => {
-    return (
-      <TouchableOpacity onPress={() => setFullScreenImage(props.currentMessage.image)}>
-        <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: props.currentMessage.image }}
-          style={styles.messageImage}
-        />
-        <Text style={styles.timestampImage}>
-        {props.currentMessage?.createdAt
-          ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : ''}
-        </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-  
-  const renderMessageVideo = (props: any) => {
-    return (
-      <View style={styles.videoContainer}>
-        <Video
-          source={{ uri: props.currentMessage.video }}
-          style={styles.messageVideo}
-          controls={true}
-          resizeMode="cover"
-        />
-        <Text style={styles.timestampImage}>
-        {props.currentMessage?.createdAt
-          ? new Date(props.currentMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : ''}
-        </Text>
-      </View>
-    );
-  };
-
-  const renderSend = (props: any) => {
-    return (
-      <View style={styles.sendContainer}>
-        <TouchableOpacity
-          style={styles.optionButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Image
-            source={attachment}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.sendButton}
-          onPress={() => {
-            if (props.text && props.onSend) {
-              props.onSend({ text: props.text.trim() }, true);
-            }
-          }}
-        >
-          <Image
-            source={sendIcon3}
-            style={styles.sendIcon}
-          />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderInputToolbar = (props: any) => {
-    return (
-      <InputToolbar
-        {...props}
-        containerStyle={styles.containerchatBar}
-      />
-    );
   };
 
   const handleOptionSelect = (option: string) => {
@@ -386,39 +292,36 @@ const ShowComment = (props: messageProps) => {
           <View style={styles.header}>
             <Text style={styles.title}>Comentarios</Text>
           </View>
-          <KeyboardAvoidingView style={styles.chatContainer} behavior="height">
+          <KeyboardAvoidingView style={styles.chatContainer}>
             <GiftedChat
               messages={queryComments.data}
               onSend={newMessage => onSend(newMessage)}
               user={{ _id: roleId }} 
               renderAvatar={renderAvatar}
               renderBubble={renderBubble}
-              renderSend={renderSend}
               placeholder="Haz un comentario"
               renderInputToolbar={renderInputToolbar}
+              
+              renderSend={(props) => (
+                <View style={styles.sendContainer}>
+
+                  <TouchableOpacity style={styles.optionButton} onPress={() => setModalVisible(true)} >
+                    <Image source={attachment}/>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity style={styles.sendButton}
+                    onPress={() => {
+                      if (props.text && props.onSend) {
+                        props.onSend({ text: props.text.trim() }, true);
+                      }
+                    }}
+                  >
+                    <Image source={sendIcon3} style={styles.sendIcon} />
+                  </TouchableOpacity>
+                </View>
+              )} 
             />
           </KeyboardAvoidingView>
-
-          <Modal
-            visible={!!fullScreenImage}
-            animationType="fade"
-            transparent={true}
-            onRequestClose={() => setFullScreenImage(null)}
-          >
-            <View style={styles.fullScreenImageContainer}>
-              <Image
-                source={{ uri: fullScreenImage || '' }}
-                style={styles.fullScreenImage}
-                resizeMode="contain"
-              />
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setFullScreenImage(null)}
-              >
-                <Text style={styles.closeButtonText}>Cerrar</Text>
-              </TouchableOpacity>
-            </View>
-          </Modal>
 
           <Modal
             transparent={true}
@@ -463,12 +366,6 @@ const ShowComment = (props: messageProps) => {
 export default ShowComment;
 
 const styles = StyleSheet.create({
-  containerchatBar: {
-    borderRadius: 5,
-    width: '90%',
-    marginHorizontal: 20,
-    borderBlockColor: Colors.white,
-  },
   container: {
     flex: 1,
   },
@@ -483,46 +380,6 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
-    //marginBottom: "-10%",
-    //maxHeight: Dimensions.get('window').height / 2,
-  },
-  bubble: {
-    maxWidth: '80%',
-    marginVertical: 5,
-    borderRadius: 10,
-    padding: 10
-  },
-  userBubble: {
-    backgroundColor: Colors.lightblue, 
-  },
-  otherBubble: {
-    backgroundColor: Colors.gray, 
-  },
-  text: {
-    fontSize: 16,
-    color: Colors.white,
-  },
-  timestamp: {
-    marginTop: 5,
-    fontSize: 10,
-    textAlign: 'right',
-    color: Colors.white,
-  },
-  timestampImage: {
-    fontSize: 10,
-    textAlign: 'right',
-    color: Colors.white,
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    marginRight: 5, // Ajusta el espaciado desde el borde derecho de la burbuja
-    marginBottom: 5, 
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
   },
   sendButton: {
     justifyContent: 'center',
@@ -567,47 +424,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
-  fullScreenImageContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   fullScreenImage: {
-    width: '100%',
-    height: '100%',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#000',
-  },
-  messageImage: {
-    width: '100%',
-    height: '100%',
-  },
-  videoContainer: {
-    width: 250,
-    height: 250,
-    borderRadius: 5,
-    overflow: 'hidden',
-    margin: -5,
-  },
-  imageContainer: {
-    width: 250,
-    height: 250,
-    borderRadius: 5,
-    overflow: 'hidden',
-    margin: -5,
-  },
-  messageVideo: {
     width: '100%',
     height: '100%',
   },
