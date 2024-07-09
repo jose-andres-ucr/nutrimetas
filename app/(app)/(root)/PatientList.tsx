@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 
 const PatientList = () => {
     const session = useContext(SessionContext);
