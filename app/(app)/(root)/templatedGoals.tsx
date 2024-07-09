@@ -4,11 +4,11 @@ import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firest
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
-import { useGoalFirestoreQuery } from '@/components/FetchData';
+import { useTemplateFirestoreQuery } from '@/components/FetchData';
 
 const TemplatedGoals = () => {
     const router = useRouter();
-    const { data: templatedGoals = [], error, isLoading } = useGoalFirestoreQuery();
+    const { data: templatedGoals = [], error, isLoading } = useTemplateFirestoreQuery();
 
     if (isLoading) {
         return (
@@ -19,8 +19,8 @@ const TemplatedGoals = () => {
         );
     }
 
-    const onPressHandle = async (goalDocId: string) => {
-        router.push({ pathname: '/CheckboxPatients', params: { goalDocId: goalDocId } });
+    const onPressHandle = async (templateDocId: string) => {
+        router.push({ pathname: '/CheckboxPatients', params: { templateDocId: templateDocId } });
     };
 
     return (
@@ -33,7 +33,7 @@ const TemplatedGoals = () => {
                         <View style={styles.item}>
                             <Image
                                 style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/512/flag+24px-131985190044767854.png' }}
+                                source={require('@/assets/images/goals.png')}
                             />
                             <View style={styles.goalDetails}>
                                 <Text style={styles.itemTitle}> {item.rubric} </Text>
@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1
     },
     itemImage: {
-        width: 60,
-        height: 60,
+        width: 35,
+        height: 35,
         marginRight: 10
     },
     goalDetails: {

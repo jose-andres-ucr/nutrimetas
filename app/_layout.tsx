@@ -1,6 +1,4 @@
 // Dependencies
-import "@react-native-firebase/firestore"
-
 // React Query and their providers
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 

@@ -2,7 +2,7 @@ import { StyleSheet, TouchableOpacity, FlatList, Image, ActivityIndicator } from
 import { View, Text, useThemeColor } from '@/components/Themed'
 import React, { useState, useEffect, useContext } from 'react';
 import Colors from '@/constants/Colors';
-import firestore from '@react-native-firebase/firestore';
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -10,8 +10,23 @@ import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { scheduleNotification } from '../../notification';
+import * as Notifications from 'expo-notifications';
+
+const images = {
+    carne: require('@/assets/images/carnes.png'),
+    fruta: require('@/assets/images/frutas.png'),
+    actividadFisica: require('@/assets/images/actividadFisica.png'),
+    agua: require('@/assets/images/agua.png'),
+    cafe: require('@/assets/images/cafe.png'),
+    harinas: require('@/assets/images/harinas.png'),
+    lacteos: require('@/assets/images/lacteos.png'),
+    vegetales: require('@/assets/images/vegetales.png'),
+}
+
 
 const GoalList = () => {
+    const [errorVisible, setErrorVisible] = useState(false);
     const router = useRouter();
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
@@ -22,6 +37,7 @@ const GoalList = () => {
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
 
+
     // Estados para los filtros
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [startDate, setStartDate] = useState(new Date());
@@ -30,7 +46,7 @@ const GoalList = () => {
     const [showBackdrop, setShowBackdrop] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [endDate, setEndDate] = useState(new Date());
-    
+
     useEffect(() => {
         // Guarda las metas originales solo la primera vez que se cargan
         if (!originalGoalsSaved && goals.length > 0) {
@@ -51,7 +67,6 @@ const GoalList = () => {
                 .onSnapshot((snapshot) => {
                     const patientData = snapshot.data();
                     const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
-
                     if (patientGoals.length > 0) {
                         fetchGoalsFromFirebase(patientGoals);
                     } else {
@@ -65,8 +80,14 @@ const GoalList = () => {
         }
     }, [patientId]);
 
+    const getGoalById = (goalId: any) => {
+        return goals.find(goal => goal.goalSelectId === goalId);
+    };
+
     const fetchGoalsFromFirebase = async (patientGoals: any) => {
         const goalsFromFirebase = [];
+        // Cancelar todas las notificaciones antes de programar nuevas
+        await Notifications.cancelAllScheduledNotificationsAsync();
         for (const goalId of patientGoals) {
             if (typeof goalId.id === 'string') {
                 const goalDoc = await firestore().collection('Goal').doc(goalId.id).get();
@@ -76,6 +97,12 @@ const GoalList = () => {
                     if (goalData) {
                         const title = await buildTitle(goalData.Rubric);
                         const description = await buildDescription(goalData);
+                        //if (role === 'patient') { // Notificar solo a los que se loguearon como paciente
+                        const notificationDate = new Date(Date.now() + 60 * 1000); // 1 minuto después
+                        scheduleNotification('Añadiendo Notificaciones', 'Has añadido una nueva meta.', notificationDate);
+                        console.log(notificationDate);
+                        scheduleDailyNotifications(goalData, description);
+                        // }
                         goalsFromFirebase.push({ ...goalData, title, description, goalSelectId });
                     } else {
                         console.error('Goal data is undefined for goal ID:', goalId.id);
@@ -85,7 +112,6 @@ const GoalList = () => {
                 console.error('Invalid goal ID:', goalId);
             }
         }
-
         setGoals(goalsFromFirebase);
 
         setLoading(false);
@@ -97,7 +123,7 @@ const GoalList = () => {
             if (rubricDoc.exists) {
                 const rubricData = rubricDoc.data();
                 if (rubricData && rubricData.Name) {
-                    return rubricData.Name;
+                    return rubricData.Name.charAt(0).toUpperCase() + rubricData.Name.slice(1);;
                 } else {
                     throw new Error('Rubric data or Name is missing');
                 }
@@ -117,7 +143,7 @@ const GoalList = () => {
     };
 
 
-    const buildDescription = async (goalData: any) => {
+    const buildDescription = async (goalData: FirebaseFirestoreTypes.DocumentData) => {
         try {
             const [typeData, actionData, rubricData, amountData, portionData, frequencyData] = await Promise.all([
                 fetchReferenceData('Type', goalData.Type),
@@ -148,14 +174,45 @@ const GoalList = () => {
         }
     };
 
+    const scheduleDailyNotifications = async (goalData: FirebaseFirestoreTypes.DocumentData, description: string) => {
+        if (goalData.NotificationTime && goalData.Deadline) {
+            const startTime = new Date(goalData.NotificationTime.seconds * 1000);
+            const endTime = new Date(goalData.Deadline.seconds * 1000);
+            let currentDate = new Date(startTime);
+            console.log(currentDate);
+            while (currentDate <= endTime) {
+                scheduleNotification('Recordatorio de Meta', description, currentDate);
+                // Incrementa el día
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+    };
+
     const onPressHandle = (selectedGoalId: string) => {
-        console.log(selectedGoalId);
         router.push({ pathname: '/GoalDetail', params: { selectedGoal: selectedGoalId, role: role ? role : "" } });
     };
 
+    const editGoal = (selectedGoalId: string) => {
+        const selectedGoal = getGoalById(selectedGoalId);
+        const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
+        if (selectedGoal) {
+            setErrorVisible(false);
+            router.replace({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
+        } else {
+            setErrorVisible(true);
+        }
+    };
+
+    const handleDeleteGoals = () => {
+        router.replace({
+            pathname: '/GoalDelete',
+            params: { patientId: patientId }
+        })
+        console.log("Eliminando");
+    }
+
     const handleAddGoal = () => {
         router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
-        // navigation.navigate('assingGoal', { sessionDocId: patientId });
     };
 
     const handleDailyGoal = () => {
@@ -183,7 +240,7 @@ const GoalList = () => {
             setError(true);
             setErrorMessage("La fecha inicial debe ser anterior a la fecha final");
             return;
-        }else{
+        } else {
             setError(false);
         }
         filterGoalsByDateRange(startDate, endDate);
@@ -221,14 +278,14 @@ const GoalList = () => {
                 adjustedStartDate.setHours(0, 0, 0, 0);
                 const adjustedEndDate = new Date(endDate);
                 adjustedEndDate.setHours(23, 59, 59, 999);
-                
+
                 // Filtrar las metas originales 
                 const filteredGoals = originalGoals.filter(goal => {
                     const goalStartDate = goal.StartDate ? goal.StartDate.toDate() : undefined;
                     const goalEndDate = goal.Deadline ? goal.Deadline.toDate() : undefined;
                     const isWithinRange = (goalStartDate && goalEndDate) &&
-                                          (goalStartDate <= adjustedEndDate) &&
-                                          (goalEndDate >= adjustedStartDate);
+                        (goalStartDate <= adjustedEndDate) &&
+                        (goalEndDate >= adjustedStartDate);
                     return isWithinRange;
                 });
                 setGoals(filteredGoals);
@@ -237,6 +294,30 @@ const GoalList = () => {
             } finally {
                 setLoading(false);
             }
+        }
+    };
+
+    const getImageSource = (rubric: string) => {
+        const lowerCaseRubric = rubric.toLowerCase();
+        switch (lowerCaseRubric) {
+            case 'actividad física':
+                return images.actividadFisica;
+            case 'frutas':
+                return images.fruta;
+            case 'harinas':
+                return images.harinas;
+            case 'vegetales':
+                return images.vegetales;
+            case 'café':
+                return images.cafe;
+            case 'carnes rojas':
+                return images.carne;
+            case 'lácteos':
+                return images.lacteos;
+            case 'agua':
+                return images.agua;
+            default:
+                return images.actividadFisica; // imagen por defecto
         }
     };
 
@@ -262,6 +343,18 @@ const GoalList = () => {
                         source={{ uri: 'https://icons-for-free.com/iff/png/512/filter-131979013401653166.png' }}
                     />
                 </TouchableOpacity>
+                <TouchableOpacity>
+                    {role === 'professional' && (
+                        <View style={styles.deleteButtonContainer}>
+                            <TouchableOpacity
+                                style={styles.deleteButton}
+                                onPress={handleDeleteGoals}
+                            >
+                                <Icon name="trash" size={24} color={Colors.white} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </TouchableOpacity>
             </View>
             {showBackdrop && <View style={styles.backdrop} />}
             {/* Ventana emergente */}
@@ -270,7 +363,7 @@ const GoalList = () => {
                     <View style={styles.filtersHeader}>
                         <Text style={styles.filterTitle}>Filtros</Text>
                     </View>
-                    <Text style={styles.dateTitle} >Fecha inicial</Text>
+                    <Text style={styles.dateTitle}>Fecha inicial</Text>
                     <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowStartDatePicker(true)}>
                         <Text>{startDate.toDateString()}</Text>
                         <FontAwesome name="calendar" size={24} color="gray" />
@@ -283,7 +376,7 @@ const GoalList = () => {
                             onChange={handleStartDateChange}
                         />
                     )}
-                    <Text style={styles.dateTitle} >Fecha final</Text>
+                    <Text style={styles.dateTitle}>Fecha final</Text>
                     <TouchableOpacity style={styles.datePickerStyle} onPress={() => setShowEndDatePicker(true)}>
                         <Text>{endDate.toDateString()}</Text>
                         <FontAwesome name="calendar" size={24} color="gray" />
@@ -321,29 +414,40 @@ const GoalList = () => {
                     <Text style={styles.emptyText}>No tiene metas pendientes.</Text>
                 </View>
             ) : (
-            <FlatList
-                data={goals}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
-                        <View style={styles.item}>
-                            <Image
-                                style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
-                            />
-                            <View style={styles.goalDetails}>
-                                <Text style={styles.itemTitle}>{item.title}</Text>
-                                <Text style={styles.itemDescription}>{item.description}</Text>
+                <FlatList
+                    data={goals}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity onPress={() => onPressHandle(item.goalSelectId)}>
+                            <View style={styles.item}>
+                                <Image
+                                    style={styles.itemImage}
+                                    source={getImageSource(item.title)}
+                                />
+                                <View style={styles.goalDetails}>
+                                    <Text style={styles.itemTitle}>{item.title}</Text>
+                                    <Text style={styles.itemDescription}>{item.description}</Text>
+                                </View>
+                                <View>
+                                    {errorVisible && (
+                                        <Text style={{ color: 'red', fontSize: 16 }}>
+                                            Meta no encontrada. Por favor, selecciona una meta válida.
+                                        </Text>
+                                    )}
+                                    <TouchableOpacity onPress={() => editGoal(item.goalSelectId)} style={styles.editIconContainer}>
+                                        <Icon name="pencil" size={24} color="gray" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
-                    </TouchableOpacity>
-                )}
-                keyExtractor={(item, index) => `${item.title}-${index}`}
-            />   
+                        </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => `${item.title}-${index}`}
+                />
             )}
             {role === 'professional' && (
                 <TouchableOpacity style={styles.floatingButton} onPress={handleAddGoal}>
                     <Icon name="add" size={24} color="white" />
                 </TouchableOpacity>
+
             )}
             {role === 'patient' && (
                 <TouchableOpacity style={styles.registerDayButton} onPress={handleDailyGoal}>
@@ -536,5 +640,42 @@ const styles = StyleSheet.create({
     errorText: {
         color: Colors.white,
         fontWeight: "bold",
+    },
+    editIcon: {
+        padding: 8,
+    },
+    editIconContainer: {
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
+    },
+    deleteButtonContainer: {
+        position: 'absolute',
+        top: -15,
+        left: 150,
+        backgroundColor: Colors.red,
+        padding: 5,
+        borderRadius: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    deleteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    deleteButtonText: {
+        color: 'white',
+        marginLeft: 5,
+        fontWeight: 'bold',
+    },
+    selectedItem: {
+        shadowColor: Colors.gray,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 3,
+        backgroundColor: Colors.lightGray,
     },
 });

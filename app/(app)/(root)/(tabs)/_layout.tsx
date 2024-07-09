@@ -1,7 +1,6 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import {Text, StyleSheet } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -13,14 +12,6 @@ function TabBarIcon(props: {
   color: string;
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
-
-function ExpedientesScreen() {
-  return (
-    <Text style={styles.subtitle}>
-      NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
-    </Text>
-  );
 }
 
 export default function TabLayout() {
@@ -37,8 +28,8 @@ export default function TabLayout() {
         name="expedientes"
         options={{
           title: "Expedientes",
-          headerTitle: () => <ExpedientesScreen />, 
           tabBarIcon: ({ color }) => <TabBarIcon name="address-book" color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -48,15 +39,15 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="flag" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="transferencias"
+        options={{
+          title: 'Mover Pacientes',
+          tabBarIcon: ({ color }) => <TabBarIcon name="address-card-o" color={color} />,
+          headerShown: false,
+        }}
+      />
     </Tabs>
+    
   );
 }
-
-
-const styles = StyleSheet.create({
-  subtitle: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: Colors.green,
-  },
-});

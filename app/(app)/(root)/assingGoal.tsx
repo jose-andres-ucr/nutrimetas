@@ -33,6 +33,7 @@ type GoalFormType = z.infer<typeof partialGoalForm>;
 export default function AssignGoal() {
   const router = useRouter();
   const { patientId } = useGlobalSearchParams();
+  const title = patientId ? "Asignar Meta" : "Crear Plantilla"
 
 
   const {
@@ -76,7 +77,7 @@ export default function AssignGoal() {
   return (
     <ScrollView>
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Asignar Meta</Text>
+        <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text></Text>
         <View style={styles.separator} lightColor={Colors.lightGray} darkColor={Colors.white} />
 
