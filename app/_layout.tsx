@@ -7,18 +7,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 // Expo Navigation
 import { Slot } from 'expo-router';
 
-// Login session and its dispatching context 
-import { LoginSessionProvider } from '@/shared/LoginSession';
+// Login session and its context 
+import LoginSessionProvider from '@/shared/Session/LoginSessionProvider';
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
   // Inject login session state and handling 
   return (
-    <LoginSessionProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <LoginSessionProvider>
         <Slot />
-      </QueryClientProvider>
-    </LoginSessionProvider>
+      </LoginSessionProvider>
+    </QueryClientProvider>
   );
 }
