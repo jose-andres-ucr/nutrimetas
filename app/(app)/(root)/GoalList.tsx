@@ -10,7 +10,7 @@ import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import { useGlobalSearchParams } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { scheduleNotification } from '../../notification';
+import { scheduleNotification } from '@/shared/Notifications/notification';
 import * as Notifications from 'expo-notifications';
 
 const images = {
