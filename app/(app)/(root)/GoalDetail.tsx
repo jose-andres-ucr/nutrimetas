@@ -7,7 +7,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useGlobalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import Colors from '@/constants/Colors';
-import ShowComment from './showComment';
 
 interface Timestamp {
     seconds: number;
@@ -158,9 +157,6 @@ const GoalDetail = () => {
                     {formatDate(Deadline)}
                 </Text>
             </View>
-            <View style={styles.commentsContainer}>
-                <ShowComment role={role as string} goalId={selectedGoal as string} />
-            </View>
         </SafeAreaView>
     );
 };
@@ -205,9 +201,5 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 10,
         fontSize: 18,
-    },
-    commentsContainer: {
-        flex: 2,
-        alignContent: 'flex-end',
     },
 });
