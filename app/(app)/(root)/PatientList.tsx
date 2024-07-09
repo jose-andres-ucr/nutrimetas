@@ -10,14 +10,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import profileIcon from '@/assets/images/ProfileIcon.png';
 import searchIcon from '@/assets/images/searchIcon.png';
 
-function ExpedientesScreen() {
-    return (
-      <Text style={styles.subtitle}>
-        NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
-      </Text>
-    );
-  }
-
 const PatientList = () => {
     const session = useContext(SessionContext);
     const router = useRouter();
@@ -131,7 +123,9 @@ const PatientList = () => {
                 ListHeaderComponent={
                     <View >
                         <View style={styles.title}>
-                            <ExpedientesScreen />
+                            <Text style={styles.subtitle}>
+                                NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
+                            </Text>
                         </View>
                         <View style={styles.searchContainer}>
                             <View style={styles.inputContainer}>

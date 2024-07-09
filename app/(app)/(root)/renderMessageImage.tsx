@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     marginBottom: 5, 
   },
   messageImage: {
-    flex: 1,
+    flex: 1
   },
   imageContainer: {
     width: 250,
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     overflow: 'hidden',
     margin: -5,
-    marginTop: -56,
+    marginTop: -30,
   },
   fullScreenImageContainer: {
     flex: 1,

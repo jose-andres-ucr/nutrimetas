@@ -10,7 +10,7 @@ export default function Goals() {
     
     return (
         <SafeAreaView style={styles.container}>
-            <GoalList goalId={patientId as string}/>
+            <GoalList/>
         </SafeAreaView>
     );
 }
@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.gray,
-    top: "-13%",
+    top: "-12%",
     marginBottom: "-22%",
   },
   button: {
