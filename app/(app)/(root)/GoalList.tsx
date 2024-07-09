@@ -16,7 +16,8 @@ const GoalList = () => {
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
     const session = useContext(SessionContext);
-    const role = useContext(SessionContext)?.role;
+    const role = session && session.state === "valid" ? session.userData.role : null;
+    const docId = session && session.state === "valid" ? session.userData.docId : undefined;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
@@ -44,7 +45,7 @@ const GoalList = () => {
         if (patientId) {
             const unsubscribe = firestore()
                 .collection('Professionals')
-                .doc(session?.docId)
+                .doc(docId)
                 .collection('Patient')
                 .doc(patientId.toString())
                 .onSnapshot((snapshot) => {
