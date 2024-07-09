@@ -9,13 +9,6 @@ import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import profileIcon from '@/assets/images/ProfileIcon.png';
 import searchIcon from '@/assets/images/searchIcon.png';
 
-function ExpedientesScreen() {
-    return (
-        <Text style={styles.subtitle}>Elija Profesional Para Transferir Pacientes</Text>
-        
-    );
-  }
-
 const ProfessionalList = () => {
     const router = useRouter();
     const [professionals, setProfessionals] = useState<any[]>([]);
@@ -109,7 +102,7 @@ const ProfessionalList = () => {
                 ListHeaderComponent={
                     <View >
                         <View style={styles.title}>
-                            <ExpedientesScreen />
+                            <Text style={styles.subtitle}>Elija Profesional Para Transferir Pacientes</Text>
                         </View>
                         <View style={styles.searchContainer}>
                             <View style={styles.inputContainer}>
@@ -186,6 +179,6 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        marginLeft: "-12%",
+        //marginLeft: "-12%",
     },
 });

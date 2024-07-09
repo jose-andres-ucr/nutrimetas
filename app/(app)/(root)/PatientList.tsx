@@ -6,16 +6,9 @@ import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionContext } from '@/shared/Session/LoginSessionProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import profileIcon from '@/assets/images/ProfileIcon.png';
 import searchIcon from '@/assets/images/searchIcon.png';
-
-function ExpedientesScreen() {
-    return (
-      <Text style={styles.subtitle}>
-        NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
-      </Text>
-    );
-  }
 
 const PatientList = () => {
     const session = useContext(SessionContext);
@@ -53,7 +46,15 @@ const PatientList = () => {
     };
 
     const onPressHandle = async (patientDocId: string) => {
-        router.push({ pathname: '/GoalList', params: { patientId: patientDocId } });
+        try {
+            // Guardar patientDocId en el local storage
+            await AsyncStorage.setItem('selectedPatientId', patientDocId);
+    
+            // Navegar a la nueva pantalla
+            router.push({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientDocId } });
+        } catch (error) {
+            console.error('Error saving patient ID:', error);
+        }
     };
 
     const filteredPatients = patients.filter(patient => {
@@ -124,7 +125,9 @@ const PatientList = () => {
                 ListHeaderComponent={
                     <View >
                         <View style={styles.title}>
-                            <ExpedientesScreen />
+                            <Text style={styles.subtitle}>
+                                NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
+                            </Text>
                         </View>
                         <View style={styles.searchContainer}>
                             <View style={styles.inputContainer}>

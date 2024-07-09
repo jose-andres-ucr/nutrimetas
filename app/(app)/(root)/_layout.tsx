@@ -34,6 +34,7 @@ function RootLayoutNav() {
       <FlashMessage position="top" />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(patientTabs)" options={{ headerShown: false }} />
         <Stack.Screen name="addPatient" options={{ headerShown: false }} />
         <Stack.Screen name="assingGoal" options={{ headerShown: false }} />
         <Stack.Screen name="configGoal" options={{ headerShown: false }} />
