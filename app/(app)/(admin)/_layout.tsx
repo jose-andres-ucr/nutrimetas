@@ -70,12 +70,12 @@ export default function RootLayout() {
     return null;
   }
 
-  // If the session is invalidated, redirect to the sign-in page
-/*   if ((!session) 
-    || session.state !== "valid" 
-    || session.userData.role !== "admin") {
-    return <Redirect href="/sign-in" />;
-  } */
+  // If the session isn't valid, or the role isn't that of an admin, redirect 
+  // to the sign-in page
+  if (!session || session.state !== "valid" || 
+    session.userData.role !== "admin") {
+    return <Redirect href="/(app)/(public)/sign-in" />;
+  }
 
   // Otherwise, defer to the root layout.
   return (

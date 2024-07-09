@@ -22,9 +22,13 @@ import LoginForm from "@/components/LoginForm";
 // Icon pop-up
 import IconPopup from "@/components/IconPopup";
 
-// Session Context, User Data
+// Session Context
 import { SessionContext } from "@/shared/Session/LoginSessionProvider";
+
+// Sign in, sign out mutations
 import { signIn, signOut } from "@/shared/User/Mutations/SessionMutations";
+
+// User login credential datatype
 import { UserLoginCredentials } from "@/shared/Session/LoginSessionTypes";
 
 type SignInAttemptBase = {state: string};

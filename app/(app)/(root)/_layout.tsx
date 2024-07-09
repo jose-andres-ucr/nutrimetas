@@ -78,10 +78,15 @@ export default function RootLayout() {
     return null;
   }
 
-  // If the session is invalidated, redirect to the sign-in page
-/*   if ((!session) || session.state !== "valid") {
-    return <Redirect href="/sign-in" />;
-  } */
+  // If the session isn't valid, or the role isn't that of a professional or
+  // patient, redirect to the sign-in page
+  // TODO: Maybe split grouped routes for patient and professionals
+  if (!session || session.state !== "valid" || (
+    session.userData.role !== "patient" && 
+    session.userData.role !== "professional"
+  )) {
+    return <Redirect href="/(app)/(public)/sign-in" />;
+  }
 
   // Otherwise, defer to the root layout.
   return (
