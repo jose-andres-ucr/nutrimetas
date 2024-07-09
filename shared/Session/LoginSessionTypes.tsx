@@ -11,19 +11,19 @@ type SessionBase = {
     state: string,
 }
 
-type ValidSession = {
+type ValidSession = { // (Good data and auth)
     state: "valid",
     uid: string, // Account's Auth UID
     verified: boolean, // Whether the account is verified
     userData: UserData, // User's data
 } & SessionBase;
 
-type InvalidSession = {
+type InvalidSession = { // (Bad data or auth)
     state: "invalid",
     error: Error,
 } & SessionBase;
 
-type PendingSession = {
+type PendingSession = { // (Loading either data or auth)
     state: "pending",
 } & SessionBase;
 
@@ -34,16 +34,16 @@ export type LoginSession = ValidSession | InvalidSession | PendingSession;
 type LoginActionBase = {
     type: string,
 }
-type CleanSession = {
+type CleanSession = { // Clean session
     type: "clean",
 } & LoginActionBase;
 
-type SetSession = {
+type SetSession = { // Assign new session
     type: "set",
     newSession: LoginSession,
 } & LoginActionBase;
 
-type InvalidateSession = {
+type InvalidateSession = { // Mark session as invalid
     type: "invalidate",
     error: Error,
 } & LoginActionBase;

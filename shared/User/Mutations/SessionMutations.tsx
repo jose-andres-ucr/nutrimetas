@@ -44,7 +44,6 @@ export const signIn = () => {
 
     return useMutation({
         mutationFn: trySignIn,
-        // Notice the second argument is the variables object that the `mutate` function receives
         onSuccess: (data) => {
             console.log("Sign in succesfull");
             queryClient.setQueryData(queryKey, data)

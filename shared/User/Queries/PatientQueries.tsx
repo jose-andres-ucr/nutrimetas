@@ -28,6 +28,7 @@ const asUnexpectedError = (reason : any) => {
 export const fetchPatientData = (email : string) => {
     const queryKey = [email, "user/query/data/patient"] as const;
 
+    // Build the datasheet based on the search results
     const handleNestedResults = (patientCollection : SnapshotDocData, 
         profDocId : string) => {
         if (patientCollection.docs.length === 1) {
@@ -48,6 +49,8 @@ export const fetchPatientData = (email : string) => {
         ));
     }
 
+    // Collect the patient datasheet for a given professional's
+    // patients, if there's a match
     const handleResults = (profCollection : SnapshotDocData) => {
         const matchedPatients = profCollection.docs.map(
             (profDoc) => {
@@ -67,6 +70,7 @@ export const fetchPatientData = (email : string) => {
         return Promise.any(matchedPatients);
     }
 
+    // Collect the patient's datasheet
     const fetchData = () => firestore()
         .collection(Collections.Professionals)
         .get()
@@ -86,6 +90,7 @@ export const usePatientData = (email: string) => {
     const queryKey = ["user/query/data/patient", email] as const;
     const queryClient = useQueryClient();
 
+    // Build the datasheet based on the search results
     const handleNestedResults = (patientCollection : SnapshotDocData, 
         profDocId : string) => {
         if (patientCollection.docs.length === 1) {
@@ -106,6 +111,8 @@ export const usePatientData = (email: string) => {
         ));
     }
 
+    // Collect the patient datasheet for a given professional's
+    // patients, if there's a match
     const handleResults = (profCollection : SnapshotDocData) => {
         const matchedPatients = profCollection.docs.map(
             (profDoc) => {
@@ -125,6 +132,7 @@ export const usePatientData = (email: string) => {
         return Promise.any(matchedPatients);
     }
 
+    // Collect the patient's datasheet
     const fetchData = () => firestore()
         .collection(Collections.Professionals)
         .get()
@@ -140,10 +148,12 @@ export const usePatientData = (email: string) => {
 
     const [snapshotError, setSnapshotError] = useState<QueryError | null>(null);
 
+    // Listen to changes on the document...
     useEffect(() => {
         const unsubscribe = firestore()
             .collection(Collections.Professionals)
             .onSnapshot(
+                // To rebuild the datasheet
                 (profCollection) => {
                     console.log("Pulling patient data (snapshot)");
                     handleResults(profCollection).then(
@@ -171,6 +181,7 @@ export const usePatientData = (email: string) => {
         return () => { unsubscribe() };
     }, [email]);
 
+    // Invalidate datasheet if error is encountered on updates
     if (snapshotError) {
         return {
             data : undefined, 

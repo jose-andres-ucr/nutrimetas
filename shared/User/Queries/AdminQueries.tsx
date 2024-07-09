@@ -28,6 +28,7 @@ const asUnexpectedError = (reason : any) => {
 export const fetchAdminData = (email: string) => {
     const queryKey = [email, "user/query/data/admin"] as const;
 
+    // Search for document in admin collection...
     const fetchData = () => firestore()
         .collection(Collections.Admin)
         .where("email", "==", email)
@@ -35,6 +36,7 @@ export const fetchAdminData = (email: string) => {
         .get()
         .then(
             (query) => {
+                // And build the datasheet
                 if (query.docs.length === 1) {
                     const doc = query.docs[0];
                     const data : AdminData = {
@@ -48,7 +50,8 @@ export const fetchAdminData = (email: string) => {
 
                 return Promise.reject(
                     new QueryError(
-                        "No se encontró al administrador asignado", "missing-user"
+                        "No se encontró al administrador asignado", 
+                        "missing-user"
                     )
                 );
             },
@@ -66,6 +69,7 @@ export const useAdminData = (email: string) => {
     const queryKey = [email, "user/query/data/admin"] as const;
     const queryClient = useQueryClient();
 
+    // Build the datasheet based on the search results
     const handleResults = (query : SnapshotDocData) => {
         if (query.docs.length === 1) {
             const doc = query.docs[0];
@@ -85,11 +89,13 @@ export const useAdminData = (email: string) => {
         );
     }
 
+    // Search for the admin's document
     const filter = () => firestore()
         .collection(Collections.Admin)
         .where("email", "==", email)
         .limit(1);
 
+    // Collect the admin's datasheet
     const fetchData = () => filter()
         .get()
         .then(
@@ -104,10 +110,12 @@ export const useAdminData = (email: string) => {
 
     const [snapshotError, setSnapshotError] = useState<QueryError | null>(null);
 
+    // Listen to changes on the document...
     useEffect(() => {
         const unsubscribe = filter()
         .onSnapshot(
             (adminData) => {
+                // To rebuild the datasheet
                 console.log("Pulling admin data (snapshot)");
                 handleResults(adminData).then(
                     (adminData) => {
@@ -134,6 +142,7 @@ export const useAdminData = (email: string) => {
         return () => { unsubscribe() };
     }, [email]);
 
+    // Invalidate datasheet if error is encountered on updates
     if (snapshotError) {
         return {
             data : undefined, 

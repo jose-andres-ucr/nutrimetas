@@ -28,6 +28,7 @@ const asUnexpectedError = (reason : any) => {
 export const fetchProfData = (email: string) => {
     const queryKey = [email, "user/query/data/professional"] as const;
 
+    // Search for document in professionals collection...
     const fetchData = () => firestore()
         .collection(Collections.Professionals)
         .where("email", "==", email)
@@ -35,6 +36,7 @@ export const fetchProfData = (email: string) => {
         .get()
         .then(
             (query) => {
+                // And build the datasheet
                 if (query.docs.length === 1) {
                     const doc = query.docs[0];
                     const data : ProfessionalData = {
@@ -64,6 +66,7 @@ export const useProfData = (email: string) => {
     const queryKey = [email, "user/query/data/professional"] as const;
     const queryClient = useQueryClient();
 
+    // Build the datasheet based on the search results
     const handleResults = (query : SnapshotDocData) => {
         if (query.docs.length === 1) {
             const doc = query.docs[0];
@@ -82,11 +85,13 @@ export const useProfData = (email: string) => {
         ));
     }
 
+    // Search for the professional's document
     const filter = () => firestore()
         .collection(Collections.Professionals)
         .where("email", "==", email)
         .limit(1);
 
+    // Collect the professional's datasheet
     const fetchData = () => filter()
         .get()
         .then(
@@ -101,9 +106,11 @@ export const useProfData = (email: string) => {
 
     const [snapshotError, setSnapshotError] = useState<QueryError | null>(null);
 
+    // Listen to changes on the document...
     useEffect(() => {
       const unsubscribe = filter()
         .onSnapshot(
+            // To rebuild the datasheet
             (profData) => {
                 console.log("Pulling professional data (snapshot)");
                 handleResults(profData).then(
@@ -131,6 +138,7 @@ export const useProfData = (email: string) => {
         return () => { unsubscribe() };
     }, [email]);
 
+    // Invalidate datasheet if error is encountered on updates
     if (snapshotError) {
         return {
             data : undefined, 
