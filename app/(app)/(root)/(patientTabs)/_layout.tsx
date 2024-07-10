@@ -6,6 +6,7 @@ import {Text, StyleSheet } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import useSignOutButton from '@/components/SignOutButton';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -25,6 +26,7 @@ function Nutrimetas() {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const signOutButton = useSignOutButton();
 
   return (
     <Tabs
@@ -37,7 +39,10 @@ export default function TabLayout() {
         name="goalsPatient"
         options={{
           title: 'Metas',
-          headerTitle: () => <Nutrimetas />, 
+          headerTitle: Nutrimetas,
+          headerRight: signOutButton,
+          headerRightContainerStyle: {marginRight: 15},
+          headerShown: true, 
           tabBarIcon: ({ color }) => <TabBarIcon name="flag" color={color} />,
         }}
       />

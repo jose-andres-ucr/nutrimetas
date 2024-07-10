@@ -98,6 +98,7 @@ export default function LoginPage() {
                             onError: (error) => setSignInAttempt(
                                 {state: "invalid", error: error}
                             ),
+                            onSuccess: () => setSignInAttempt({state: "pending"})
                         }
                     );
                 }

@@ -354,9 +354,14 @@ const GoalList = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color={arrowColor} />
-                </TouchableOpacity>
+                {
+                    router.canGoBack() ? (
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                            <Icon name="arrow-back" size={24} color={arrowColor} />
+                        </TouchableOpacity>
+                    ) : null
+                }
+                
                 <Text style={styles.title}>Metas</Text>
                 <TouchableOpacity onPress={handleFilterPress} style={styles.filterContainer}>
                     <Image
