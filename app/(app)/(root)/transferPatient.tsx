@@ -6,7 +6,7 @@ import { showMessage } from 'react-native-flash-message';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { usePatientsFirestoreQuery } from '@/components/FetchData';
 import TransferredPatientItem from '../../../components/TransferredPatientItem';
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { useGlobalSearchParams } from 'expo-router';
 import greenCheckIcon from '@/assets/images/greenCheckIcon.png';
@@ -17,8 +17,10 @@ type CallbackFunction = () => void;
 
 const TransferPatient = () => {
     const router = useRouter();
-    const actualProfessionalID = useContext(SessionContext)?.docId
-    
+    const session = useContext(SessionContext);
+    const actualProfessionalID = session && session.state === "valid" ? 
+        session.userData.docId : undefined;
+
     const { targetProfessionalId } = useGlobalSearchParams();
     const targetProfessionalIdString = Array.isArray(targetProfessionalId) ? targetProfessionalId[0] : targetProfessionalId; 
    

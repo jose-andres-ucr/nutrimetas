@@ -8,6 +8,7 @@ export default {
   Patient: "Patient",
   Portion: "Portion",
   Professionals: "Professionals",
+  Admin: "Admin",
   Rubric: "Rubric",
   Template: "Template",
   Type: "Type",

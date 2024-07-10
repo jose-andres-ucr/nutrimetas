@@ -19,7 +19,7 @@ import { partialGoalForm } from "./assingGoal";
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useDropDownDataFirestoreQuery } from "@/components/FetchData";
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import Collections from "@/constants/Collections";
 
 const goalSecondaryForm = z.object({
@@ -73,6 +73,8 @@ export default function InfoGoals() {
   const route = useRoute<ConfigGoalScreenRouteProp>();
   const router = useRouter();
   const session = useContext(SessionContext);
+  const docId = session && session.state === "valid" ?
+    session.userData.docId : undefined;
   const { formData, patientId } = route.params;
   const [firstGoalData, setParsedFormData] = useState<any>(null);
   const today = new Date();
@@ -166,7 +168,7 @@ export default function InfoGoals() {
         console.log('Goal added!');
         await firestore()
           .collection(Collections.Professionals)
-          .doc(session?.docId)
+          .doc(docId)
           .collection(Collections.Patient)
           .doc(patientId)
           .update({
