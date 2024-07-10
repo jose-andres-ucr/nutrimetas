@@ -73,16 +73,28 @@ export default function AddPatient() {
     passwordRef: React.useRef<TextInputRn>(null),
   } as const;
 
-  const idExists = async (idNumber: string) => {
+  const idExists = async (idNumber: string, email: string) => {
     try {
-      const user = await firestore()
+      const idQuery = await firestore()
         .collection('Professionals')
         .doc(session?.docId)
         .collection('Patient')
         .where('idNumber', '==', idNumber)
+        .limit(1)
         .get();
-      console.log("Usuario", user)
-      return user.empty? false: true;
+  
+      const emailQuery = await firestore()
+        .collection('Professionals')
+        .doc(session?.docId)
+        .collection('Patient')
+        .where('email', '==', email)
+        .limit(1)
+        .get();
+  
+      console.log("Usuario por ID", idQuery.empty);
+      console.log("Usuario por Email", emailQuery.empty);
+  
+      return !idQuery.empty || !emailQuery.empty;
     } catch (error) {
       console.error("Error al comprobar si el usuario ya existe: ", error);
       throw new Error("Error al comprobar si el usuario ya existe.");
@@ -90,7 +102,8 @@ export default function AddPatient() {
   }
 
   const onSubmit = async (data: PatientFormType) => {
-    const userExists = await idExists(data.idNumber)
+    const formattedID = data.idNumber.replace(/-/g, '')
+    const userExists = await idExists(formattedID, data.email)
     if (!userExists) {
       const newUser = firestore()
         .collection('Professionals')
@@ -99,7 +112,7 @@ export default function AddPatient() {
         .add({
           firstName: data.firstName,
           lastName: data.lastName,
-          idNumber: data.idNumber.replace(/-/g, ''),
+          idNumber: formattedID,
           phone: data.phone,
           email: data.email,
           password: data.password,
