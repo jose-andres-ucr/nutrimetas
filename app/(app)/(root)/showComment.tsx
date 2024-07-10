@@ -82,12 +82,6 @@ const ShowComment = (props: messageProps) => {
     undefined
   ) : undefined;
 
-  console.log("PROPS: ", props.parientIDLocalStorage);
-  console.log("User role: ", role);
-  console.log("User doc ID: ", userDocID);
-  console.log("Patient doc ID: ", patientDocID);
-  console.log("Professional doc ID: ", profDocID);
-
   var queryComments = useQuery({ 
     queryKey: [GET_COMMENTS_QUERY_KEY, profDocID as string, patientDocID as string], 
     queryFn: getComments
@@ -98,13 +92,6 @@ const ShowComment = (props: messageProps) => {
   const renderInputToolbar = (props: any) => <RenderInputToolbar {...props} />;
 
   React.useEffect(() => {
-    console.log("Dentro de useEffect - PROPS: ", props.parientIDLocalStorage);
-    console.log("Dentro de useEffect - Role: ", role);
-    console.log("Dentro de useEffect - UserID Context: ", userDocID);
-    console.log("Dentro de useEffect - ID PROFESIONAL: ", profDocID);
-    console.log("Dentro de useEffect - ID PACIENTE: ", patientDocID);
-
-    console.log("Fetching", queryComments.isFetching)
     const unsubscribe = firebase
       .firestore()
       .collection('Professionals')
@@ -182,7 +169,7 @@ const ShowComment = (props: messageProps) => {
         user: {
           _id: roleID,
           name: role,
-          avatar: {profileIcon}
+          avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
       };
       
@@ -203,7 +190,6 @@ const ShowComment = (props: messageProps) => {
         const videoUrl = await queryUpload.mutateAsync(params);
         messageData.video = videoUrl;
       }
-      console.log("Guardando comentario en colleccion Patient. PatientID es: ", patientDocID);
       await db.collection('Professionals').doc(profDocID).collection('Patient').doc(patientDocID).collection('comments').add(messageData);
       console.log("Guardado!");
     } catch (error) {
