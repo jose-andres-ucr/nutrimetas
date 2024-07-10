@@ -4,7 +4,7 @@ import { UserData } from "@/shared/User/UserDataTypes";
 
 // User credentials
 export type UserLoginCredentials = {email: string, password : string};
-export type UserAuthCredentials = {email: string | null, uid : string};
+export type UserAuthCredentials = {email: string, uid : string};
 
 // Possible session states
 type SessionBase = {
@@ -13,8 +13,8 @@ type SessionBase = {
 
 type ValidSession = { // (Good data and auth)
     state: "valid",
-    uid: string, // Account's Auth UID
     verified: boolean, // Whether the account is verified
+    userCreds: UserAuthCredentials, // Account's Auth UID
     userData: UserData, // User's data
 } & SessionBase;
 
