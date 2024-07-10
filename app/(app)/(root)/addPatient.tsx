@@ -46,9 +46,16 @@ type PatientFormType = z.infer<typeof patientForm>
 
 export default function AddPatient() {
 
+  // Sesión, rol e ID de la persona logueada
   const session = useContext(SessionContext);
-  const docId = session && session.state === "valid" ? 
+  const userDocID = session && session.state === "valid" ? 
     session.userData.docId : undefined;
+
+  // ID del profesional (o profesional asignado)
+  const profDocID = session && session.state === "valid" ? (
+    session.userData.role === "professional" ? userDocID :
+    undefined
+  ) : undefined;
 
   const {
     control,
@@ -79,7 +86,7 @@ export default function AddPatient() {
     try {
       const idQuery = await firestore()
         .collection('Professionals')
-        .doc(docId)
+        .doc(profDocID)
         .collection('Patient')
         .where('idNumber', '==', idNumber)
         .limit(1)
@@ -87,7 +94,7 @@ export default function AddPatient() {
   
       const emailQuery = await firestore()
         .collection('Professionals')
-        .doc(session?.docId)
+        .doc(profDocID)
         .collection('Patient')
         .where('email', '==', email)
         .limit(1)
@@ -109,7 +116,7 @@ export default function AddPatient() {
     if (!userExists) {
       const newUser = firestore()
         .collection('Professionals')
-        .doc(docId)
+        .doc(profDocID)
         .collection('Patient')
         .add({
           firstName: data.firstName,
