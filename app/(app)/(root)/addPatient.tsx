@@ -46,9 +46,16 @@ type PatientFormType = z.infer<typeof patientForm>
 
 export default function AddPatient() {
 
+  // Sesión, rol e ID de la persona logueada
   const session = useContext(SessionContext);
-  const docId = session && session.state === "valid" ? 
+  const userDocID = session && session.state === "valid" ? 
     session.userData.docId : undefined;
+
+  // ID del profesional (o profesional asignado)
+  const profDocID = session && session.state === "valid" ? (
+    session.userData.role === "professional" ? userDocID :
+    undefined
+  ) : undefined;
 
   const {
     control,
@@ -79,7 +86,7 @@ export default function AddPatient() {
     try {
       const idQuery = await firestore()
         .collection('Professionals')
-        .doc(docId)
+        .doc(profDocID)
         .collection('Patient')
         .where('idNumber', '==', idNumber)
         .limit(1)
@@ -87,7 +94,7 @@ export default function AddPatient() {
   
       const emailQuery = await firestore()
         .collection('Professionals')
-        .doc(session?.docId)
+        .doc(profDocID)
         .collection('Patient')
         .where('email', '==', email)
         .limit(1)
@@ -105,35 +112,46 @@ export default function AddPatient() {
 
   const onSubmit = async (data: PatientFormType) => {
     const formattedID = data.idNumber.replace(/-/g, '')
-    const userExists = await idExists(formattedID, data.email)
-    if (!userExists) {
-      const newUser = firestore()
-        .collection('Professionals')
-        .doc(docId)
-        .collection('Patient')
-        .add({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          idNumber: formattedID,
-          phone: data.phone,
-          email: data.email,
-          password: data.password,
-          activated: false
-        })
-        .then(() => {
+
+    try {
+      const userExists = await idExists(formattedID, data.email)
+      if (!userExists) {
+        const newUser = await firestore()
+          .collection('Professionals')
+          .doc(profDocID)
+          .collection('Patient')
+          .add({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            idNumber: formattedID,
+            phone: data.phone,
+            email: data.email,
+          })
+        
+        if (newUser) {
+          await firestore()
+            .collection('Metadata')
+            .doc(data.email)
+            .set({
+              role: 'Patient',
+              verified: false,
+              password: data.password,
+              route: `/Professionals/${profDocID}/Patient/${newUser.id}`
+            })
           console.log('Usuario agregado!')
           router.replace('/(app)/(root)/(tabs)/expedientes')
           successfulAddition()
-        })
-        .catch((error: Error) => {
-          console.log("Error tratando de agregar paciente: ", error)
-          somethingWentWrong();
-        });
-      return newUser
-    } else {
-      console.log("El usuario ya existe")
-      alreadyExistAlert()
-      return userExists
+        }
+
+        return newUser
+      } else {
+        console.log("El usuario ya existe")
+        alreadyExistAlert()
+        return userExists
+      }
+    } catch (error) {
+      console.log("Error tratando de agregar paciente: ", error)
+      somethingWentWrong();
     }
   };
 
