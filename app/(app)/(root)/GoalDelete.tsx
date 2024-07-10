@@ -5,7 +5,7 @@ import Colors from '@/constants/Colors';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import { useRouter, useGlobalSearchParams } from 'expo-router';
 
 const images = {
@@ -28,7 +28,10 @@ const GoalDelete = () => {
     const navigation = useNavigation();
     const { patientId } = useGlobalSearchParams();
     const session = useContext(SessionContext);
-    const role = useContext(SessionContext)?.role;
+    const role = session && session.state === "valid" 
+        ? session.userData.role : undefined;
+    const docId = session && session.state === "valid" 
+        ? session.userData.docId : undefined;
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
@@ -39,7 +42,7 @@ const GoalDelete = () => {
         if (patientId) {
             const unsubscribe = firestore()
                 .collection('Professionals')
-                .doc(session?.docId)
+                .doc(docId)
                 .collection('Patient')
                 .doc(patientId.toString())
                 .onSnapshot((snapshot) => {
@@ -154,7 +157,7 @@ const GoalDelete = () => {
             try {
                 const patientDocRef = firestore()
                     .collection('Professionals')
-                    .doc(session?.docId)
+                    .doc(docId)
                     .collection('Patient')
                     .doc(patientId.toString());
 

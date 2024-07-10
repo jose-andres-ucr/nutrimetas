@@ -8,7 +8,7 @@ import firebase from '@react-native-firebase/app';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import storage from '@react-native-firebase/storage';
 import * as ImagePicker from 'react-native-image-picker';
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 
 import attachment from '@/assets/images/attachment.png';
 import sendIcon3 from '@/assets/images/sendIcon2.png';
@@ -58,21 +58,32 @@ const ShowComment = (props: messageProps) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [uploadingVisible, setUploadingVisible] = useState(false)
   const [modalMessage, setModalMessage] = useState('');
-  const role = useContext(SessionContext)?.role
-  const roleId = role == "patient" ? 2 : 1
-  const userIDContext = useContext(SessionContext)?.docId // ID del la persona logueada //Nuevo
-  //const professionalIDContext = useContext(SessionContext)?.docIdProfessional //nuevo y no existe aun (es lo que tiene que hacer javier)
-  const professionalID = role == "professional" ? userIDContext : "NgUbhJ7rOEGnN0lrDF2T"; // Nuevo
-  const patientID = role == "patient" ? userIDContext : props.parientIDLocalStorage; 
 
-  console.log("PROPS: ", props.parientIDLocalStorage);
-  console.log("Role: ", role);
-  console.log("UserID Context: ", userIDContext);
-  console.log("PATIENT: ", patientID);
-  console.log("PROFESSIONAL: ", professionalID);
+  // Sesión, rol e ID de la persona logueada
+  const session = useContext(SessionContext);
+  const userDocID = session && session.state === "valid" ? 
+    session.userData.docId : undefined;
+
+  // Rol de la persona logueada
+  const role = session && session.state === "valid" ? session.userData.role : undefined;
+  const roleID = role === "patient" ? 2 : role === "professional" ? 1 : 0;
+
+  // ID del profesional (o profesional asignado)
+  const profDocID = session && session.state === "valid" ? (
+    session.userData.role === "professional" ? userDocID :
+    session.userData.role === "patient" ? session.userData.assignedProfDocId : 
+    undefined
+  ) : undefined;
+
+  // ID del paciente (o paciente asignado)
+  const patientDocID = session && session.state === "valid" ? (
+    session.userData.role === "professional" ? props.parientIDLocalStorage :
+    session.userData.role === "patient" ? session.userData.docId : 
+    undefined
+  ) : undefined;
 
   var queryComments = useQuery({ 
-    queryKey: [GET_COMMENTS_QUERY_KEY, professionalID as string, patientID as string], 
+    queryKey: [GET_COMMENTS_QUERY_KEY, profDocID as string, patientDocID as string], 
     queryFn: getComments
   })
 
@@ -81,24 +92,17 @@ const ShowComment = (props: messageProps) => {
   const renderInputToolbar = (props: any) => <RenderInputToolbar {...props} />;
 
   React.useEffect(() => {
-    console.log("Dentro de useEffect - PROPS: ", props.parientIDLocalStorage);
-    console.log("Dentro de useEffect - Role: ", role);
-    console.log("Dentro de useEffect - UserID Context: ", userIDContext);
-    console.log("Dentro de useEffect - ID PROFESIONAL: ", professionalID);
-    console.log("Dentro de useEffect - ID PACIENTE: ", patientID);
-
-    console.log("Fetching", queryComments.isFetching)
     const unsubscribe = firebase
       .firestore()
       .collection('Professionals')
-      .doc(professionalID)
+      .doc(profDocID)
       .collection('Patient')
-      .doc(patientID)
+      .doc(patientDocID)
       .collection('comments')
       .orderBy('createdAt', 'desc')
       .onSnapshot((querySnapshot) => {
         queryClient.setQueryData(
-          [GET_COMMENTS_QUERY_KEY, professionalID, patientID],
+          [GET_COMMENTS_QUERY_KEY, profDocID, patientDocID],
           querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -113,23 +117,23 @@ const ShowComment = (props: messageProps) => {
         );
       });
     return () => unsubscribe();
-  }, [professionalID, patientID, props.parientIDLocalStorage]);
+  }, [profDocID, patientDocID, props.parientIDLocalStorage]);
 
   const uploadMediaToStorage = async ({ uri, isImage }: UploadMediaParams): Promise<string>=> {
     const randomComponent1 = Math.random().toString(36).substring(2, 9);
     const randomComponent2 = Math.random().toString(36).substring(2, 9);
     const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ''); 
-    const uniqueImageId = randomComponent1 + randomComponent2 + patientID + timestamp;
+    const uniqueImageId = randomComponent1 + randomComponent2 + patientDocID + timestamp;
 
     let storageRef 
 
     if (isImage){
-      storageRef = storage().ref(`Comments/${patientID}/${uniqueImageId}.jpg`);
-      console.log("Path es", `Comments/${patientID}/${uniqueImageId}.jpg`);
+      storageRef = storage().ref(`Comments/${patientDocID}/${uniqueImageId}.jpg`);
+      console.log("Path es", `Comments/${patientDocID}/${uniqueImageId}.jpg`);
 
     }else{
-      storageRef = storage().ref(`Comments/${patientID}/${uniqueImageId}.mp4`);
-      console.log("Path es", `Comments/${patientID}/${uniqueImageId}.mp4`);
+      storageRef = storage().ref(`Comments/${patientDocID}/${uniqueImageId}.mp4`);
+      console.log("Path es", `Comments/${patientDocID}/${uniqueImageId}.mp4`);
     }
 
     await storageRef.putFile(uri);
@@ -163,9 +167,9 @@ const ShowComment = (props: messageProps) => {
         text: newMessage[0].text,
         createdAt: newMessage[0].createdAt,
         user: {
-          _id: roleId,
+          _id: roleID,
           name: role,
-          avatar: {profileIcon}
+          avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
         }
       };
       
@@ -186,8 +190,7 @@ const ShowComment = (props: messageProps) => {
         const videoUrl = await queryUpload.mutateAsync(params);
         messageData.video = videoUrl;
       }
-      console.log("Guardando comentario en colleccion Patient. PatientID es: ", patientID);
-      await db.collection('Professionals').doc(professionalID).collection('Patient').doc(patientID).collection('comments').add(messageData);
+      await db.collection('Professionals').doc(profDocID).collection('Patient').doc(patientDocID).collection('comments').add(messageData);
       console.log("Guardado!");
     } catch (error) {
       console.error("Error saving message to Firestore: ", error);
@@ -218,7 +221,7 @@ const ShowComment = (props: messageProps) => {
               text: '', 
               createdAt: new Date(),
               user: {
-                _id: roleId,
+                _id: roleID,
                 name: role,
                 avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
               },
@@ -239,7 +242,7 @@ const ShowComment = (props: messageProps) => {
               text: '', 
               createdAt: new Date(),
               user: {
-                _id: roleId,
+                _id: roleID,
                 name: role,
                 avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
               },
@@ -259,7 +262,7 @@ const ShowComment = (props: messageProps) => {
               text: '', 
               createdAt: new Date(),
               user: {
-                _id: roleId,
+                _id: roleID,
                 name: role,
                 avatar: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png'
               },
@@ -296,7 +299,7 @@ const ShowComment = (props: messageProps) => {
             <GiftedChat
               messages={queryComments.data}
               onSend={newMessage => onSend(newMessage)}
-              user={{ _id: roleId }} 
+              user={{ _id: roleID }} 
               renderAvatar={renderAvatar}
               renderBubble={renderBubble}
               placeholder="Haz un comentario"
@@ -407,12 +410,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.lightBlack,
   },
   modalContent: {
     width: "80%",
     padding: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 10,
   },
   modalButton: {

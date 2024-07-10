@@ -4,14 +4,15 @@ import firestore from '@react-native-firebase/firestore';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import profileIcon from '@/assets/images/ProfileIcon.png';
 import searchIcon from '@/assets/images/searchIcon.png';
 
 const PatientList = () => {
     const session = useContext(SessionContext);
+    const docId = session && session.state === "valid" ? 
+        session.userData.docId : undefined;
     const router = useRouter();
     const [patients, setPatients] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +20,7 @@ const PatientList = () => {
     useEffect(() => {
         const unsubscribe = firestore()
             .collection('Professionals')
-            .doc(session?.docId)
+            .doc(docId)
             .collection('Patient')
             .onSnapshot((snapshot) => {
                 const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -88,7 +89,7 @@ const PatientList = () => {
     
     if (patients.length == 0){
         return(
-            <SafeAreaView>
+            <View>
                 <View style={{height: "100%", alignItems: 'center', marginTop: '70%'}}>
                     <Text style={{textAlign:'center', fontSize: 18}}>
                         No hay pacientes que mostrar. Agregue uno con el botón de abajo
@@ -98,11 +99,11 @@ const PatientList = () => {
                         style={{width:24, height: 24, margin: 20}}
                     />
                 </View>
-            </SafeAreaView>
+            </View>
         )
     }
     return (
-        <SafeAreaView>
+        <View>
             <FlatList
                 data={filteredPatients}
                 renderItem={({ item }) => (
@@ -121,31 +122,23 @@ const PatientList = () => {
                 )}
                 keyExtractor={(item) => item.idNumber}
                 ListHeaderComponent={
-                    <View >
-                        <View style={styles.title}>
-                            <Text style={styles.subtitle}>
-                                NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
-                            </Text>
-                        </View>
-                        <View style={styles.searchContainer}>
-                            <View style={styles.inputContainer}>
-                                <Image
-                                    style={styles.searchIcon}
-                                    source={searchIcon}
-                                />
-                                <TextInput
-                                    style={styles.searchBar}
-                                    placeholder="Paciente"
-                                    onChangeText={setSearchTerm}
-                                    value={searchTerm}
-                                />
-                            </View>
+                    <View style={styles.searchContainer}>
+                        <View style={styles.inputContainer}>
+                            <Image
+                                style={styles.searchIcon}
+                                source={searchIcon}
+                            />
+                            <TextInput
+                                style={styles.searchBar}
+                                placeholder="Paciente"
+                                onChangeText={setSearchTerm}
+                                value={searchTerm}
+                            />
                         </View>
                     </View>
                 }
-                
             />
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -194,15 +187,5 @@ const styles = StyleSheet.create({
     },
     nameAndIdContainer: {
         flexDirection: 'column',
-    },
-    title: {
-        alignItems: 'center',
-        top: '-15%'
-    },
-    subtitle: {
-        fontSize: 30,
-        fontWeight: 'bold',
-        color: Colors.green,
-        top: '10%'
-    },
+    }
 });

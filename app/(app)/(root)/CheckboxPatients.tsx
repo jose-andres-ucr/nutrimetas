@@ -8,7 +8,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useCheckBoxPatientsFirestoreQuery } from '@/components/FetchData';
 import PatientItem from '../../../components/PatientItem';
 import Collections from '@/constants/Collections';
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 
 type CallbackFunction = () => void;
 
@@ -25,6 +25,8 @@ const CheckboxPatients = () => {
     const router = useRouter();
     const { templateDocId } = useGlobalSearchParams();
     const session = useContext(SessionContext);
+    const docId = session && session.state === "valid" 
+        ? session.userData.docId : undefined;
     const { data: patients = [], error, isLoading: loading } = useCheckBoxPatientsFirestoreQuery();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -114,7 +116,7 @@ const CheckboxPatients = () => {
                     try {
                         await firestore()
                         .collection(Collections.Professionals)
-                        .doc(session?.docId)
+                        .doc(docId)
                         .collection(Collections.Patient)
                         .doc(patientId)
                         .update({

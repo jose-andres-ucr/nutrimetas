@@ -1,18 +1,18 @@
 import { Link } from "expo-router";
-import { SafeAreaView, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import Colors from "@/constants/Colors";
 import ProfessionalList from "../professionalList";
 
 export default function Professionals() {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.listContainer}>
           <ProfessionalList></ProfessionalList>
         </View>
         <Link push href="/addProfessional" style={styles.addButton}>
           Registrar profesional
         </Link>
-      </SafeAreaView>
+      </View>
     );
 }
 

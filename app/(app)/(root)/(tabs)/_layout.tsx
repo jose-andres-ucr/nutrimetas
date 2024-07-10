@@ -5,6 +5,9 @@ import { Tabs } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { Text } from '@/components/Themed';
+import Nutrimetas from '@/components/NutrimetasHeader';
+import useSignOutButton from '@/components/SignOutButton';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -16,6 +19,7 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const signOutButton = useSignOutButton();
 
   return (
     <Tabs
@@ -28,8 +32,11 @@ export default function TabLayout() {
         name="expedientes"
         options={{
           title: "Expedientes",
+          headerTitle: Nutrimetas,
+          headerRight: signOutButton,
+          headerRightContainerStyle: {marginRight: 15},
+          headerShown: true,
           tabBarIcon: ({ color }) => <TabBarIcon name="address-book" color={color} />,
-          headerShown: false,
         }}
       />
       <Tabs.Screen

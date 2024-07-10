@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SessionContext } from '@/shared/LoginSession';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 import profileIcon from '@/assets/images/ProfileIcon.png';
 import searchIcon from '@/assets/images/searchIcon.png';
 
@@ -13,7 +13,9 @@ const ProfessionalList = () => {
     const router = useRouter();
     const [professionals, setProfessionals] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const actualProfessionalID = useContext(SessionContext)?.docId
+    const session = useContext(SessionContext);
+    const actualProfessionalID = session && session.state === "valid" ? 
+        session.userData.docId : undefined;
 
     useEffect(() => {
         const unsubscribe = firestore()
@@ -177,6 +179,5 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        //marginLeft: "-12%",
     },
 });
