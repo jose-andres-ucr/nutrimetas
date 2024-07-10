@@ -1,6 +1,6 @@
 // Dependencies
 // Core React hooks & misc. stuff
-import { ReactNode, createContext, useContext } from "react";
+import { ReactNode, createContext, useContext, useEffect } from "react";
 
 // User session data types
 import { LoginSession } from "@/shared/Session/LoginSessionTypes";
@@ -74,22 +74,25 @@ const SolvedSessionProvider = ({ children } : {children : ReactNode}) => {
     const authCreds = useContext(AuthCredentialsContext);
     const session = useSession(authCreds);
 
-    if (session) {
-        switch (session.state) {
-            case "invalid":
-                console.log("Invalid session detected: " + session.error.message);
-                break;
-            case "pending":
-                console.log("Pending session detected");
-                break;
-            case "valid":
-                console.log("Valid session detected");
-                break;
-        }
-    } else {
-        console.log("No session detected");
-    }
-
+    useEffect(
+        () => {
+            if (session) {
+                switch (session.state) {
+                    case "invalid":
+                        console.log("Invalid session detected:", session.error);
+                        break;
+                    case "pending":
+                        console.log("Pending session detected");
+                        break;
+                    case "valid":
+                        console.log("Valid session detected");
+                        break;
+                }
+            } else {
+                console.log("No session detected");
+            }
+        }, [session?.state]
+    );
 
     // Inject it as a dependency onto children
     return (
@@ -104,15 +107,19 @@ const SolvedCredentialsProvider = ({ children } : {children : ReactNode}) => {
     // Pull the auth credentials
     const authCreds = useUserCredentials();
 
-    if (authCreds.isLoading) {
-        console.log("Pending credentials detected");
-    } else if (authCreds.error) {
-        console.log("Invalid credentials detected:", authCreds.error);
-    } else if (authCreds.data) {
-        console.log("Valid credentials detected for:", authCreds.data);
-    } else {
-        console.log("No credentials detected");
-    }
+    useEffect(
+        () => {
+            if (authCreds.isLoading) {
+                console.log("Pending credentials detected");
+            } else if (authCreds.error) {
+                console.log("Invalid credentials detected:", authCreds.error);
+            } else if (authCreds.data) {
+                console.log("Valid credentials detected for:", authCreds.data);
+            } else {
+                console.log("No credentials detected");
+            }
+        }, [authCreds]
+    );
 
     // Inject it as a dependency onto children
     return (
