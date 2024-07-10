@@ -459,9 +459,9 @@ const GoalList = () => {
                                             Meta no encontrada. Por favor, selecciona una meta válida.
                                         </Text>
                                     )}
-                                    <TouchableOpacity onPress={() => editGoal(item.goalSelectId)} style={styles.editIconContainer}>
+                                    {role == "professional" && <TouchableOpacity onPress={() => editGoal(item.goalSelectId)} style={styles.editIconContainer}>
                                         <Icon name="pencil" size={24} color="gray" />
-                                    </TouchableOpacity>
+                                    </TouchableOpacity>}
                                 </View>
                             </View>
                         </TouchableOpacity>
