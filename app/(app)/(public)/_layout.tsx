@@ -1,5 +1,5 @@
 import { SessionContext } from "@/shared/Session/LoginSessionProvider";
-import { Redirect, Stack } from "expo-router";
+import { Redirect, router, Stack } from "expo-router";
 import { useContext } from "react";
 
 export default function AppLayout() {
@@ -16,7 +16,7 @@ export default function AppLayout() {
             case "professional":
                 return <Redirect href="/(app)/(root)/(tabs)/expedientes" />;
             case "patient":
-                return <Redirect href="/(app)/(root)/GoalList" />;
+                return <Redirect href="/(app)/(root)/(patientTabs)/goalsPatient" />;
             default:
                 break;
         }

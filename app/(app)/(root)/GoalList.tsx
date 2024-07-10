@@ -29,14 +29,38 @@ const GoalList = () => {
     const [errorVisible, setErrorVisible] = useState(false);
     const router = useRouter();
     const navigation = useNavigation();
-    const { patientId } = useGlobalSearchParams();
+
+    // Sesión, rol e ID de la persona logueada
     const session = useContext(SessionContext);
-    const role = session && session.state === "valid" ? session.userData.role : null;
-    const docId = session && session.state === "valid" ? session.userData.docId : undefined;
+    const userDocID = session && session.state === "valid" ? 
+        session.userData.docId : undefined;
+
+    // Rol de la persona logueada
+    const role = session && session.state === "valid" ? session.userData.role : undefined;
+
+    // ID del profesional (o profesional asignado)
+    const profDocID = session && session.state === "valid" ? (
+        session.userData.role === "professional" ? userDocID :
+        session.userData.role === "patient" ? session.userData.assignedProfDocId : 
+        undefined
+    ) : undefined;
+
+    // ID del paciente (o paciente asignado)
+    const { patientId : paramPatientID } = useGlobalSearchParams();
+    const patientDocID = session && session.state === "valid" ? (
+        session.userData.role === "professional" ? (
+            paramPatientID ? paramPatientID.toString() : undefined
+        ) :
+        session.userData.role === "patient" ? session.userData.docId : 
+        undefined
+    ) : undefined;
+    
     const [goals, setGoals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
 
+    console.log("Patient doc ID", patientDocID);
+    console.log("Professional doc ID", profDocID);
 
     // Estados para los filtros
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -58,12 +82,12 @@ const GoalList = () => {
 
     useEffect(() => {
         // Maneja la suscripción a los cambios de Patient en Firestore
-        if (patientId) {
+        if (patientDocID) {
             const unsubscribe = firestore()
                 .collection('Professionals')
-                .doc(docId)
+                .doc(profDocID)
                 .collection('Patient')
-                .doc(patientId.toString())
+                .doc(patientDocID)
                 .onSnapshot((snapshot) => {
                     const patientData = snapshot.data();
                     const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
@@ -78,7 +102,7 @@ const GoalList = () => {
         } else {
             setLoading(false);
         }
-    }, [patientId]);
+    }, [patientDocID, profDocID]);
 
     const getGoalById = (goalId: any) => {
         return goals.find(goal => goal.goalSelectId === goalId);
@@ -97,12 +121,9 @@ const GoalList = () => {
                     if (goalData) {
                         const title = await buildTitle(goalData.Rubric);
                         const description = await buildDescription(goalData);
-                        //if (role === 'patient') { // Notificar solo a los que se loguearon como paciente
-                        const notificationDate = new Date(Date.now() + 60 * 1000); // 1 minuto después
-                        scheduleNotification('Añadiendo Notificaciones', 'Has añadido una nueva meta.', notificationDate);
-                        console.log(notificationDate);
-                        scheduleDailyNotifications(goalData, description);
-                        // }
+                        if (role === 'patient') { // Notificar solo a los que se loguearon como paciente
+                            scheduleDailyNotifications(goalData, description);
+                        }
                         goalsFromFirebase.push({ ...goalData, title, description, goalSelectId });
                     } else {
                         console.error('Goal data is undefined for goal ID:', goalId.id);
@@ -197,7 +218,7 @@ const GoalList = () => {
         const serializedGoal = encodeURIComponent(JSON.stringify(selectedGoal));
         if (selectedGoal) {
             setErrorVisible(false);
-            router.replace({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientId } });
+            router.replace({ pathname: '/EditGoal', params: { serializedGoal: serializedGoal, GoalId: selectedGoalId, patientId: patientDocID ?? ""} });
         } else {
             setErrorVisible(true);
         }
@@ -206,19 +227,19 @@ const GoalList = () => {
     const handleDeleteGoals = () => {
         router.replace({
             pathname: '/GoalDelete',
-            params: { patientId: patientId }
+            params: { patientId: patientDocID ?? "" }
         })
         console.log("Eliminando");
     }
 
     const handleAddGoal = () => {
-        router.replace({ pathname: '/assingGoal', params: { patientId: patientId } });
+        router.replace({ pathname: '/assingGoal', params: { patientId: patientDocID ?? "" } });
     };
 
     const handleDailyGoal = () => {
         console.log('daily register');
-        router.push({ pathname: '/DailyGoal', params: { patientId: patientId } });
-        console.log({ pathname: '/DailyGoal', params: { sessionDocId: patientId } });
+        router.push({ pathname: '/DailyGoal', params: { patientId: patientDocID  ?? ""} });
+        console.log({ pathname: '/DailyGoal', params: { sessionDocId: patientDocID } });
     };
 
     const handleFilterPress = () => {
@@ -270,7 +291,7 @@ const GoalList = () => {
     }
 
     const filterGoalsByDateRange = async (startDate: Date, endDate: Date) => {
-        if (patientId) {
+        if (patientDocID) {
             setLoading(true);
             try {
                 // Ajustar las fechas de inicio y fin para incluir la primera y última hora
@@ -654,7 +675,7 @@ const styles = StyleSheet.create({
     deleteButtonContainer: {
         position: 'absolute',
         top: -15,
-        left: 150,
+        left: 130,
         backgroundColor: Colors.red,
         padding: 5,
         borderRadius: 5,
