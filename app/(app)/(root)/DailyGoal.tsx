@@ -21,14 +21,16 @@ const DailyGoal = () => {
                 .collection('Patient')
                 .doc(patientId.toString())
                 .onSnapshot((snapshot) => {
-                    const patientData = snapshot.data();
-                    const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
+                    if (snapshot){
+                        const patientData = snapshot.data();
+                        const patientGoals = patientData && patientData.Goals ? patientData.Goals : [];
 
-                    if (patientGoals.length > 0) {
-                        fetchGoalsFromFirebase(patientGoals);
-                    } else {
-                        setLoading(false);
-                        console.log('El paciente no tiene metas.');
+                        if (patientGoals.length > 0) {
+                            fetchGoalsFromFirebase(patientGoals);
+                        } else {
+                            setLoading(false);
+                            console.log('El paciente no tiene metas.');
+                        }
                     }
                 });
             return () => unsubscribe();
