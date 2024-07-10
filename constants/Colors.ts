@@ -30,4 +30,7 @@ export default {
   red: '#FF0000',
   black: '#000000',
   backdrop: '#00000080' ,
+  lightBlack: '#00000080',
+  black90: '#000000E6',
+  white70: '#FFFFFFB3'
 };

@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   },
   fullScreenImageContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: Colors.black90,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     top: 40,
     right: 20,
     padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: Colors.white70,
     borderRadius: 5,
   },
   closeButtonText: {
