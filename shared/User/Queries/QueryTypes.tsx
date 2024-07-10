@@ -6,8 +6,8 @@ export type SnapshotDocData = FirebaseFirestoreTypes
     .QuerySnapshot<FirebaseFirestoreTypes.DocumentData>;
 
 // Type aliases for errors during query
-export type QueryErrorReason = "missing-user" | "invalid-credentials" | 
-    "unverified-account" | "unknown";
+export type QueryErrorReason = "missing-user" | "missing-user-email" | 
+    "invalid-credentials" | "unverified-account" | "unknown";
 
 export class QueryError extends Error {
     public readonly reason: QueryErrorReason;

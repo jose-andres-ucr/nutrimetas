@@ -154,6 +154,13 @@ export const useUserCredentials = (creds?: UserLoginCredentials) => {
                 .then(
                     (Credentials : FirebaseAuthTypes.UserCredential) => {
                         console.log("Sign in triggered via credentials")
+                        if (!Credentials.user.email) {
+                            throw new QueryError(
+                                "Usuario no tiene correo asociado", 
+                                "missing-user-email"
+                            )
+                        }
+
                         return {
                             uid:  Credentials.user.uid, 
                             email: Credentials.user.email
