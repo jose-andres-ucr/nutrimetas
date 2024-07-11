@@ -1,5 +1,5 @@
 // Core React hooks & misc. stuff
-import {useEffect, useState, useContext} from "react";
+import { useEffect, useState, useContext } from "react";
 
 // React Native UI
 import FlashMessage from "react-native-flash-message";
@@ -18,71 +18,48 @@ import { Redirect, Stack } from "expo-router";
 import { useColorScheme } from '@/components/useColorScheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 
-// Firestore Authentication
-import auth from '@react-native-firebase/auth';
-
 // Sign-in session context
-import { SessionContext, SessionDispatchContext } from "@/shared/LoginSession";
+import { SessionContext } from "@/shared/Session/LoginSessionProvider";
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: 'index',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <FlashMessage position="top" />      
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="addPatient" options={{ headerShown: false }} />
-          <Stack.Screen name="assingGoal" options={{ headerShown: false }} />
-          <Stack.Screen name="configGoal" options={{ headerShown: false }} />
-          <Stack.Screen name="PatientList" options={{ headerShown: false }} />
-          <Stack.Screen name="GoalList" options={{ headerShown: false }} />
-          <Stack.Screen name="CheckboxPatients" options={{ headerShown: false }} />
-          <Stack.Screen name="GoalDetail" options={{ headerShown: false }} />
-          <Stack.Screen name="showComment" options={{ headerShown: false }} />
-          <Stack.Screen name="DailyGoal" options={{ headerShown: false }} />
-        </Stack>
+      <FlashMessage position="top" />
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(patientTabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="addPatient" options={{ headerShown: false }} />
+        <Stack.Screen name="assingGoal" options={{ headerShown: false }} />
+        <Stack.Screen name="configGoal" options={{ headerShown: false }} />
+        <Stack.Screen name="PatientList" options={{ headerShown: false }} />
+        <Stack.Screen name="GoalList" options={{ headerShown: false }} />
+        <Stack.Screen name="CheckboxPatients" options={{ headerShown: false }} />
+        <Stack.Screen name="GoalDetail" options={{ headerShown: false }} />
+        <Stack.Screen name="showComment" options={{ headerShown: false }} />
+        <Stack.Screen name="DailyGoal" options={{ headerShown: false }} />
+        <Stack.Screen name="transferPatient" options={{ headerShown: false }} />
+        <Stack.Screen name="ProfessionalList" options={{ headerShown: false }} />
+        <Stack.Screen name="EditGoal" options={{ headerShown: false }} />
+        <Stack.Screen name="GoalDelete" options={{ headerShown: false }} />
+      </Stack>
     </ThemeProvider>
   );
 }
 
 export default function RootLayout() {
+  // Prevent the splash screen from auto-hiding before asset loading is complete.
+  SplashScreen.preventAutoHideAsync();
+
   // Keep track on whether or not a redirect is required based on
   // the previously known credentials
   const session = useContext(SessionContext);
-  const sessionDispatch = useContext(SessionDispatchContext);
-
-  // Subscribe to Firebase Auth's authentication state as to notice
-  // and account-for inconsistent sessions
-  useEffect(() => {
-      const authUnsuscriber = auth()
-        .onAuthStateChanged(
-            (User) => {
-                if (User === null || User.uid !== session?.uid) {
-                  sessionDispatch({
-                    type: "reset",
-                    newSession: session,
-                  });
-                }
-            }
-        );
-
-      return authUnsuscriber;
-  }, []);
 
   // Load required fonts
   const [loaded, error] = useFonts({
@@ -106,9 +83,14 @@ export default function RootLayout() {
     return null;
   }
 
-  // If the session is invalidated, redirect to the sign-in page
-  if (session === undefined) {
-    return <Redirect href="/sign-in" />;
+  // If the session isn't valid, or the role isn't that of a professional or
+  // patient, redirect to the sign-in page
+  // TODO: Maybe split grouped routes for patient and professionals
+  if (!session || session.state !== "valid" || (
+    session.userData.role !== "patient" && 
+    session.userData.role !== "professional"
+  )) {
+    return <Redirect href="/(app)/(public)/sign-in" />;
   }
 
   // Otherwise, defer to the root layout.

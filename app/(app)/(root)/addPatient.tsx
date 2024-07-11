@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, Link } from 'expo-router';
-import React from 'react';
+import React, { useContext } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Platform, StyleSheet, Image, TextInput as TextInputRn, ScrollView } from 'react-native';
 import { Text, TextInput, Button } from "react-native-paper";
@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import firestore from '@react-native-firebase/firestore';
 import { showMessage } from "react-native-flash-message";
 import { useMutation } from "@tanstack/react-query"
+import { SessionContext } from "@/shared/Session/LoginSessionProvider";
 
 import Colors from '@/constants/Colors';
 import { View } from "@/components/Themed";
@@ -45,6 +46,17 @@ type PatientFormType = z.infer<typeof patientForm>
 
 export default function AddPatient() {
 
+  // Sesión, rol e ID de la persona logueada
+  const session = useContext(SessionContext);
+  const userDocID = session && session.state === "valid" ? 
+    session.userData.docId : undefined;
+
+  // ID del profesional (o profesional asignado)
+  const profDocID = session && session.state === "valid" ? (
+    session.userData.role === "professional" ? userDocID :
+    undefined
+  ) : undefined;
+
   const {
     control,
     handleSubmit,
@@ -70,10 +82,28 @@ export default function AddPatient() {
     passwordRef: React.useRef<TextInputRn>(null),
   } as const;
 
-  const idExists = async (idNumber: string) => {
+  const idExists = async (idNumber: string, email: string) => {
     try {
-      const user = await firestore().collection('Patient').where('idNumber', '==', idNumber).get();
-      return user.empty? false: true;
+      const idQuery = await firestore()
+        .collection('Professionals')
+        .doc(profDocID)
+        .collection('Patient')
+        .where('idNumber', '==', idNumber)
+        .limit(1)
+        .get();
+  
+      const emailQuery = await firestore()
+        .collection('Professionals')
+        .doc(profDocID)
+        .collection('Patient')
+        .where('email', '==', email)
+        .limit(1)
+        .get();
+  
+      console.log("Usuario por ID", idQuery.empty);
+      console.log("Usuario por Email", emailQuery.empty);
+  
+      return !idQuery.empty || !emailQuery.empty;
     } catch (error) {
       console.error("Error al comprobar si el usuario ya existe: ", error);
       throw new Error("Error al comprobar si el usuario ya existe.");
@@ -81,33 +111,48 @@ export default function AddPatient() {
   }
 
   const onSubmit = async (data: PatientFormType) => {
-    const userExists = await idExists(data.idNumber)
-    if (!userExists) {
-      const newUser = firestore()
-        .collection('Patient')
-        .add({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          idNumber: data.idNumber,
-          phone: data.phone,
-          email: data.email,
-          password: data.password,
-          activated: false
-        })
-        .then(() => {
+    const formattedID = data.idNumber.replace(/-/g, '')
+
+    try {
+      const userExists = await idExists(formattedID, data.email)
+      if (!userExists) {
+        const newUser = await firestore()
+          .collection('Professionals')
+          .doc(profDocID)
+          .collection('Patient')
+          .add({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            idNumber: formattedID,
+            phone: data.phone,
+            email: data.email,
+          })
+        
+        if (newUser) {
+          await firestore()
+            .collection('Metadata')
+            .doc(data.email)
+            .set({
+              role: 'Patient',
+              verified: false,
+              password: data.password,
+              route: `Professionals/${profDocID}/Patient/${newUser.id}`
+            })
           console.log('Usuario agregado!')
-          router.replace('/(app)/(root)/(tabs)/expedientes')
           successfulAddition()
-        })
-        .catch((error: Error) => {
-          console.log("Error tratando de agregar paciente: ", error)
-          somethingWentWrong();
-        });
-      return newUser
-    } else {
-      console.log("El usuario ya existe")
-      alreadyExistAlert()
-      return userExists
+        }
+
+        router.replace('/(app)/(root)/(tabs)/expedientes')
+        return newUser
+      } else {
+        console.log("El usuario ya existe")
+        alreadyExistAlert()
+        return userExists
+      }
+    } catch (error) {
+      console.log("Error tratando de agregar paciente: ", error)
+      router.replace('/(app)/(root)/(tabs)/expedientes')
+      somethingWentWrong();
     }
   };
 
@@ -117,7 +162,7 @@ export default function AddPatient() {
 
   const successfulAddition = () => {
     showMessage({
-        position: "bottom",
+        position: "top",
         type: "success",
         message: "Exito!",
         description: "Paciente añadido exitosamente.",
@@ -132,7 +177,7 @@ export default function AddPatient() {
   
   const alreadyExistAlert = () => {
     showMessage({
-        position: "bottom",
+        position: "top",
         type: "warning",
         message: "Atención",
         description: "El paciente ya existe.",
@@ -147,10 +192,10 @@ export default function AddPatient() {
 
   const somethingWentWrong = () => {
     showMessage({
-        position: "bottom",
+        position: "top",
         type: "danger",
         message: "Error",
-        description: "Algo salió mal.",
+        description: "Algo salió mal. Por favor contacte a su administrador",
         backgroundColor: Colors.gray, 
         color: Colors.white, 
         icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/3/free-icon-warning-sign-9743.png'}} {...props} />,
@@ -158,6 +203,26 @@ export default function AddPatient() {
         borderRadius: 10, 
         },
     })
+  }
+
+  if (session == undefined){
+    return (
+        <SafeAreaView style={styles.container}>
+          <Text style={{fontSize: 24, fontWeight: 'bold'}}>Error en el inicio de sesion</Text>
+          <Text style={{fontSize: 16, margin: 20}}>
+            No es posible crear pacientes en este momento, intentelo mas tarde.
+          </Text>
+          <Link href='/(app)/(root)/(tabs)/expedientes' style={{
+            ...styles.button, 
+            borderWidth: 1,
+            borderColor: "black",
+            lineHeight: 35
+            }}>
+              Volver al inicio
+          </Link>
+
+        </SafeAreaView>
+    )
   }
 
   return (

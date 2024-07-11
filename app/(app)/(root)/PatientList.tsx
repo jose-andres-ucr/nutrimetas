@@ -1,18 +1,26 @@
 import { StyleSheet, TouchableOpacity, FlatList, TextInput, Image } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import firestore from '@react-native-firebase/firestore';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { View, Text } from "@/components/Themed";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import profileIcon from '@/assets/images/ProfileIcon.png';
+import searchIcon from '@/assets/images/searchIcon.png';
 
 const PatientList = () => {
+    const session = useContext(SessionContext);
+    const docId = session && session.state === "valid" ? 
+        session.userData.docId : undefined;
     const router = useRouter();
     const [patients, setPatients] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const unsubscribe = firestore()
+            .collection('Professionals')
+            .doc(docId)
             .collection('Patient')
             .onSnapshot((snapshot) => {
                 const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -37,7 +45,15 @@ const PatientList = () => {
     };
 
     const onPressHandle = async (patientDocId: string) => {
-        router.push({ pathname: '/GoalList', params: { patientId: patientDocId } });
+        try {
+            // Guardar patientDocId en el local storage
+            await AsyncStorage.setItem('selectedPatientId', patientDocId);
+    
+            // Navegar a la nueva pantalla
+            router.push({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientDocId } });
+        } catch (error) {
+            console.error('Error saving patient ID:', error);
+        }
     };
 
     const filteredPatients = patients.filter(patient => {
@@ -70,9 +86,24 @@ const PatientList = () => {
     function formatId(idNumber: string) {
         return idNumber.replace(/(\d{1})(\d{4})(\d{4})/, "$1-$2-$3");
     }
-
+    
+    if (patients.length == 0){
+        return(
+            <View>
+                <View style={{height: "100%", alignItems: 'center', marginTop: '70%'}}>
+                    <Text style={{textAlign:'center', fontSize: 18}}>
+                        No hay pacientes que mostrar. Agregue uno con el botón de abajo
+                    </Text>
+                    <Image
+                        source={require("@/assets/images/below-arrow.png")}
+                        style={{width:24, height: 24, margin: 20}}
+                    />
+                </View>
+            </View>
+        )
+    }
     return (
-        <SafeAreaView>
+        <View>
             <FlatList
                 data={filteredPatients}
                 renderItem={({ item }) => (
@@ -80,7 +111,7 @@ const PatientList = () => {
                         <View style={styles.item}>
                             <Image
                                 style={styles.itemImage}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/profile+profile+page+user+icon-1320186864367220794.png' }}
+                                source={profileIcon}
                             />
                             <View style={styles.nameAndIdContainer}>
                                 <Text style={styles.itemName}> {item.lastName.trim()}, {item.firstName.trim()} </Text>
@@ -95,7 +126,7 @@ const PatientList = () => {
                         <View style={styles.inputContainer}>
                             <Image
                                 style={styles.searchIcon}
-                                source={{ uri: 'https://icons-for-free.com/iff/png/256/search+icon+search+line+icon+icon-1320073121423015314.png' }}
+                                source={searchIcon}
                             />
                             <TextInput
                                 style={styles.searchBar}
@@ -107,7 +138,7 @@ const PatientList = () => {
                     </View>
                 }
             />
-        </SafeAreaView>
+        </View>
     );
 }
 

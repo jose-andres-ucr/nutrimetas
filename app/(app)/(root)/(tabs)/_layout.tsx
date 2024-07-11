@@ -1,11 +1,13 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import {Text, StyleSheet } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { Text } from '@/components/Themed';
+import Nutrimetas from '@/components/NutrimetasHeader';
+import useSignOutButton from '@/components/SignOutButton';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -15,16 +17,9 @@ function TabBarIcon(props: {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
 }
 
-function ExpedientesScreen() {
-  return (
-    <Text style={styles.subtitle}>
-      NUTRI<Text style={{ color: Colors.lightblue }}>METAS</Text>
-    </Text>
-  );
-}
-
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const signOutButton = useSignOutButton();
 
   return (
     <Tabs
@@ -37,7 +32,10 @@ export default function TabLayout() {
         name="expedientes"
         options={{
           title: "Expedientes",
-          headerTitle: () => <ExpedientesScreen />, 
+          headerTitle: Nutrimetas,
+          headerRight: signOutButton,
+          headerRightContainerStyle: {marginRight: 15},
+          headerShown: true,
           tabBarIcon: ({ color }) => <TabBarIcon name="address-book" color={color} />,
         }}
       />
@@ -48,15 +46,15 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="flag" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="transferencias"
+        options={{
+          title: 'Mover Pacientes',
+          tabBarIcon: ({ color }) => <TabBarIcon name="address-card-o" color={color} />,
+          headerShown: false,
+        }}
+      />
     </Tabs>
+    
   );
 }
-
-
-const styles = StyleSheet.create({
-  subtitle: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: Colors.green,
-  },
-});
