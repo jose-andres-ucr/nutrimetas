@@ -3,10 +3,10 @@
 import { ReactNode, createContext, useContext, useEffect } from "react";
 
 // User session data types
-import { LoginSession } from "@/shared/Session/LoginSessionTypes";
+import { LoginSession, UserAuthCredentials } from "@/shared/Session/LoginSessionTypes";
 
 // User data queries
-import { useUserCredentials, useUserData } from "@/shared/User/Queries/UserDataQueries";
+import { useUserMetadata as useUserMetadata, useUserCredentials, useUserData } from "@/shared/User/Queries/UserDataQueries";
 
 // Context of the current user's session
 export const SessionContext = createContext<LoginSession | null>(null);
@@ -20,16 +20,12 @@ const AuthCredentialsContext = createContext<AuthCredentialsState>(
 // Compute session based on given credentials
 const useSession = (userCreds: AuthCredentialsState) : 
     LoginSession | null => {
-    // Pull the verified account's user data
-    const userData = useUserData(userCreds.data?.email ?? "");
+    // Pull the verified account's user data and metadata
+    const userData = useUserData(userCreds.data?.email);
+    const userMetadata = useUserMetadata(userCreds.data?.email);
 
-    // No credentials: no session
-    if (userCreds.data === null) {
-        return null;
-    }
-
-    // Pending data / credentials: pending session
-    if (userData.isLoading || userCreds.isLoading) {
+    // Pending credentials: pending session
+    if (userCreds.isLoading) {
         return {state: "pending"};
     }
 
@@ -41,7 +37,41 @@ const useSession = (userCreds: AuthCredentialsState) :
         };
     }
 
-    const pulledCredentials = userCreds.data!;
+    const pulledCredentials = userCreds.data as UserAuthCredentials | null;
+    
+    // No credentials: no session
+    if (!pulledCredentials) {
+        return null;
+    }
+
+    // Pending metadata: pending session
+    if (userMetadata.isLoading) {
+        return {state: "pending"};
+    }
+
+    // Bad metadata: invalid session
+    if (userMetadata.error) {
+        return {
+            state: "invalid", 
+            error: userMetadata.error
+        };
+    }
+
+    const pulledMetadata = userMetadata.data!;
+
+    // Not verified: session pending verification
+    if (!pulledMetadata.verified) {
+        return {
+            state: "pending-verification",
+            userCreds: pulledCredentials,
+            userMetadata: pulledMetadata,
+        };
+    }
+
+    // Pending data: pending session
+    if (userData.isLoading) {
+        return {state: "pending"};
+    }
 
     // Bad data: invalid session
     if (userData.error) {
@@ -51,12 +81,14 @@ const useSession = (userCreds: AuthCredentialsState) :
         };
     }
 
+    const pulledData = userData.data!
+
     // All good: valid session
     return {
         state: "valid",
-        verified: true,
+        userData: pulledData,
+        userMetadata: pulledMetadata,
         userCreds: pulledCredentials,
-        userData: userData.data!,
     };
 }
 
