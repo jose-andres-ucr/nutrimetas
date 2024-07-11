@@ -14,9 +14,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Mutation query types
 import { MutationError } from '@/shared/User/Mutations/MutationTypes';
-import { useContext } from 'react';
-import { SessionContext } from '@/shared/Session/LoginSessionProvider';
-import { UserMetadata } from '@/shared/User/UserDataTypes';
 
 // Validate account sign-in credentials
 const tryExternalSignIn = (creds : UserLoginCredentials) => {
