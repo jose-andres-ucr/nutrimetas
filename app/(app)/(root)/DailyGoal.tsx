@@ -147,11 +147,20 @@ const DailyGoal = () => {
             const article = amountData.Value === 1 ? (portionData.Gender === 'M' ? 'un' : 'una') : (portionData.Gender === 'M' ? 'unos' : 'unas');
             const interrogative = amountData.Value !== 1 ? (portionData.Gender === 'M' ? 'Cuántos' : 'Cuántas') : '';
 
-            const description = amountData.Value !== 1
-                ? `${interrogative} ${portionName} de ${rubricName} consumiste ${today}`
-                : `${typePrefix} ${article} ${rubricName} ${today}`;
+            const isActividadFisica = rubricName.toLowerCase() === 'actividad física';
 
-            return description.charAt(0).toUpperCase() + description.slice(1);
+            let description;
+
+            if (isActividadFisica) {
+                // Si el título es "actividad física"
+                description = `${typePrefix} ${rubricName} ${today}`;
+            } else {
+                // Para otros casos 
+                description = amountData.Value !== 1
+                    ? `${interrogative} ${portionName} de ${rubricName} consumiste ${today}`
+                    : `${typePrefix} ${article} ${rubricName} ${today}`;
+            }
+            return description.charAt(0).toUpperCase() + description.slice(1);  
         } catch (error) {
             console.error('Error building description:', error);
             return '';
@@ -188,22 +197,25 @@ const DailyGoal = () => {
             <View style={styles.goalDetails}>
                 <Text style={styles.itemDescription}>{item.description}</Text>
             </View>
-            <View style={styles.arrow}>
-                <TouchableOpacity onPress={() => handleDecrement(item.goalSelectId)}>
-                    <Icon name="arrow-back" size={24} color={arrowColor} />
-                </TouchableOpacity>
-            </View>  
-            <Text style={styles.number}>{textInputValues[item.goalSelectId] || 0}</Text>
-            <View style={styles.arrow}>
-                <TouchableOpacity onPress={() => handleIncrement(item.goalSelectId)}>
-                    <Icon name="arrow-forward" size={24} color={arrowColor} />
-                </TouchableOpacity>
-            </View>  
-            {item.description.includes('Cuán') ? null : (
+            {item.title.toLowerCase() === 'actividad física' ? (
                 <CheckBox
                     checked={selectedGoal[item.goalSelectId] || false}
                     onPress={() => handleGoalCheckbox(item.goalSelectId)}
                 />
+            ) : (
+                <>
+                    <View style={styles.arrow}>
+                        <TouchableOpacity onPress={() => handleDecrement(item.goalSelectId)}>
+                            <Icon name="arrow-back" size={24} color={arrowColor} />
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.number}>{textInputValues[item.goalSelectId] || 0}</Text>
+                    <View style={styles.arrow}>
+                        <TouchableOpacity onPress={() => handleIncrement(item.goalSelectId)}>
+                            <Icon name="arrow-forward" size={24} color={arrowColor} />
+                        </TouchableOpacity>
+                    </View>
+                </>
             )}
         </View>
     );
