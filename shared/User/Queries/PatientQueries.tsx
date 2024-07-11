@@ -15,7 +15,7 @@ import Collections from "@/constants/Collections";
 import { PatientData } from "@/shared/User/UserDataTypes";
 
 // User query types
-import { QueryError, SnapshotDocData } from "@/shared/User/Queries/QueryTypes";
+import { QueryError, SnapshotDocQuery } from "@/shared/User/Queries/QueryTypes";
 
 // Shorthand wrapper for unexpected errors
 const asUnexpectedError = (reason : any) => {
@@ -29,7 +29,7 @@ export const fetchPatientData = (email : string) => {
     const queryKey = [email, "user/query/data/patient"] as const;
 
     // Build the datasheet based on the search results
-    const handleNestedResults = (patientCollection : SnapshotDocData, 
+    const handleNestedResults = (patientCollection : SnapshotDocQuery, 
         profDocId : string) => {
         if (patientCollection.docs.length === 1) {
             const doc = patientCollection.docs[0];
@@ -51,7 +51,7 @@ export const fetchPatientData = (email : string) => {
 
     // Collect the patient datasheet for a given professional's
     // patients, if there's a match
-    const handleResults = (profCollection : SnapshotDocData) => {
+    const handleResults = (profCollection : SnapshotDocQuery) => {
         const matchedPatients = profCollection.docs.map(
             (profDoc) => {
                 const profDocId = profDoc.id;
@@ -91,7 +91,7 @@ export const usePatientData = (email: string) => {
     const queryClient = useQueryClient();
 
     // Build the datasheet based on the search results
-    const handleNestedResults = (patientCollection : SnapshotDocData, 
+    const handleNestedResults = (patientCollection : SnapshotDocQuery, 
         profDocId : string) => {
         if (patientCollection.docs.length === 1) {
             const doc = patientCollection.docs[0];
@@ -113,7 +113,7 @@ export const usePatientData = (email: string) => {
 
     // Collect the patient datasheet for a given professional's
     // patients, if there's a match
-    const handleResults = (profCollection : SnapshotDocData) => {
+    const handleResults = (profCollection : SnapshotDocQuery) => {
         const matchedPatients = profCollection.docs.map(
             (profDoc) => {
                 const profDocId = profDoc.id;
