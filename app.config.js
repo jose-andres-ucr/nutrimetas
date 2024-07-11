@@ -19,7 +19,7 @@ export default {
       "supportsTablet": true
     },
     "android": {
-      "googleServicesFile": "./google-services.json",
+      "googleServicesFile": process.env.GOOGLE_SERVICES_JSON,
       "package": "com.ucr.rnfirebase",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
