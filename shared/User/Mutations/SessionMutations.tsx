@@ -7,13 +7,15 @@ import firestore from '@react-native-firebase/firestore';
 import Collections from '@/constants/Collections';
 
 // User data types
-import {UserAuthCredentials, UserLoginCredentials } from "@/shared/Session/LoginSessionTypes";
+import {LoginSession, UserAuthCredentials, UserLoginCredentials } from "@/shared/Session/LoginSessionTypes";
 
 // React Query hooks
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Mutation query types
 import { MutationError } from '@/shared/User/Mutations/MutationTypes';
+import { useContext } from 'react';
+import { SessionContext } from '@/shared/Session/LoginSessionProvider';
 
 // Validate account sign-in credentials
 const tryExternalSignIn = (creds : UserLoginCredentials) => {
@@ -158,19 +160,50 @@ export const signIn = () => {
 }
 
 // De-validate account sign-in credentials
-const trySignOut = () => {
-    console.log("Sign out requested");
+const tryExternalSignOut = () => {
+    console.log("External sign out requested");
 
     return auth()
         .signOut()
         .then( 
             () => {
-                console.log("Sign out succesfull");
+                console.log("External sign out succesfull");
             },
             (reason) => {
                 return Promise.reject(reason)
             }
         );
+}
+
+const trySignOut = (session : LoginSession | null) => {
+    console.log("Sign out requested");
+
+    if (!session) {
+        return Promise.reject(
+            new MutationError(
+                "La sesión no está activa",
+                "invalid-session"
+            )
+        );
+    }
+
+    if (session.state !== "valid" && session.state !== "pending-verification") {
+        return Promise.reject(
+            new MutationError(
+                "La sesión no es válida o pendiente de verificación",
+                "invalid-session"
+            )
+        );
+    }
+
+    const creds = session.userCreds;
+
+    if (creds.type === "server-provided") {
+        return tryExternalSignOut();
+    }
+
+    // If not externally signed out, no extra checks are needed
+    return Promise.resolve();
 }
 
 export const signOut = () => {
@@ -180,6 +213,7 @@ export const signOut = () => {
     return useMutation({
         mutationFn: trySignOut,
         onSuccess: () => {
+            console.log("Sign out succesful");
             queryClient.setQueryData(queryKey, null)
         },
         onError: (error) => {

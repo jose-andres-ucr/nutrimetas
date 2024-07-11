@@ -78,7 +78,7 @@ export default function LoginPage() {
                 // And the user is not pushing new credentials...
                 else {
                     // Try to sign out
-                    signOutMutation.mutate(undefined, {
+                    signOutMutation.mutate(session, {
                             onError: (error) => setSignInAttempt(
                                 {state: "invalid", error: error}
                             ),
@@ -106,7 +106,7 @@ export default function LoginPage() {
                 // And the user is not pushing new credentials...
                 else {
                     // Try to sign out
-                    signOutMutation.mutate(undefined, {
+                    signOutMutation.mutate(session, {
                             onError: (error) => setSignInAttempt(
                                 {state: "invalid", error: error}
                             ),

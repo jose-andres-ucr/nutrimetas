@@ -30,6 +30,10 @@ export default function AppLayout() {
 				name="(root)"
 				options={{ headerShown: false }}
 			/>
+			<Stack.Screen
+				name="(account)"
+				options={{ headerShown: false }}
+			/>
 		</Stack>
 	);
 }
