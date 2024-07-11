@@ -15,7 +15,7 @@ import Collections from "@/constants/Collections";
 import { ProfessionalData } from "@/shared/User/UserDataTypes";
 
 // User query types
-import { QueryError, SnapshotDocData } from "@/shared/User/Queries/QueryTypes";
+import { QueryError, SnapshotDocQuery } from "@/shared/User/Queries/QueryTypes";
 
 // Shorthand wrapper for unexpected errors
 const asUnexpectedError = (reason : any) => {
@@ -67,7 +67,7 @@ export const useProfData = (email: string) => {
     const queryClient = useQueryClient();
 
     // Build the datasheet based on the search results
-    const handleResults = (query : SnapshotDocData) => {
+    const handleResults = (query : SnapshotDocQuery) => {
         if (query.docs.length === 1) {
             const doc = query.docs[0];
             const data : ProfessionalData = {

@@ -1,9 +1,6 @@
 // Dependencies
-// Core React hooks & misc. stuff
-import { useEffect, useState } from "react";
-
 // React Query hooks
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Firestore DB
 import firestore from '@react-native-firebase/firestore';
@@ -17,14 +14,9 @@ import { UserMetadata } from "@/shared/User/UserDataTypes";
 // User query types
 import { MutationError } from "@/shared/User/Mutations/MutationTypes";
 
-// Shorthand wrapper for unexpected errors
-const asUnexpectedError = (reason : any) => {
-    throw new MutationError(
-        "Ocurrió un error inesperado: " + reason, "unknown"
-    );
-}
-
-const tryUpdateMetadata = (email : string, data: UserMetadata) => {
+// Verify the account of a given user on the DB
+const tryUpdateMetadata = (params : {email : string, data: UserMetadata}) => {
+    const {email, data} = params;
     console.log("Metadata update requested for", email);
 
     const updatedFields = data.verified ? {
@@ -40,7 +32,7 @@ const tryUpdateMetadata = (email : string, data: UserMetadata) => {
         .update(updatedFields)
         .then(
             () => {
-                
+                console.log("User metadata verification succesful");
             },
             (updatingError) => { 
                 throw new MutationError(
@@ -48,4 +40,25 @@ const tryUpdateMetadata = (email : string, data: UserMetadata) => {
                 );
             }
         );
+}
+
+export const updateMetadata = () => {
+    const queryClient = useQueryClient();
+    const queryKey = ["user/query/metadata"] as const;
+
+    return useMutation({
+        mutationFn: tryUpdateMetadata,
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: queryKey,
+                exact: true,
+            });
+        },
+        onError: (error : Error) => {
+            console.log("Controlled error while verifying user:", error);
+            return Promise.reject(new MutationError(
+                "Error inesperado verificando cuenta: " + error, "unknown"
+            ));
+        }
+    });
 }

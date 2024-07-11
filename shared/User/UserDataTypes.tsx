@@ -26,3 +26,37 @@ export type AdminData = UserDataBase & {
 
 // Possible user data
 export type UserData = AdminData | ProfessionalData | PatientData;
+
+// Common user metadata on the DB
+type UserMetadataBase = {
+    role: UserRole, // Role for a given user
+    verified: boolean
+}
+
+// Unverified user metadata on the Db
+export type UnverifiedMetadata = UserMetadataBase & {
+    verified: false,
+    password: string, // Assigned temporary password
+}
+
+// Patient metadata on the DB
+export type PatientMetadata = UserMetadataBase & {
+    role: "patient",
+    verified: true,
+}
+
+// Professional metadata on the DB
+export type ProfessionalMetadata = UserMetadataBase & {
+    role: "professional",
+    verified: true,
+}
+
+// Professional metadata on the DB
+export type AdminMetadata = UserMetadataBase & {
+    role: "admin",
+    verified: true,
+}
+
+// Possible user metadata
+export type UserMetadata = AdminMetadata | ProfessionalMetadata | 
+    PatientMetadata | UnverifiedMetadata;

@@ -16,20 +16,21 @@ import AppBanner from '@/assets/images/logo.png';
 import Colors from "@/constants/Colors";
 import { View, Text } from "@/components/Themed";
 
-// Login form 
-import LoginForm from "@/components/LoginForm";
-
 // Icon pop-up
 import IconPopup from "@/components/IconPopup";
+
+// Notification
+import { scheduleNotification } from "@/shared/Notifications/notification";
 
 // Session Context
 import { SessionContext } from "@/shared/Session/LoginSessionProvider";
 
 // Sign in, sign out mutations
-import { signIn, signOut } from "@/shared/User/Mutations/SessionMutations";
+import { createAndSignIn, signOut } from "@/shared/User/Mutations/SessionMutations";
 
 // User login credential datatype
-import { UserLoginCredentials } from "@/shared/Session/LoginSessionTypes";
+import ResetPasswordForm from "@/components/ResetPasswordForm";
+
 
 type SignInAttemptBase = {state: string};
 type NilSignInAttempt = {state: "nil"} & SignInAttemptBase;
@@ -38,18 +39,18 @@ type InvalidSignInAttempt = {state: "invalid", error: Error} & SignInAttemptBase
 type SignInAttempt = NilSignInAttempt | PendingSignInAttempt | InvalidSignInAttempt;
 
 // Login form rendering and hooks
-export default function LoginPage() {
+export default function ResetPassAndLoginPage() {
     // Keep track of the current user's session data
     const session = useContext(SessionContext);
 
     // and the entered credentials
-    const [passedCreds, setPassedCreds] 
-        = useState<UserLoginCredentials | null>(null);
+    const [newPassword, setNewPassword] 
+        = useState<string | null>(null);
 
     // Handle changes to the submitted credentials
-    const signInMutation = signIn();
+    const signInMutation = createAndSignIn();
     const signOutMutation = signOut();
-    
+
     // Keep track of the sign in attempt state so far
     const [signInAttempt, setSignInAttempt] 
         = useState<SignInAttempt>({state: "nil"});
@@ -67,7 +68,7 @@ export default function LoginPage() {
             // And it is invalid...
             else if (session.state === "invalid") {
                 // And the user is pushing new credentials...
-                if (passedCreds) {
+                if (newPassword) {
                     // Mark the attempt as invalid
                     setSignInAttempt({
                         state: "invalid", 
@@ -88,56 +89,52 @@ export default function LoginPage() {
                 }
             }
 
-            // And it is valid...
-            else {
+            // And it is pending verification, while being issued by them...
+            else if (session.state === "pending-verification" &&
+                session.userCreds.type === "user-provided"
+            ) {
                 // And the user is pushing new credentials...
-                if (passedCreds) {
+                if (newPassword) {
                     // Try to sign in
-                    signInMutation.mutate(
-                            passedCreds, {
+                    signInMutation.mutate({
+                            email: session.userCreds.email, 
+                            password: newPassword
+                        }, {
                             onError: (error) => setSignInAttempt(
                                 {state: "invalid", error: error}
                             ),
-                            onSuccess: () => setSignInAttempt({state: "pending"})
+                            onSuccess: () => {
+                                    scheduleNotification(
+                                        "Contraseña cambiada con éxito!",
+                                        "Intente ingresar sesión de nuevo",
+                                        new Date()
+                                    );
+                                    setSignInAttempt({state: "pending"})
+                            }
                         }
                     );
                 }
 
                 // And the user is not pushing new credentials...
                 else {
-                    // Try to sign out
-                    signOutMutation.mutate(session, {
-                            onError: (error) => setSignInAttempt(
-                                {state: "invalid", error: error}
-                            ),
-                            onSuccess: () => setSignInAttempt({state: "nil"})
-                        }
-                    );
+                    // Mark the attempt as nil
+                    setSignInAttempt({state: "nil"})
                 }
+            }
+
+            // And it is valid, or pending yet issued by the server...
+            else {
+                // Keep the current attempt as pending
+                setSignInAttempt( {state: "pending"} );
             }
         }
 
         // If no session is already active...
         else {
-            // And the user is pushing new credentials...
-            if (passedCreds) {
-                // Try to sign in
-                signInMutation.mutate(
-                    passedCreds, {
-                        onError: (error) => setSignInAttempt(
-                            {state: "invalid", error: error}
-                        )
-                    }
-                );
-            } 
-
-            // And the user is not pushing new credentials...
-            else {
-                // Mark the attempt as nil
-                setSignInAttempt( {state: "nil"} );
-            }
+            // Mark the current attempt as pending
+            setSignInAttempt( {state: "pending"} );
         }
-    }, [passedCreds, session]);
+    }, [newPassword, session]);
 
     // Render login form
     return (
@@ -145,27 +142,13 @@ export default function LoginPage() {
             { /* Form title */}
             <Text 
                 style={LoginStyles.Title}> 
-                Iniciar Sesión 
+                Cambie su contraseña 
             </Text>
 
-            { /* App logo */}
-            <View style={LoginStyles.LogoView}>
-                <Image
-                    source={AppBanner}
-                    onError={(error) => {
-                        console.error("Error loading image:", error);
-                    }}
-
-                    contentFit="contain"
-                    contentPosition="top center"
-                    style={LoginStyles.LogoImage}
-                />
-            </View>
-
-            { /* Login form */}
+            { /* Reset password form */}
             <View style={LoginStyles.FormView}>
-                <LoginForm
-                    onSubmit={(creds) => {setPassedCreds(creds);}}
+                <ResetPasswordForm
+                    onSubmit={({password_a}) => {setNewPassword(password_a);}}
                 />
             </View>
 
@@ -179,8 +162,8 @@ export default function LoginPage() {
                     signInAttempt.state === "invalid" || 
                     signInAttempt.state === "pending"
                 }
-                onCloseRequest={() => {setPassedCreds(null);}}
-                onActionRequest={() => {setPassedCreds(null);}}
+                onCloseRequest={() => {setNewPassword(null);}}
+                onActionRequest={() => {setNewPassword(null);}}
                 icon={AppBanner as ImageSourcePropType}
                 description={
                     {
@@ -208,7 +191,7 @@ const LoginStyles = StyleSheet.create({
     OverallView: {
         flex: 1,
         padding: 20,
-        gap: 5,
+        gap: 50,
 
         flexDirection: "column",
         alignItems: "center",

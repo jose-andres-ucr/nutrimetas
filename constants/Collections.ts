@@ -12,4 +12,5 @@ export default {
   Rubric: "Rubric",
   Template: "Template",
   Type: "Type",
+  Metadata: "Metadata",
 };
