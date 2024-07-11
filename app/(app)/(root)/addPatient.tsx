@@ -136,13 +136,13 @@ export default function AddPatient() {
               role: 'Patient',
               verified: false,
               password: data.password,
-              route: `/Professionals/${profDocID}/Patient/${newUser.id}`
+              route: `Professionals/${profDocID}/Patient/${newUser.id}`
             })
           console.log('Usuario agregado!')
-          router.replace('/(app)/(root)/(tabs)/expedientes')
           successfulAddition()
         }
 
+        router.replace('/(app)/(root)/(tabs)/expedientes')
         return newUser
       } else {
         console.log("El usuario ya existe")
@@ -151,6 +151,7 @@ export default function AddPatient() {
       }
     } catch (error) {
       console.log("Error tratando de agregar paciente: ", error)
+      router.replace('/(app)/(root)/(tabs)/expedientes')
       somethingWentWrong();
     }
   };
@@ -194,7 +195,7 @@ export default function AddPatient() {
         position: "top",
         type: "danger",
         message: "Error",
-        description: "Algo salió mal.",
+        description: "Algo salió mal. Por favor contacte a su administrador",
         backgroundColor: Colors.gray, 
         color: Colors.white, 
         icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/3/free-icon-warning-sign-9743.png'}} {...props} />,
