@@ -410,12 +410,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.lightBlack,
   },
   modalContent: {
     width: "80%",
     padding: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderRadius: 10,
   },
   modalButton: {

@@ -23,17 +23,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     top: -10,
   },
-  addButton: {
-    backgroundColor: Colors.lightblue,
-    fontWeight: "bold",
-    width: '100%',
-    height: 55,
-    position: "absolute",
-    bottom: 0,
-    justifyContent: "center",
-    textAlign: 'center',
-    color: Colors.white,
-    fontSize: 16,
-    lineHeight: 50
-  },
 });

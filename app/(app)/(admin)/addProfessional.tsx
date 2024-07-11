@@ -69,31 +69,45 @@ const professionalForm = z.object({
     }
   
     const onSubmit = async (data: ProfessionalFormType) => {
-      const userExists = await idExists(data.email)
-      if (!userExists) {
-        const newUser = firestore()
-          .collection('Professionals')
-          .add({
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            password: data.password,
-            activated: false
-          })
-          .then(() => {
-            console.log('Profesional agregado!')
-            router.replace('/(app)/(admin)/(tabs)/professionals')
+      try {
+        const userExists = await idExists(data.email)
+        if (!userExists) {
+          const newUser = await firestore()
+            .collection('Professionals')
+            .add({
+              firstName: data.firstName,
+              lastName: data.lastName,
+              email: data.email
+            })
+          
+          if (newUser) {
+            await firestore()
+              .collection('Metadata')
+              .doc(data.email)
+              .set({
+                role: 'Professional',
+                verified: false,
+                password: data.password
+              })
+            console.log('Usuario agregado!')
             successfulAddition()
-          })
-          .catch((error: Error) => {
-            console.log("Error tratando de agregar profesional: ", error)
-            somethingWentWrong();
-          });
-        return newUser
-      } else {
-        console.log("El usuario ya existe")
-        alreadyExistAlert()
-        return userExists
+          }
+  
+          router.replace('/(app)/(admin)/(tabs)/professionals')
+          return newUser
+        } else {
+          console.log("El usuario ya existe") 
+          alreadyExistAlert()
+          return userExists
+        }
+      } catch (error) {
+        console.log("Error tratando de agregar profesional: ", error)
+        await firestore()
+          .collection('Professionals')
+          .doc(data.email)
+          .delete()
+        router.replace('/(app)/(root)/(tabs)/expedientes')
+        somethingWentWrong();
       }
     };
   
@@ -103,7 +117,7 @@ const professionalForm = z.object({
   
     const successfulAddition = () => {
       showMessage({
-          position: "bottom",
+          position: "top",
           type: "success",
           message: "Exito!",
           description: "Profesional añadido exitosamente.",
@@ -118,7 +132,7 @@ const professionalForm = z.object({
     
     const alreadyExistAlert = () => {
       showMessage({
-          position: "bottom",
+          position: "top",
           type: "warning",
           message: "Atención",
           description: "El profesional ya existe.",
@@ -133,7 +147,7 @@ const professionalForm = z.object({
   
     const somethingWentWrong = () => {
       showMessage({
-          position: "bottom",
+          position: "top",
           type: "danger",
           message: "Error",
           description: "Algo salió mal.",

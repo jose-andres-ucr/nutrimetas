@@ -191,7 +191,7 @@ export default function EditGoal() {
         console.log('Goal updated!');
         setLoading(false);
         showSuccessMessage(() => { });
-        router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
+        router.replace({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientId } });
       })
       .catch((error) => {
         setLoading(false);

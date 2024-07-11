@@ -179,6 +179,5 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         textAlign: 'left',
-        //marginLeft: "-12%",
     },
 });

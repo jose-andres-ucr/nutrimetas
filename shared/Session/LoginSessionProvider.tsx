@@ -41,15 +41,7 @@ const useSession = (userCreds: AuthCredentialsState) :
         };
     }
 
-    const {email, uid} = userCreds.data!;
-
-    // No email: invalid session
-    if (!email) {
-        return {
-            state: "invalid", 
-            error: Error("Usuario no tiene correo asociado") 
-        };
-    }
+    const pulledCredentials = userCreds.data!;
 
     // Bad data: invalid session
     if (userData.error) {
@@ -62,8 +54,8 @@ const useSession = (userCreds: AuthCredentialsState) :
     // All good: valid session
     return {
         state: "valid",
-        uid: uid,
         verified: true,
+        userCreds: pulledCredentials,
         userData: userData.data!,
     };
 }

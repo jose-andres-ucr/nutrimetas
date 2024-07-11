@@ -22,17 +22,4 @@ const styles = StyleSheet.create({
     top: "-12%",
     marginBottom: "-22%",
   },
-  button: {
-    backgroundColor: Colors.lightblue,
-    fontWeight: "bold",
-    width: '100%',
-    height: 50,
-    position: "absolute",
-    bottom: 0,
-    justifyContent: "center",
-    textAlign: 'center',
-    color: 'white',
-    fontSize: 16,
-    lineHeight: 50
-  }
 });
