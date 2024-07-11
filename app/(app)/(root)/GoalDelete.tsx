@@ -181,7 +181,7 @@ const GoalDelete = () => {
                 });
 
                 setSelectedGoalIds([]);
-                router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
+                router.replace({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientId } });
             } catch (error) {
                 console.error("Error deleting goals:", error);
             }

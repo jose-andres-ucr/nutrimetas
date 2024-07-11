@@ -112,35 +112,47 @@ export default function AddPatient() {
 
   const onSubmit = async (data: PatientFormType) => {
     const formattedID = data.idNumber.replace(/-/g, '')
-    const userExists = await idExists(formattedID, data.email)
-    if (!userExists) {
-      const newUser = firestore()
-        .collection('Professionals')
-        .doc(profDocID)
-        .collection('Patient')
-        .add({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          idNumber: formattedID,
-          phone: data.phone,
-          email: data.email,
-          password: data.password,
-          activated: false
-        })
-        .then(() => {
+
+    try {
+      const userExists = await idExists(formattedID, data.email)
+      if (!userExists) {
+        const newUser = await firestore()
+          .collection('Professionals')
+          .doc(profDocID)
+          .collection('Patient')
+          .add({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            idNumber: formattedID,
+            phone: data.phone,
+            email: data.email,
+          })
+        
+        if (newUser) {
+          await firestore()
+            .collection('Metadata')
+            .doc(data.email)
+            .set({
+              role: 'Patient',
+              verified: false,
+              password: data.password,
+              route: `Professionals/${profDocID}/Patient/${newUser.id}`
+            })
           console.log('Usuario agregado!')
-          router.replace('/(app)/(root)/(tabs)/expedientes')
           successfulAddition()
-        })
-        .catch((error: Error) => {
-          console.log("Error tratando de agregar paciente: ", error)
-          somethingWentWrong();
-        });
-      return newUser
-    } else {
-      console.log("El usuario ya existe")
-      alreadyExistAlert()
-      return userExists
+        }
+
+        router.replace('/(app)/(root)/(tabs)/expedientes')
+        return newUser
+      } else {
+        console.log("El usuario ya existe")
+        alreadyExistAlert()
+        return userExists
+      }
+    } catch (error) {
+      console.log("Error tratando de agregar paciente: ", error)
+      router.replace('/(app)/(root)/(tabs)/expedientes')
+      somethingWentWrong();
     }
   };
 
@@ -183,7 +195,7 @@ export default function AddPatient() {
         position: "top",
         type: "danger",
         message: "Error",
-        description: "Algo salió mal.",
+        description: "Algo salió mal. Por favor contacte a su administrador",
         backgroundColor: Colors.gray, 
         color: Colors.white, 
         icon: props => <Image source={{uri: 'https://www.iconpacks.net/icons/3/free-icon-warning-sign-9743.png'}} {...props} />,

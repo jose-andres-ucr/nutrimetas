@@ -178,7 +178,7 @@ export default function InfoGoals() {
         setLoading(false);
         showSuccessMessage(() => { });
         console.log('Patient Goal added!');
-        router.replace({ pathname: '/GoalList', params: { patientId: patientId } });
+        router.replace({ pathname: '/(app)/(root)/(patientTabs)/goalsPatient', params: { patientId: patientId } });
       }
     } catch (error) {
       setLoading(false);
