@@ -15,7 +15,7 @@ import { UserMetadata } from "@/shared/User/UserDataTypes";
 import { MutationError } from "@/shared/User/Mutations/MutationTypes";
 
 // Verify the account of a given user on the DB
-const tryVerifyUser = (params : {email : string, data: UserMetadata}) => {
+const tryUpdateMetadata = (params : {email : string, data: UserMetadata}) => {
     const {email, data} = params;
     console.log("Metadata update requested for", email);
 
@@ -42,12 +42,12 @@ const tryVerifyUser = (params : {email : string, data: UserMetadata}) => {
         );
 }
 
-export const verifyUser = () => {
+export const updateMetadata = () => {
     const queryClient = useQueryClient();
     const queryKey = ["user/query/metadata"] as const;
 
     return useMutation({
-        mutationFn: tryVerifyUser,
+        mutationFn: tryUpdateMetadata,
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: queryKey,

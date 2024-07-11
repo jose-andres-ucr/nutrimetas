@@ -1,8 +1,11 @@
 import { SessionContext } from "@/shared/Session/LoginSessionProvider";
+import { signOut } from "@/shared/User/Mutations/SessionMutations";
 import { Redirect, router, Stack } from "expo-router";
 import { useContext } from "react";
 
 export default function AppLayout() {
+    const signOutMutation = signOut();
+
     // If session is already active and valid, redirect to the landing page
     // for the assigned role
     const session = useContext(SessionContext);
@@ -22,6 +25,11 @@ export default function AppLayout() {
                     break;
             }
         } else if (session.state === "pending-verification") {
+            if (session.userCreds.type === "server-provided") {
+                signOutMutation.mutate(session);
+                return <Redirect href="/(app)/(public)/sign-in" />;
+            }
+
             return <Redirect href="/(app)/(account)/reset-password" />;
         }
     }

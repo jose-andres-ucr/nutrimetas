@@ -16,6 +16,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MutationError } from '@/shared/User/Mutations/MutationTypes';
 import { useContext } from 'react';
 import { SessionContext } from '@/shared/Session/LoginSessionProvider';
+import { UserMetadata } from '@/shared/User/UserDataTypes';
 
 // Validate account sign-in credentials
 const tryExternalSignIn = (creds : UserLoginCredentials) => {
@@ -188,12 +189,11 @@ const trySignOut = (session : LoginSession | null) => {
     }
 
     if (session.state !== "valid" && session.state !== "pending-verification") {
-        return Promise.reject(
-            new MutationError(
-                "La sesión no es válida o pendiente de verificación",
-                "invalid-session"
-            )
+        console.log(
+            "Attempting to close an invalid or pending session",
         );
+
+        return Promise.resolve()
     }
 
     const creds = session.userCreds;
@@ -225,6 +225,29 @@ export const signOut = () => {
     });
 }
 
+// Verify the account of a given user on the DB
+const tryVerifyUser = (email : string) => {
+    console.log("Account verification requested for", email);
+
+    return firestore()
+        .collection(Collections.Metadata)
+        .doc(email)
+        .update({
+            verified: true,
+            password: firestore.FieldValue.delete()
+        })
+        .then(
+            () => {
+                console.log("User metadata verification succesful");
+            },
+            (updatingError) => { 
+                throw new MutationError(
+                    "Ocurrió un error inesperado: " + updatingError, "unknown"
+                );
+            }
+        );
+}
+
 // Create and sign-in into account for given credentials
 const tryCreateAndSignIn = (creds : UserLoginCredentials) => {
     console.log("Account creation and sign in requested");
@@ -232,8 +255,19 @@ const tryCreateAndSignIn = (creds : UserLoginCredentials) => {
     return auth()
         .createUserWithEmailAndPassword(creds.email, creds.password)
         .then(
-            () => {
-                console.log("Account creation and sign in succesful");
+            (Creds) => {
+                console.log("Account credentials creation succesful:", creds);
+                const email = Creds.user.email;
+
+                if (!email) {
+                    return Promise.reject(
+                        new MutationError(
+                        "No se le asoció el correo al nuevo usuario", 
+                        "missing-user-email"
+                    ));
+                }
+
+                return tryVerifyUser(email);
             },
             (reason) => {
                 return Promise.reject(reason)
